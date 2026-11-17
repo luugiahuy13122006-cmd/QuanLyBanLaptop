@@ -1,0 +1,36 @@
+# Compiled class files
+target/
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse / VS Code
+.classpath
+.project
+.settings/
+.vscode/
+
+# Local config containing SQL Server passwords
+laptop-shop-web/src/main/resources/application.properties
+application-local.properties
+
+# OS files
+.DS_Store
+Thumbs.db
