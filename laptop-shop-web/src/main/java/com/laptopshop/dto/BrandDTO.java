@@ -1,0 +1,3 @@
+package com.laptopshop.dto; import jakarta.validation.constraints.*;
+public class BrandDTO { private Integer id; @NotBlank(message="Tên thương hiệu không được để trống") @Size(max=100) private String name; @Size(max=100) private String country; @Size(max=500) private String description; private Boolean isActive=true;
+ public Integer getId(){return id;} public void setId(Integer v){id=v;} public String getName(){return name;} public void setName(String v){name=v;} public String getCountry(){return country;} public void setCountry(String v){country=v;} public String getDescription(){return description;} public void setDescription(String v){description=v;} public Boolean getIsActive(){return isActive;} public void setIsActive(Boolean v){isActive=v;}}
