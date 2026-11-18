@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Kiểm thử đa luồng</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<style>body{background:#f8f9fa}.sidebar{min-height:100vh;background:#212529}.sidebar .nav-link{color:#adb5bd}.sidebar .nav-link:hover,.sidebar .nav-link.active{color:#fff;background:rgba(255,255,255,.1);border-radius:6px}.brand-title{color:#fff;font-weight:700;font-size:1.2rem;padding:1rem;border-bottom:1px solid rgba(255,255,255,.1)}.main-content{padding:2rem}.log-box{background:#1e1e1e;color:#a8ff78;font-family:monospace;font-size:.85rem;padding:1rem;border-radius:6px;max-height:400px;overflow-y:auto}</style>
+</head>
+<body>
+<div class="container-fluid"><div class="row">
+  <nav class="col-md-2 sidebar p-3">
+    <div class="brand-title"><i class="bi bi-laptop me-2"></i>QL Laptop</div>
+    <ul class="nav flex-column mt-3">
+      <li><a class="nav-link" th:href="@{/admin/laptops}"><i class="bi bi-pc-display"></i> Laptop</a></li>
+      <li><a class="nav-link" th:href="@{/admin/categories}"><i class="bi bi-tags"></i> Danh mục</a></li>
+      <li><a class="nav-link" th:href="@{/admin/brands}"><i class="bi bi-award"></i> Thương hiệu</a></li>
+      <li><a class="nav-link active" th:href="@{/admin/stock/test}"><i class="bi bi-cpu"></i> Kiểm thử đa luồng</a></li>
+    </ul>
+  </nav>
+  <main class="col-md-10 main-content">
+    <h2><i class="bi bi-cpu me-2"></i>Kiểm thử Đa Luồng – Cập nhật Tồn Kho</h2>
+    <p class="text-muted">Chạy nhiều luồng đồng thời cập nhật tồn kho của một laptop. Hệ thống sử dụng <strong>Pessimistic Locking (JPA)</strong> để ngăn race condition.</p>
+
+    <div class="row">
+      <div class="col-md-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white"><i class="bi bi-play-circle me-2"></i>Cấu hình kiểm thử</div>
+          <div class="card-body">
+            <form th:action="@{/admin/stock/concurrent-test}" method="post">
+              <div class="mb-3">
+                <label class="form-label fw-bold">ID Laptop cần kiểm thử</label>
+                <input type="number" name="laptopId" class="form-control" value="1" min="1" required/>
+                <div class="form-text">Nhập ID của laptop trong CSDL (VD: 1 = Dell Inspiron 15)</div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Số luồng đồng thời</label>
+                <input type="number" name="threadCount" class="form-control" value="5" min="2" max="20" required/>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Delta mỗi luồng (dương = nhập, âm = xuất)</label>
+                <input type="number" name="deltaPerThread" class="form-control" value="2" required/>
+                <div class="form-text">VD: +2 = mỗi luồng cộng 2 vào tồn kho; -1 = trừ 1</div>
+              </div>
+              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-lightning-charge me-1"></i>Chạy kiểm thử đa luồng</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div th:if="${testResults != null}" class="card shadow-sm">
+          <div class="card-header bg-dark text-white"><i class="bi bi-terminal me-2"></i>Kết quả kiểm thử (Laptop ID: <span th:text="${laptopId}"></span>)</div>
+          <div class="card-body">
+            <div class="d-flex gap-3 mb-3">
+              <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Thành công: <span th:text="${successCount}"></span></span>
+              <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Thất bại: <span th:text="${failCount}"></span></span>
+            </div>
+            <div class="log-box">
+              <div th:each="r : ${testResults}" th:text="${r}"></div>
+            </div>
+            <p class="mt-2 text-muted small">
+              <i class="bi bi-info-circle me-1"></i>
+              Kiểm tra tồn kho thực tế tại <a th:href="@{/admin/laptops}">trang Laptop</a> sau khi test.
+            </p>
+          </div>
+        </div>
+        <div th:unless="${testResults != null}" class="card shadow-sm">
+          <div class="card-body text-center text-muted py-5">
+            <i class="bi bi-cpu display-4 mb-3 d-block"></i>
+            <p>Nhấn "Chạy kiểm thử" để bắt đầu. Kết quả sẽ hiển thị ở đây.</p>
+          </div>
+        </div>
+        <div class="card mt-3 border-info">
+          <div class="card-header bg-info bg-opacity-10"><i class="bi bi-book me-2"></i>Cơ chế chống Race Condition</div>
+          <div class="card-body small">
+            <ul class="mb-0">
+              <li><strong>Pessimistic Locking:</strong> <code>@Lock(PESSIMISTIC_WRITE)</code> – SQL Server khóa row khi đọc để cập nhật</li>
+              <li><strong>@Transactional:</strong> Mỗi luồng thực hiện trong transaction độc lập</li>
+              <li><strong>ExecutorService:</strong> Quản lý thread pool, CountDownLatch đảm bảo tất cả bắt đầu cùng lúc</li>
+              <li><strong>Log luồng:</strong> Xem console của ứng dụng để thấy tên luồng trong log</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>
