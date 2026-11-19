@@ -1,0 +1,140 @@
+package com.laptopshop.entity;
+
+// Thành viên phụ trách: TV4
+// Thực thể đại diện cho bảng OrderDetails trong cơ sở dữ liệu QL_Laptop (SQL Server - TV1).
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "OrderDetails")
+public class OrderDetail {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "OrderDetailID")
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "OrderID", nullable = false)
+    private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "LaptopID")
+    private Laptop laptop;
+
+    @Column(name = "SKUSnapshot", nullable = false, length = 30)
+    private String skuSnapshot;
+
+    @Column(name = "LaptopNameSnapshot", nullable = false, length = 200)
+    private String laptopNameSnapshot;
+
+    @Column(name = "UnitPrice", nullable = false, precision = 18, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "Quantity", nullable = false)
+    private Integer quantity;
+
+    @Column(name = "LineTotal", nullable = false, precision = 18, scale = 2)
+    private BigDecimal lineTotal;
+
+    public OrderDetail() {
+    }
+
+    public OrderDetail(Order order, Laptop laptop, Integer quantity, BigDecimal unitPrice) {
+        this.order = order;
+        this.laptop = laptop;
+        this.skuSnapshot = (laptop != null && laptop.getSku() != null) ? laptop.getSku() : "N/A";
+        this.laptopNameSnapshot = (laptop != null && laptop.getName() != null) ? laptop.getName() : "N/A";
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
+    }
+
+    public Laptop getLaptop() {
+        return laptop;
+    }
+
+    public void setLaptop(Laptop laptop) {
+        this.laptop = laptop;
+        if (laptop != null) {
+            if (this.skuSnapshot == null) {
+                this.skuSnapshot = laptop.getSku();
+            }
+            if (this.laptopNameSnapshot == null) {
+                this.laptopNameSnapshot = laptop.getName();
+            }
+        }
+    }
+
+    public String getSkuSnapshot() {
+        return skuSnapshot;
+    }
+
+    public void setSkuSnapshot(String skuSnapshot) {
+        this.skuSnapshot = skuSnapshot;
+    }
+
+    public String getLaptopNameSnapshot() {
+        return laptopNameSnapshot;
+    }
+
+    public void setLaptopNameSnapshot(String laptopNameSnapshot) {
+        this.laptopNameSnapshot = laptopNameSnapshot;
+    }
+
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
+    }
+
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
+        if (unitPrice != null && this.quantity != null) {
+            this.lineTotal = unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+        }
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+        if (this.unitPrice != null && quantity != null) {
+            this.lineTotal = this.unitPrice.multiply(BigDecimal.valueOf(quantity));
+        }
+    }
+
+    public BigDecimal getLineTotal() {
+        return lineTotal;
+    }
+
+    public void setLineTotal(BigDecimal lineTotal) {
+        this.lineTotal = lineTotal;
+    }
+
+    // Alias tương thích subtotal -> lineTotal
+    public BigDecimal getSubtotal() {
+        return lineTotal;
+    }
+
+    public void setSubtotal(BigDecimal subtotal) {
+        this.lineTotal = subtotal;
+    }
+}
