@@ -1,0 +1,141 @@
+package com.laptopshop.entity;
+
+// Thành viên phụ trách: TV4
+// Thực thể đại diện cho bảng Payments (Thanh toán đơn hàng) trong cơ sở dữ liệu QL_Laptop (SQL Server - TV1).
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "Payments")
+public class Payment {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "PaymentID")
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "OrderID", nullable = false)
+    private Order order;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "PaymentMethod", nullable = false, length = 30)
+    private PaymentMethod paymentMethod = PaymentMethod.CASH;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "PaymentStatus", nullable = false, length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(name = "Amount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal amount = BigDecimal.ZERO;
+
+    @Column(name = "TransactionCode", length = 100)
+    private String transactionCode;
+
+    @Column(name = "PaidAt")
+    private LocalDateTime paidAt;
+
+    @Column(name = "CreatedAt", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    public Payment() {
+    }
+
+    public Payment(Order order, PaymentMethod paymentMethod, PaymentStatus paymentStatus, BigDecimal amount, String transactionCode) {
+        this.order = order;
+        this.paymentMethod = paymentMethod != null ? paymentMethod : PaymentMethod.CASH;
+        this.paymentStatus = paymentStatus != null ? paymentStatus : PaymentStatus.UNPAID;
+        this.amount = amount != null ? amount : BigDecimal.ZERO;
+        this.transactionCode = transactionCode;
+        this.createdAt = LocalDateTime.now();
+        if (this.paymentStatus == PaymentStatus.PAID) {
+            this.paidAt = LocalDateTime.now();
+        }
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.paymentMethod == null) {
+            this.paymentMethod = PaymentMethod.CASH;
+        }
+        if (this.paymentStatus == null) {
+            this.paymentStatus = PaymentStatus.UNPAID;
+        }
+        if (this.amount == null) {
+            this.amount = BigDecimal.ZERO;
+        }
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getTransactionCode() {
+        return transactionCode;
+    }
+
+    public String getTransactionRef() {
+        return transactionCode;
+    }
+
+    public void setTransactionCode(String transactionCode) {
+        this.transactionCode = transactionCode;
+    }
+
+    public LocalDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(LocalDateTime paidAt) {
+        this.paidAt = paidAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+}
