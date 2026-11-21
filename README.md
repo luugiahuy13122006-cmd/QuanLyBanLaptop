@@ -38,9 +38,9 @@ QuanLyBanLaptop/
 ├── database/
 │   └── QL_LAPTOP.sql                   # Script SQL Server (10 bảng + mẫu)
 ├── docs/
-│   ├── BaoCao_LaptopShop.docx          # Báo cáo đồ án hoàn chỉnh (Word)
-│   ├── BaoCao_LaptopShop.pdf           # Báo cáo đồ án hoàn chỉnh (PDF)
-│   └── WebsiteLaptop_CongNgheJava.pptx # Slide thuyết trình đồ án
+│   ├── BaoCao_LaptopShop.docx               # Báo cáo đồ án hoàn chỉnh (Word)
+│   ├── BaoCao_LaptopShop.pdf                # Báo cáo đồ án hoàn chỉnh (PDF)
+│   └── Slide_LaptopShop_CongNgheJava.pptx   # Slide thuyết trình đồ án
 ├── laptop-shop-web/                    # Module 1: Web (8080) & Socket (9090)
 │   ├── pom.xml
 │   └── src/
