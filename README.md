@@ -36,9 +36,9 @@ QuanLyBanLaptop/
 ├── database/
 │   └── QL_LAPTOP.sql                   # Script tạo CSDL QL_Laptop (10 bảng) + 20 bản ghi mẫu/bảng
 ├── docs/
-│   ├── So_do_ERD_QL_LAPTOP.png         # Sơ đồ ERD
-│   ├── Chuong1_2_ThietKeCSDL.docx      # Tài liệu thiết kế CSDL
-│   └── PHAN_CONG_FILE_THANH_VIEN.md    # Bảng phân công file/thư mục từng thành viên trên Git
+│   ├── BaoCao_LaptopShop.docx          # Báo cáo đồ án hoàn chỉnh (Word)
+│   ├── BaoCao_LaptopShop.pdf           # Báo cáo đồ án hoàn chỉnh (PDF)
+│   └── WebsiteLaptop_CongNgheJava.pptx # Slide thuyết trình đồ án (PowerPoint)
 ├── laptop-shop-web/                    # Module 1: Spring Boot Web App + TCP Socket Server (cổng 8080 & 9090)
 └── laptop-socket-client/               # Module 2: Chương trình Java Client mạng tách biệt
 ```
