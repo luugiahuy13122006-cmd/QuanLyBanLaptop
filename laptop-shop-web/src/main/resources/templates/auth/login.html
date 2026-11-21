@@ -25,7 +25,7 @@
           <form th:action="@{/login}" method="post">
             <div class="mb-3">
               <label class="form-label fw-semibold">Tên đăng nhập</label>
-              <input type="text" name="username" class="form-control" placeholder="admin / staff01 / khach01" required autofocus/>
+              <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập" required autofocus/>
             </div>
             <div class="mb-3">
               <label class="form-label fw-semibold">Mật khẩu</label>
@@ -39,14 +39,6 @@
           <hr class="my-4"/>
           <div class="text-center small">
             Chưa có tài khoản? <a th:href="@{/register}" class="fw-semibold">Đăng ký ngay</a>
-          </div>
-          <div class="alert alert-light border mt-3 mb-0 small">
-            <strong>Tài khoản mẫu (Mật khẩu: <code>123456</code>):</strong>
-            <ul class="mb-0 ps-3 mt-1">
-              <li>Admin: <code>admin</code> (Toàn quyền quản trị)</li>
-              <li>Nhân viên: <code>staff01</code> (Quản lý kho, đơn hàng)</li>
-              <li>Khách hàng: <code>khach01</code> (Mua hàng, xem đơn)</li>
-            </ul>
           </div>
         </div>
       </div>
