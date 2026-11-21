@@ -12,6 +12,18 @@ GO
 USE QL_Laptop;
 GO
 
+-- Xóa các bảng cũ theo thứ tự ngược khóa ngoại (giúp script chạy lại được trên mọi máy)
+DROP TABLE IF EXISTS LichSuTrangThaiDonHang;
+DROP TABLE IF EXISTS ThanhToan;
+DROP TABLE IF EXISTS ChiTietDonHang;
+DROP TABLE IF EXISTS DonHang;
+DROP TABLE IF EXISTS KhachHang;
+DROP TABLE IF EXISTS Laptop;
+DROP TABLE IF EXISTS ThuongHieu;
+DROP TABLE IF EXISTS DanhMucLaptop;
+DROP TABLE IF EXISTS TaiKhoan;
+DROP TABLE IF EXISTS VaiTro;
+GO
 
 -- =========================================
 -- 1. BẢNG VAI TRÒ (VaiTro)

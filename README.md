@@ -58,15 +58,15 @@ QuanLyBanLaptop/
 
 ## 5. Cấu hình kết nối trên máy cá nhân
 
-Mở file `laptop-shop-web/src/main/resources/application.properties` và kiểm tra thông tin kết nối SQL Server:
+Mở file `laptop-shop-web/src/main/resources/application.properties` (hoặc copy từ `application.properties.example`) và điền thông tin kết nối SQL Server trên máy bạn:
 
 ```properties
 spring.datasource.url=${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=QL_Laptop;encrypt=true;trustServerCertificate=true}
 spring.datasource.username=${DB_USERNAME:sa}
-spring.datasource.password=${DB_PASSWORD:123}
+spring.datasource.password=${DB_PASSWORD:YOUR_SQL_SERVER_PASSWORD}
 ```
 
-> Nếu mật khẩu `sa` trên máy bạn khác `123` (ví dụ `123456`), hãy sửa `123` thành mật khẩu SQL Server của máy bạn (hoặc truyền biến môi trường `DB_PASSWORD`).
+> Thay `YOUR_SQL_SERVER_PASSWORD` bằng mật khẩu `sa` trên máy bạn (hoặc truyền qua biến môi trường `DB_PASSWORD`).
 
 ---
 
