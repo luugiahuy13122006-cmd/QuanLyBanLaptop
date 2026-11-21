@@ -1,8 +1,6 @@
 package com.laptopshop.repository;
 
-// Thành viên phụ trách: TV4
-// Repository thao tác dữ liệu bảng Orders và thực hiện các truy vấn thống kê doanh thu bằng JPQL khớp QL_LAPTOP.sql.
-
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.MonthlyRevenueDTO;
 import com.laptopshop.dto.OrderStatusCountDTO;
 import com.laptopshop.entity.Order;
@@ -22,25 +20,29 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
 
-    // Đếm số đơn hàng của một khách hàng (kiểm tra ràng buộc FK_Orders_Customers trước khi xóa khách hàng)
     long countByCustomerId(Integer customerId);
-
+    long countByCreatedBy(Integer createdBy);
     boolean existsByOrderCodeIgnoreCase(String orderCode);
 
-    // Lọc danh sách đơn hàng theo trạng thái (OrderStatus) và khách hàng (CustomerID) kèm phân trang
     @EntityGraph(attributePaths = {"customer", "payments"})
     @Query("SELECT o FROM Order o WHERE " +
            "(:status IS NULL OR o.status = :status) AND " +
-           "(:customerId IS NULL OR o.customer.id = :customerId)")
+           "(:customerId IS NULL OR o.customer.id = :customerId) AND " +
+           "(:keyword IS NULL OR :keyword = '' OR " +
+           " LOWER(o.orderCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           " LOWER(o.recipientName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           " o.recipientPhone LIKE CONCAT('%', :keyword, '%'))")
     Page<Order> filterOrders(@Param("status") OrderStatus status,
                              @Param("customerId") Integer customerId,
+                             @Param("keyword") String keyword,
                              Pageable pageable);
 
-    // Lấy thông tin đơn hàng kèm khách hàng
+    @EntityGraph(attributePaths = {"customer", "details"})
+    List<Order> findByCustomerIdOrderByOrderDateDesc(Integer customerId);
+
     @EntityGraph(attributePaths = {"customer"})
     Optional<Order> findWithCustomerById(Integer id);
 
-    // 1. Thống kê tổng doanh thu: các đơn hàng đã hoàn thành (COMPLETED) hoặc đã thanh toán (PAID) và không bị hủy/trả
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
            "WHERE (o.status = com.laptopshop.entity.OrderStatus.COMPLETED " +
            "   OR EXISTS (SELECT p FROM Payment p WHERE p.order = o AND p.paymentStatus = com.laptopshop.entity.PaymentStatus.PAID)) " +
@@ -48,7 +50,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "AND o.status <> com.laptopshop.entity.OrderStatus.RETURNED")
     BigDecimal calculateTotalRevenue();
 
-    // 2. Thống kê doanh thu theo từng tháng của năm (khớp truy vấn Thống kê doanh thu theo tháng trong QL_LAPTOP.sql)
     @Query("SELECT new com.laptopshop.dto.MonthlyRevenueDTO(" +
            "MONTH(o.orderDate), COUNT(o), COALESCE(SUM(o.totalAmount), 0)) " +
            "FROM Order o WHERE YEAR(o.orderDate) = :year " +
@@ -60,7 +61,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
            "ORDER BY MONTH(o.orderDate)")
     List<MonthlyRevenueDTO> getMonthlyRevenueByYear(@Param("year") int year);
 
-    // 3. Thống kê số lượng đơn hàng theo từng trạng thái đơn hàng
     @Query("SELECT new com.laptopshop.dto.OrderStatusCountDTO(o.status, COUNT(o)) " +
            "FROM Order o GROUP BY o.status")
     List<OrderStatusCountDTO> countOrdersByStatus();

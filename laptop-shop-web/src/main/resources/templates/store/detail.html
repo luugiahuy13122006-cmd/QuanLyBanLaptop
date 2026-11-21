@@ -1,5 +1,258 @@
-<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Chi tiết sản phẩm</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link th:href="@{/css/style.css}" rel="stylesheet"></head><body><div th:replace="~{fragments/header :: header}"></div>
-<div class="container py-5"><a th:href="@{/}" class="text-decoration-none">← Trang chủ</a><div class="row mt-3 g-4"><div class="col-md-6"><img class="img-fluid rounded" th:src="${product.imageUrl}" th:alt="${product.name}"></div>
-<div class="col-md-6"><h2 th:text="${product.name}">Tên laptop</h2><h4 class="text-danger my-3" th:text="${#numbers.formatDecimal(product.price,0,'COMMA',0,'POINT')} + ' đ'"></h4>
-<p th:text="${product.description}"></p><p>Còn hàng: <span th:text="${product.stock}"></span></p>
-<form th:action="@{/gio-hang/them/{id}(id=${product.id})}" method="post"><button class="btn btn-primary">Thêm vào giỏ hàng</button></form></div></div></div></body></html>
+<!DOCTYPE html>
+<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt (Trang chi tiết sản phẩm kiểu Phong Vũ: Gallery >= 5 ảnh + Sản phẩm liên quan) -->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${laptop.name + ' - LaptopShop'}">Chi tiết sản phẩm</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-3 py-md-4">
+  <!-- Breadcrumb kiểu Phong Vũ -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small mb-0">
+      <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Trang chủ</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/(categoryId=${laptop.category.id})}" class="text-decoration-none" th:text="${laptop.categoryName}">Danh mục</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/(brandId=${laptop.brand.id})}" class="text-decoration-none" th:text="${laptop.brandName}">Thương hiệu</a></li>
+      <li class="breadcrumb-item active text-truncate" style="max-width: 280px;" th:text="${laptop.name}">Tên laptop</li>
+    </ol>
+  </nav>
+
+  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+  <!-- Khối chi tiết chính 2 cột (Phong Vũ Layout) -->
+  <div class="bg-white rounded-3 border p-3 p-md-4 shadow-sm mb-4">
+    <div class="row g-4">
+      <!-- CỘT TRÁI: Gallery >= 5 ảnh + Đặc điểm nổi bật + Chính sách bán hàng -->
+      <div class="col-lg-5">
+        <div class="pv-gallery-main mb-2">
+          <img id="mainProductImg" th:src="${galleryImages[0]}" th:alt="${laptop.name}"/>
+        </div>
+
+        <!-- Hàng Thumbnail nhỏ (ít nhất 5 ảnh) -->
+        <div class="d-flex align-items-center gap-1 mb-3">
+          <button type="button" class="btn btn-sm btn-light border" onclick="shiftThumb(-1)" title="Ảnh trước">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <div class="pv-thumb-list flex-grow-1" id="thumbContainer">
+            <div class="pv-thumb-item" th:each="imgUrl, st : ${galleryImages}"
+                 th:classappend="${st.index == 0} ? 'active'"
+                 th:attr="data-img=${imgUrl}, data-idx=${st.index}"
+                 onclick="selectThumb(this)">
+              <img th:src="${imgUrl}" th:alt="${laptop.name + ' góc ' + (st.index + 1)}"/>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-light border" onclick="shiftThumb(1)" title="Ảnh sau">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Đặc điểm nổi bật -->
+        <div class="pv-policy-box mb-3">
+          <div class="fw-bold mb-2"><i class="bi bi-stars text-primary me-1"></i>Đặc điểm nổi bật</div>
+          <ul class="mb-0 ps-3 small text-secondary">
+            <li th:if="${laptop.cpu != null}">Vi xử lý: <strong th:text="${laptop.cpu}"></strong></li>
+            <li th:if="${laptop.ramGb != null}">Bộ nhớ RAM: <strong th:text="${laptop.ramGb + ' GB'}"></strong> | Ổ cứng: <strong th:text="${laptop.storage}"></strong></li>
+            <li th:if="${laptop.gpu != null}">Đồ họa: <strong th:text="${laptop.gpu}"></strong></li>
+            <li th:if="${laptop.screenSize != null}">Màn hình: <strong th:text="${laptop.screenSize + ' inch'}"></strong></li>
+          </ul>
+        </div>
+
+        <!-- Chính sách bán hàng kiểu Phong Vũ -->
+        <div class="pv-policy-box">
+          <div class="fw-bold mb-2">Chính sách bán hàng</div>
+          <div class="d-flex align-items-center gap-2 mb-2 small"><i class="bi bi-truck text-primary fs-5"></i><span>Miễn phí giao hàng cho đơn từ 5 triệu</span></div>
+          <div class="d-flex align-items-center gap-2 mb-2 small"><i class="bi bi-shield-check text-primary fs-5"></i><span>Cam kết hàng chính hãng 100%</span></div>
+          <div class="d-flex align-items-center gap-2 small"><i class="bi bi-arrow-repeat text-primary fs-5"></i><span>Đổi trả trong 10 ngày nếu lỗi nhà sản xuất</span></div>
+        </div>
+      </div>
+
+      <!-- CỘT PHẢI: Thông tin, Giá, Khuyến mãi, Chọn số lượng & Mua ngay -->
+      <div class="col-lg-7">
+        <div class="small mb-1">
+          Thương hiệu: <a th:href="@{/(brandId=${laptop.brand.id})}" class="fw-semibold text-decoration-none" th:text="${laptop.brandName}">ASUS</a>
+        </div>
+        <h1 class="h3 fw-bold mb-2" th:text="${laptop.name}">Tên Laptop</h1>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 small text-muted mb-3">
+          <span>SKU: <code th:text="${laptop.sku}">LT001</code></span>
+          <span>|</span>
+          <span>Danh mục: <strong th:text="${laptop.categoryName}">Văn phòng</strong></span>
+          <span>|</span>
+          <span th:if="${laptop.stockQuantity > 0}" class="badge bg-success-subtle text-success">
+            Còn hàng (<span th:text="${laptop.stockQuantity}"></span> máy)
+          </span>
+          <span th:unless="${laptop.stockQuantity > 0}" class="badge bg-danger">Tạm hết hàng</span>
+        </div>
+
+        <!-- Khối Giá bán kiểu Phong Vũ -->
+        <div class="p-3 rounded-3 mb-3" style="background: #F8FAFC; border: 1px solid var(--pv-border);">
+          <div class="d-flex flex-wrap align-items-baseline gap-2">
+            <div class="pv-price display-6" th:text="${#numbers.formatDecimal(laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            <span th:if="${laptop.discounted}" class="pv-discount-tag fs-6" th:text="${'-' + laptop.discountPercent + '%'}"></span>
+          </div>
+          <div th:if="${laptop.discounted}" class="d-flex flex-wrap align-items-center gap-2 mt-1">
+            <span class="pv-old-price fs-6" th:text="${#numbers.formatDecimal(laptop.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+            <span class="badge bg-success-subtle text-success">
+              Tiết kiệm <span th:text="${#numbers.formatDecimal(laptop.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+            </span>
+          </div>
+          <div class="small text-muted mt-1">Đã bao gồm VAT • Hỗ trợ xuất hóa đơn điện tử</div>
+        </div>
+
+        <!-- Khối Quà tặng / Ưu đãi -->
+        <div class="pv-gift-box mb-4">
+          <span class="pv-gift-badge"><i class="bi bi-gift me-1"></i>Bạn sẽ nhận được</span>
+          <ul class="mb-0 ps-3 small">
+            <li th:if="${laptop.discounted}" class="fw-semibold text-danger">
+              Giảm trực tiếp <span th:text="${#numbers.formatDecimal(laptop.discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}"></span> (đã áp dụng vào giá bán)
+            </li>
+            <li>01 Balo Laptop chính hãng chống sốc trị giá 900.000 ₫</li>
+            <li>Chuột không dây &amp; lót chuột khi mua kèm Laptop</li>
+            <li>Miễn phí cài đặt Windows, Office &amp; vệ sinh máy trọn đời</li>
+          </ul>
+        </div>
+
+        <!-- Form Thêm vào giỏ / Mua ngay -->
+        <form th:if="${laptop.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${laptop.id})}" method="post">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <label class="fw-semibold mb-0">Số lượng:</label>
+            <div class="input-group" style="width: 130px;">
+              <button class="btn btn-outline-secondary" type="button" onclick="changeQty(-1)">-</button>
+              <input id="qtyInput" type="number" name="quantity" value="1" min="1" th:max="${laptop.stockQuantity}"
+                     class="form-control text-center fw-semibold"/>
+              <button class="btn btn-outline-secondary" type="button" onclick="changeQty(1)">+</button>
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-sm-6">
+              <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary btn-lg w-100 py-2">
+                MUA NGAY
+              </button>
+            </div>
+            <div class="col-sm-6">
+              <button type="submit" name="buyNow" value="false" class="btn btn-pv-outline btn-lg w-100 py-2">
+                <i class="bi bi-cart-plus me-1"></i>THÊM VÀO GIỎ
+              </button>
+            </div>
+          </div>
+        </form>
+        <div th:unless="${laptop.stockQuantity > 0}" class="alert alert-warning mb-0">
+          Sản phẩm hiện đang tạm hết hàng. Vui lòng chọn mẫu laptop khác bên dưới.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thông số kỹ thuật & Mô tả chi tiết -->
+  <div class="bg-white rounded-3 border p-3 p-md-4 shadow-sm mb-4">
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#tabSpecs" type="button">
+          Thông số kỹ thuật
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#tabDesc" type="button">
+          Chi tiết sản phẩm
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="tabSpecs">
+        <table class="table table-striped mb-0">
+          <tbody>
+            <tr><th style="width: 30%;">Mã sản phẩm (SKU)</th><td th:text="${laptop.sku}"></td></tr>
+            <tr><th>Thương hiệu</th><td th:text="${laptop.brandName}"></td></tr>
+            <tr><th>Danh mục</th><td th:text="${laptop.categoryName}"></td></tr>
+            <tr><th>CPU</th><td th:text="${laptop.cpu ?: '-'}"></td></tr>
+            <tr><th>RAM</th><td th:text="${laptop.ramGb != null ? laptop.ramGb + ' GB' : '-'}"></td></tr>
+            <tr><th>Lưu trữ</th><td th:text="${laptop.storage ?: '-'}"></td></tr>
+            <tr><th>Card đồ họa (GPU)</th><td th:text="${laptop.gpu ?: '-'}"></td></tr>
+            <tr><th>Kích thước màn hình</th><td th:text="${laptop.screenSize != null ? laptop.screenSize + ' inch' : '-'}"></td></tr>
+            <tr><th>Hệ điều hành</th><td th:text="${laptop.operatingSystem ?: '-'}"></td></tr>
+            <tr><th>Màu sắc</th><td th:text="${laptop.color ?: '-'}"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tab-pane fade" id="tabDesc">
+        <p class="mb-0" th:text="${laptop.description ?: 'Sản phẩm chính hãng, bảo hành theo tiêu chuẩn nhà sản xuất.'}"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phần Sản phẩm liên quan / Gợi ý cho bạn -->
+  <div th:if="${!#lists.isEmpty(relatedLaptops)}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h5 fw-bold mb-0"><i class="bi bi-stars text-primary me-2"></i>Sản phẩm liên quan</h2>
+      <a th:href="@{/(categoryId=${laptop.category.id})}" class="small fw-semibold text-decoration-none">Xem tất cả &rsaquo;</a>
+    </div>
+    <div class="row g-3">
+      <div class="col-6 col-md-3" th:each="rel : ${relatedLaptops}">
+        <div class="pv-card h-100 d-flex flex-column">
+          <a th:href="@{/san-pham/{id}(id=${rel.id})}" class="pv-img-wrap text-decoration-none">
+            <img th:src="${rel.displayImageUrl}" th:alt="${rel.name}"/>
+            <span class="pv-promo-badge" th:if="${rel.discounted}">
+              TIẾT KIỆM <span th:text="${#numbers.formatDecimal(rel.discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}"></span>
+            </span>
+          </a>
+          <div class="p-3 d-flex flex-column flex-grow-1">
+            <div class="text-uppercase fw-bold mb-1" style="font-size: 0.72rem; color: var(--pv-muted);" th:text="${rel.brandName}"></div>
+            <a th:href="@{/san-pham/{id}(id=${rel.id})}" class="pv-card-title mb-2" th:text="${rel.name}"></a>
+            <div class="mb-2">
+              <span class="pv-spec-tag" th:if="${rel.ramGb != null}" th:text="${rel.ramGb + 'GB'}"></span>
+              <span class="pv-spec-tag" th:if="${rel.storageGb != null}" th:text="${rel.storage}"></span>
+            </div>
+            <div class="mt-auto">
+              <div class="d-flex align-items-center gap-2 mb-1" th:if="${rel.discounted}">
+                <span class="pv-old-price" th:text="${#numbers.formatDecimal(rel.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                <span class="pv-discount-tag" th:text="${'-' + rel.discountPercent + '%'}"></span>
+              </div>
+              <div class="pv-price fs-6 mb-2"
+                   th:text="${#numbers.formatDecimal(rel.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+              <form th:if="${rel.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${rel.id})}" method="post">
+                <button type="submit" class="btn btn-pv-outline btn-sm w-100">Thêm vào giỏ</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  var currentThumbIdx = 0;
+  function selectThumb(el) {
+    var items = document.querySelectorAll('.pv-thumb-item');
+    items.forEach(function(i) { i.classList.remove('active'); });
+    el.classList.add('active');
+    currentThumbIdx = parseInt(el.getAttribute('data-idx') || '0', 10);
+    document.getElementById('mainProductImg').src = el.getAttribute('data-img');
+  }
+  function shiftThumb(delta) {
+    var items = document.querySelectorAll('.pv-thumb-item');
+    if (!items.length) return;
+    currentThumbIdx = (currentThumbIdx + delta + items.length) % items.length;
+    selectThumb(items[currentThumbIdx]);
+  }
+  function changeQty(delta) {
+    var input = document.getElementById('qtyInput');
+    var max = parseInt(input.getAttribute('max') || '99', 10);
+    var val = parseInt(input.value || '1', 10) + delta;
+    if (val < 1) val = 1;
+    if (val > max) val = max;
+    input.value = val;
+  }
+</script>
+</body>
+</html>

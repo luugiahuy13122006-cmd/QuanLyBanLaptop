@@ -1,51 +1,116 @@
-package com.example.laptopshop.exception;
+package com.laptopshop.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
-import org.springframework.http.HttpStatus;
+// Thành viên phụ trách: TV5 - Vũ Gia Bảo
+// Xử lý ngoại lệ tập trung (@ControllerAdvice) và cung cấp thuộc tính dùng chung (currentUri, cartCount) cho mọi giao diện.
+
+import com.laptopshop.config.CustomUserDetails;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-/** Bắt lỗi toàn hệ thống và hiển thị trang lỗi thân thiện thay vì trang lỗi mặc định. */
+import java.util.Map;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /** Ví dụ /san-pham/abc (id không phải số). */
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ModelAndView badParam(MethodArgumentTypeMismatchException e) {
-        return view("error/404", HttpStatus.BAD_REQUEST, "Đường dẫn hoặc tham số không hợp lệ.");
-    }
-
-    /** Lỗi kết nối / truy vấn SQL Server. */
-    @ExceptionHandler(DataAccessException.class)
-    public ModelAndView database(DataAccessException e) {
-        log.error("Lỗi cơ sở dữ liệu", e);
-        return view("error/500", HttpStatus.INTERNAL_SERVER_ERROR,
-                "Không truy cập được cơ sở dữ liệu. Vui lòng thử lại sau.");
-    }
-
-    /** Mọi lỗi runtime còn lại. */
-    @ExceptionHandler(RuntimeException.class)
-    public ModelAndView runtime(RuntimeException e) {
-        // Để Spring Security / Spring MVC tự xử lý các lỗi này (403, 404...)
-        if (e instanceof AccessDeniedException || e instanceof ResponseStatusException) {
-            throw e;
+    @ModelAttribute("currentUri")
+    public String currentUri(HttpServletRequest request) {
+        if (request != null) {
+            // Khởi tạo CSRF token trước khi Thymeleaf render để tránh lỗi commit response khi trang dài
+            Object csrfAttr = request.getAttribute(CsrfToken.class.getName());
+            if (csrfAttr instanceof CsrfToken csrfToken) {
+                csrfToken.getToken();
+            }
+            return request.getRequestURI();
         }
-        log.error("Lỗi không mong muốn", e);
-        return view("error/500", HttpStatus.INTERNAL_SERVER_ERROR,
-                "Hệ thống gặp sự cố. Vui lòng thử lại sau.");
+        return "";
     }
 
-    private ModelAndView view(String name, HttpStatus status, String message) {
-        ModelAndView mav = new ModelAndView(name);
-        mav.setStatus(status);
-        mav.addObject("message", message);
-        return mav;
+    @ModelAttribute("currentUserFullName")
+    public String currentUserFullName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return "";
+        }
+        if (auth.getPrincipal() instanceof CustomUserDetails cud) {
+            return cud.getFullName();
+        }
+        return auth.getName();
+    }
+
+    @ModelAttribute("currentUserRole")
+    public String currentUserRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return "";
+        }
+        if (auth.getPrincipal() instanceof CustomUserDetails cud) {
+            return cud.getRoleName();
+        }
+        return auth.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
+                .orElse("");
+    }
+
+    @ModelAttribute("cartCount")
+    @SuppressWarnings("unchecked")
+    public int cartCount(HttpServletRequest request) {
+        if (request == null) return 0;
+        HttpSession session = request.getSession(false);
+        if (session == null) return 0;
+        Object cartObj = session.getAttribute("cart");
+        if (cartObj instanceof Map<?, ?> cart) {
+            return cart.values().stream()
+                    .filter(Integer.class::isInstance)
+                    .mapToInt(Integer.class::cast)
+                    .sum();
+        }
+        return 0;
+    }
+
+    @ExceptionHandler({ResourceNotFoundException.class, NoResourceFoundException.class})
+    public String handleNotFound(Exception ex, Model model) {
+        model.addAttribute("errorTitle", "Không tìm thấy trang hoặc dữ liệu");
+        model.addAttribute("errorMessage", ex.getMessage());
+        return "error/404";
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public String handleAccessDenied(AccessDeniedException ex, Model model) {
+        model.addAttribute("errorTitle", "Không có quyền truy cập");
+        model.addAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này.");
+        return "error/403";
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public String handleBusiness(BusinessException ex, Model model) {
+        model.addAttribute("errorTitle", "Lỗi nghiệp vụ");
+        model.addAttribute("errorMessage", ex.getMessage());
+        return "error/error";
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public String handleDataIntegrity(DataIntegrityViolationException ex, Model model) {
+        model.addAttribute("errorTitle", "Vi phạm ràng buộc dữ liệu");
+        model.addAttribute("errorMessage", "Dữ liệu đang được tham chiếu hoặc bị trùng khóa duy nhất, không thể thực hiện thao tác.");
+        return "error/error";
+    }
+
+    @ExceptionHandler(Exception.class)
+    public String handleGeneral(Exception ex, Model model) {
+        model.addAttribute("errorTitle", "Lỗi hệ thống");
+        model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Lỗi không xác định");
+        return "error/error";
     }
 }

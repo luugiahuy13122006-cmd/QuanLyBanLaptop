@@ -1,5 +1,6 @@
 package com.laptopshop.service.impl;
 
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.CustomerDTO;
 import com.laptopshop.entity.Customer;
 import com.laptopshop.exception.BusinessException;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
@@ -28,7 +30,8 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional(readOnly = true)
     public Page<Customer> getCustomers(String keyword, Pageable pageable) {
-        return customerRepository.searchCustomers(keyword, pageable);
+        String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        return customerRepository.searchCustomers(kw, pageable);
     }
 
     @Override
@@ -98,5 +101,35 @@ public class CustomerServiceImpl implements CustomerService {
             throw new BusinessException("Không thể xóa khách hàng đã có lịch sử đơn hàng");
         }
         customerRepository.delete(customer);
+    }
+
+    @Override
+    @Transactional
+    public Customer findOrCreateForCheckout(Integer accountId, String name, String email, String phone, String address) {
+        if (accountId != null) {
+            Optional<Customer> byAccount = customerRepository.findByAccountId(accountId);
+            if (byAccount.isPresent()) {
+                return byAccount.get();
+            }
+        }
+        String cleanPhone = phone != null ? phone.trim() : "";
+        if (!cleanPhone.isEmpty()) {
+            Optional<Customer> byPhone = customerRepository.findByPhone(cleanPhone);
+            if (byPhone.isPresent()) {
+                Customer existing = byPhone.get();
+                if (accountId != null && existing.getAccountId() == null) {
+                    existing.setAccountId(accountId);
+                    return customerRepository.save(existing);
+                }
+                return existing;
+            }
+        }
+        Customer c = new Customer();
+        c.setAccountId(accountId);
+        c.setCustomerName(name.trim());
+        c.setEmail((email != null && !email.isBlank()) ? email.trim() : null);
+        c.setPhone(cleanPhone);
+        c.setAddress(address != null ? address.trim() : "");
+        return customerRepository.save(c);
     }
 }

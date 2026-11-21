@@ -3,11 +3,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.laptopshop</groupId>
-    <artifactId>laptop-client</artifactId>
-    <version>1.0.0</version>
-    <name>laptop-client</name>
-    <description>Chương trình Java Client mạng thuần - Thành viên 2</description>
+
+    <parent>
+        <groupId>com.laptopshop</groupId>
+        <artifactId>quan-ly-ban-laptop</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>laptop-socket-client</artifactId>
+    <name>laptop-socket-client</name>
+    <description>Chương trình Java Client mạng tách biệt (TCP Socket) - Thành viên 2 (Phạm Hữu Hiệu)</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -15,13 +20,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencies>
-        <!-- Project Java thuần sử dụng thư viện chuẩn java.net và java.io, không phụ thuộc thư viện ngoài -->
-    </dependencies>
-
     <build>
         <plugins>
-            <!-- Plugin biên dịch mã nguồn Java 17 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

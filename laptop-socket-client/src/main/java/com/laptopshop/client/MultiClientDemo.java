@@ -1,5 +1,7 @@
 package com.laptopshop.client;
 
+// Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
+// Chương trình demo chạy đồng thời ít nhất 3 Socket Client kết nối cùng lúc tới SocketServer (Tiêu chí 5.4).
 
 import java.io.*;
 import java.net.Socket;
@@ -12,8 +14,18 @@ public class MultiClientDemo {
     private static final int PORT = 9090;
 
     public static void main(String[] args) throws InterruptedException {
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+
+        String host = args.length >= 1 ? args[0] : HOST;
+        int port = PORT;
+        if (args.length >= 2) {
+            try { port = Integer.parseInt(args[1]); } catch (NumberFormatException ignored) {}
+        }
+
         System.out.println("==========================================================================");
         System.out.println("   DEMO ĐA LUỒNG: KHỞI CHẠY ĐỒNG THỜI 3 CLIENT KẾT NỐI TỚI SOCKET SERVER");
+        System.out.println("   Server: " + host + ":" + port);
         System.out.println("   Mục tiêu: Minh chứng Server phục vụ >= 3 client cùng một thời điểm");
         System.out.println("==========================================================================\n");
 
@@ -21,11 +33,14 @@ public class MultiClientDemo {
         CountDownLatch startSignal = new CountDownLatch(1);
         CountDownLatch doneSignal = new CountDownLatch(clientCount);
 
-        // Client 1: Gửi lệnh PING và LIST_CATEGORIES
+        final String targetHost = host;
+        final int targetPort = port;
+
         Thread client1 = new Thread(() -> {
             try {
-                startSignal.await(); // Đợi hiệu lệnh xuất phát cùng lúc
-                runSingleClient("Client-1-KiemTraDanhMuc", new String[]{"PING", "LIST_CATEGORIES", "LIST_BRANDS", "QUIT"});
+                startSignal.await();
+                runSingleClient(targetHost, targetPort, "Client-1-KiemTraDanhMuc",
+                        new String[]{"PING", "LIST_CATEGORIES", "LIST_BRANDS", "QUIT"});
             } catch (Exception e) {
                 System.err.println("[Client-1] Lỗi: " + e.getMessage());
             } finally {
@@ -33,11 +48,11 @@ public class MultiClientDemo {
             }
         }, "Luong-Client-1");
 
-        // Client 2: Gửi lệnh SEARCH|Dell
         Thread client2 = new Thread(() -> {
             try {
                 startSignal.await();
-                runSingleClient("Client-2-TimKiemDell", new String[]{"SEARCH|Dell", "QUIT"});
+                runSingleClient(targetHost, targetPort, "Client-2-TimKiemDell",
+                        new String[]{"SEARCH|Dell", "QUIT"});
             } catch (Exception e) {
                 System.err.println("[Client-2] Lỗi: " + e.getMessage());
             } finally {
@@ -45,11 +60,11 @@ public class MultiClientDemo {
             }
         }, "Luong-Client-2");
 
-        // Client 3: Gửi lệnh GET|1 (Chi tiết laptop ID = 1)
         Thread client3 = new Thread(() -> {
             try {
                 startSignal.await();
-                runSingleClient("Client-3-XemChiTietLap1", new String[]{"GET|1", "QUIT"});
+                runSingleClient(targetHost, targetPort, "Client-3-XemChiTietLap1",
+                        new String[]{"GET|1", "QUIT"});
             } catch (Exception e) {
                 System.err.println("[Client-3] Lỗi: " + e.getMessage());
             } finally {
@@ -70,12 +85,12 @@ public class MultiClientDemo {
         System.out.println("==========================================================================");
     }
 
-    private static void runSingleClient(String clientLabel, String[] commands) {
+    private static void runSingleClient(String host, int port, String clientLabel, String[] commands) {
         String currentThread = Thread.currentThread().getName();
-        System.out.printf("[%s | %s] Bắt đầu kết nối tới server %s:%d...%n", currentThread, clientLabel, HOST, PORT);
+        System.out.printf("[%s | %s] Bắt đầu kết nối tới server %s:%d...%n", currentThread, clientLabel, host, port);
 
         try (
-            Socket socket = new Socket(HOST, PORT);
+            Socket socket = new Socket(host, port);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8)), true)
         ) {

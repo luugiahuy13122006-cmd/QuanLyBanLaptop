@@ -1,5 +1,6 @@
 package com.laptopshop.controller;
 
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.CustomerDTO;
 import com.laptopshop.entity.Customer;
 import com.laptopshop.service.CustomerService;
@@ -28,20 +29,30 @@ public class CustomerController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
             Model model) {
 
-        Page<Customer> customerPage = customerService.getCustomers(
-                keyword, PageRequest.of(page, size, Sort.by("id").descending()));
+        String sortField = switch (sortBy) {
+            case "customerName", "phone", "email" -> sortBy;
+            default -> "id";
+        };
+        Sort sort = "asc".equalsIgnoreCase(direction)
+                ? Sort.by(sortField).ascending()
+                : Sort.by(sortField).descending();
 
+        Page<Customer> customerPage = customerService.getCustomers(keyword, PageRequest.of(page, size, sort));
         model.addAttribute("customerPage", customerPage);
         model.addAttribute("keyword", keyword);
-        return "customers/list";
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
+        return "admin/customers/list";
     }
 
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         model.addAttribute("customerDTO", new CustomerDTO());
-        return "customers/form";
+        return "admin/customers/form";
     }
 
     @GetMapping("/edit/{id}")
@@ -56,25 +67,26 @@ public class CustomerController {
                 customer.getAccountId()
         );
         model.addAttribute("customerDTO", dto);
-        return "customers/form";
+        return "admin/customers/form";
     }
 
     @PostMapping("/save")
     public String saveCustomer(
             @Valid @ModelAttribute("customerDTO") CustomerDTO customerDTO,
             BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
-            return "customers/form";
+            return "admin/customers/form";
         }
         try {
             customerService.saveCustomer(customerDTO);
             redirectAttributes.addFlashAttribute("successMessage", "Lưu thông tin khách hàng thành công!");
             return "redirect:/admin/customers";
         } catch (RuntimeException ex) {
-            bindingResult.rejectValue("phone", "error.customerDTO", ex.getMessage());
-            return "customers/form";
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "admin/customers/form";
         }
     }
 
