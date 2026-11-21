@@ -1,5 +1,6 @@
 package com.laptopshop.service;
 
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.CustomerDTO;
 import com.laptopshop.entity.Customer;
 import org.springframework.data.domain.Page;
@@ -15,4 +16,5 @@ public interface CustomerService {
     Customer updateCustomer(Integer id, CustomerDTO dto);
     Customer saveCustomer(CustomerDTO dto);
     void deleteCustomer(Integer id);
+    Customer findOrCreateForCheckout(Integer accountId, String name, String email, String phone, String address);
 }

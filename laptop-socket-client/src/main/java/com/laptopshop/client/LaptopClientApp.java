@@ -1,5 +1,7 @@
 package com.laptopshop.client;
 
+// Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
+// Chương trình Client TCP Socket tách biệt với ứng dụng Web, giao tiếp qua cổng 9090.
 
 import java.io.*;
 import java.net.ConnectException;
@@ -17,6 +19,9 @@ public class LaptopClientApp {
     private static final int TIMEOUT_MS = 10000; // 10 giây timeout
 
     public static void main(String[] args) {
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+
         String host = DEFAULT_HOST;
         int port = DEFAULT_PORT;
 
@@ -48,6 +53,7 @@ public class LaptopClientApp {
             while (running) {
                 printMenu();
                 System.out.print("Vui lòng chọn chức năng (0-6): ");
+                if (!scanner.hasNextLine()) break;
                 String choice = scanner.nextLine().trim();
 
                 switch (choice) {
@@ -59,9 +65,6 @@ public class LaptopClientApp {
                         break;
                     case "3":
                         executeCommand(out, in, "LIST_LAPTOPS", "DANH SÁCH LAPTOP");
-                        break;
-                    case "6":
-                        executeCommand(out, in, "LIST_BRANDS", "DANH SÁCH THƯƠNG HIỆU");
                         break;
                     case "4":
                         System.out.print("Nhập từ khóa cần tìm (tên hoặc hãng): ");
@@ -81,13 +84,16 @@ public class LaptopClientApp {
                             executeCommand(out, in, "GET|" + id, "CHI TIẾT LAPTOP ID " + id);
                         }
                         break;
+                    case "6":
+                        executeCommand(out, in, "LIST_BRANDS", "DANH SÁCH THƯƠNG HIỆU");
+                        break;
                     case "0":
                         executeCommand(out, in, "QUIT", "THOÁT");
                         running = false;
                         System.out.println("Đã ngắt kết nối an toàn. Hẹn gặp lại!");
                         break;
                     default:
-                        System.out.println("[LỖI] Lựa chọn không hợp lệ, vui lòng chọn từ 0 đến 5.");
+                        System.out.println("[LỖI] Lựa chọn không hợp lệ, vui lòng chọn từ 0 đến 6.");
                         break;
                 }
                 System.out.println();
@@ -95,7 +101,7 @@ public class LaptopClientApp {
 
         } catch (ConnectException ce) {
             System.err.println("[LỖI KẾT NỐI] Không thể kết nối tới Server tại " + host + ":" + port);
-            System.err.println(">> Hãy đảm bảo project 'laptop-shop-tv2' của TV2 đang chạy và cổng " + port + " đang mở.");
+            System.err.println(">> Hãy đảm bảo ứng dụng Web 'laptop-shop-web' đã được khởi chạy và cổng " + port + " đang mở.");
         } catch (SocketTimeoutException ste) {
             System.err.println("[LỖI TIMEOUT] Quá thời gian chờ phản hồi từ Server (10 giây). Vui lòng thử lại sau.");
         } catch (IOException e) {
@@ -141,7 +147,6 @@ public class LaptopClientApp {
             return;
         }
 
-        // Trường hợp trạng thái là OK
         System.out.println("\n========== " + title + " ==========");
         if (command.equalsIgnoreCase("PING") || command.equalsIgnoreCase("QUIT")) {
             for (String r : records) {
@@ -161,7 +166,15 @@ public class LaptopClientApp {
     private static void printBrandTable(List<String> records) {
         if (records.isEmpty()) { System.out.println("Không có thương hiệu nào."); return; }
         System.out.printf("%-6s | %-24s | %-20s | %-40s%n", "ID", "THƯƠNG HIỆU", "QUỐC GIA", "MÔ TẢ");
-        for (String record : records) { String[] p=record.split("\\t",-1); System.out.printf("%-6s | %-24s | %-20s | %-40s%n", p.length>0?p[0]:"",p.length>1?p[1]:"",p.length>2?p[2]:"",p.length>3?p[3]:""); }
+        System.out.println("------------------------------------------------------------------------------------------------");
+        for (String record : records) {
+            String[] p = record.split("\\t", -1);
+            System.out.printf("%-6s | %-24s | %-20s | %-40s%n",
+                    p.length > 0 ? p[0] : "",
+                    p.length > 1 ? p[1] : "",
+                    p.length > 2 ? p[2] : "",
+                    p.length > 3 ? p[3] : "");
+        }
     }
 
     private static void printCategoryTable(List<String> records) {
@@ -202,8 +215,10 @@ public class LaptopClientApp {
 
     private static void printLaptopDetail(List<String> records) {
         if (records.isEmpty()) { System.out.println("Không có thông tin chi tiết."); return; }
-        String[] p=records.get(0).split("\\t",-1);
-        String[] labels={"ID","SKU","Tên laptop","Thương hiệu","Danh mục","CPU","RAM","Lưu trữ","GPU","Giá bán","Tồn kho","Mô tả"};
-        for(int i=0;i<labels.length;i++) System.out.println(labels[i]+" : "+(i<p.length?p[i]:""));
+        String[] p = records.get(0).split("\\t", -1);
+        String[] labels = {"ID", "SKU", "Tên laptop", "Thương hiệu", "Danh mục", "CPU", "RAM", "Lưu trữ", "GPU", "Giá bán", "Tồn kho", "Mô tả"};
+        for (int i = 0; i < labels.length; i++) {
+            System.out.println(labels[i] + " : " + (i < p.length ? p[i] : ""));
+        }
     }
 }

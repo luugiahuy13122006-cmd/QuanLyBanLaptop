@@ -27,10 +27,6 @@ out/
 .settings/
 .vscode/
 
-# Local config containing SQL Server passwords
-laptop-shop-web/src/main/resources/application.properties
-application-local.properties
-
 # OS files
 .DS_Store
 Thumbs.db

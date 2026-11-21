@@ -1,11 +1,15 @@
 package com.laptopshop.socket;
 
+// Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
+// Socket Server đa luồng (ServerSocket + ExecutorService) lắng nghe cổng 9090 phục vụ tối thiểu 3 client đồng thời.
+
 import com.laptopshop.entity.Brand;
 import com.laptopshop.entity.Category;
 import com.laptopshop.entity.Laptop;
 import com.laptopshop.repository.BrandRepository;
 import com.laptopshop.repository.CategoryRepository;
 import com.laptopshop.repository.LaptopRepository;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,13 +29,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SocketServer implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(SocketServer.class);
 
-    @Value("${socket.server.port:9090}")
+    @Value("${laptop.socket.port:9090}")
     private int port;
 
     private final LaptopRepository laptopRepo;
     private final CategoryRepository categoryRepo;
     private final BrandRepository brandRepo;
     private final AtomicInteger clientCounter = new AtomicInteger(0);
+    private final ExecutorService pool = Executors.newCachedThreadPool();
+    private volatile ServerSocket serverSocket;
+    private volatile boolean running = true;
 
     public SocketServer(LaptopRepository laptopRepo,
                         CategoryRepository categoryRepo,
@@ -43,17 +50,19 @@ public class SocketServer implements Runnable {
 
     @Override
     public void run() {
-        ExecutorService pool = Executors.newCachedThreadPool();
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
+        try (ServerSocket ss = new ServerSocket(port)) {
+            this.serverSocket = ss;
             log.info("[SOCKET-SERVER] Đang lắng nghe trên cổng {}", port);
-            while (!Thread.currentThread().isInterrupted()) {
+            while (running && !Thread.currentThread().isInterrupted()) {
                 try {
-                    Socket clientSocket = serverSocket.accept();
+                    Socket clientSocket = ss.accept();
                     int clientId = clientCounter.incrementAndGet();
                     log.info("[SOCKET-SERVER] Client #{} kết nối từ {}", clientId, clientSocket.getRemoteSocketAddress());
                     pool.submit(new ClientHandler(clientSocket, clientId, laptopRepo, categoryRepo, brandRepo));
                 } catch (IOException e) {
-                    log.warn("[SOCKET-SERVER] Lỗi khi chấp nhận kết nối: {}", e.getMessage());
+                    if (running) {
+                        log.warn("[SOCKET-SERVER] Lỗi khi chấp nhận kết nối: {}", e.getMessage());
+                    }
                 }
             }
         } catch (IOException e) {
@@ -61,7 +70,18 @@ public class SocketServer implements Runnable {
         }
     }
 
-    // ====== Client Handler (mỗi client chạy trên 1 thread riêng) ======
+    @PreDestroy
+    public void stop() {
+        running = false;
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
+        } catch (IOException ignored) {
+        }
+        pool.shutdownNow();
+    }
+
     static class ClientHandler implements Runnable {
         private static final Logger log = LoggerFactory.getLogger(ClientHandler.class);
         private final Socket socket;
@@ -129,8 +149,8 @@ public class SocketServer implements Runnable {
                     out.println("OK");
                     for (Laptop l : laptops) {
                         out.println(l.getId() + "\t" + l.getName() + "\t" + l.getBrandName()
-                            + "\t" + l.getSalePrice() + "\t" + l.getStockQuantity()
-                            + "\t" + l.getCategoryName());
+                                + "\t" + l.getSalePrice() + "\t" + l.getStockQuantity()
+                                + "\t" + l.getCategoryName());
                     }
                     out.println("END");
                 } else if (cmd.toUpperCase().startsWith("SEARCH|")) {
@@ -139,8 +159,8 @@ public class SocketServer implements Runnable {
                     out.println("OK");
                     for (Laptop l : results) {
                         out.println(l.getId() + "\t" + l.getName() + "\t" + l.getBrandName()
-                            + "\t" + l.getSalePrice() + "\t" + l.getStockQuantity()
-                            + "\t" + l.getCategoryName());
+                                + "\t" + l.getSalePrice() + "\t" + l.getStockQuantity()
+                                + "\t" + l.getCategoryName());
                     }
                     out.println("END");
                 } else if (cmd.toUpperCase().startsWith("GET|")) {
@@ -155,11 +175,11 @@ public class SocketServer implements Runnable {
                         Laptop l = opt.get();
                         out.println("OK");
                         out.println(l.getId() + "\t" + nvl(l.getSku()) + "\t" + l.getName()
-                            + "\t" + l.getBrandName() + "\t" + l.getCategoryName()
-                            + "\t" + nvl(l.getCpu()) + "\t" + l.getRam()
-                            + "\t" + l.getStorage() + "\t" + nvl(l.getGpu())
-                            + "\t" + l.getSalePrice() + "\t" + l.getStockQuantity()
-                            + "\t" + nvl(l.getDescription()));
+                                + "\t" + l.getBrandName() + "\t" + l.getCategoryName()
+                                + "\t" + nvl(l.getCpu()) + "\t" + l.getRam()
+                                + "\t" + l.getStorage() + "\t" + nvl(l.getGpu())
+                                + "\t" + l.getSalePrice() + "\t" + l.getStockQuantity()
+                                + "\t" + nvl(l.getDescription()));
                         out.println("END");
                     }
                 } else if (cmd.equalsIgnoreCase("QUIT")) {
@@ -183,6 +203,8 @@ public class SocketServer implements Runnable {
             }
         }
 
-        private String nvl(String s) { return s == null ? "" : s; }
+        private String nvl(String s) {
+            return s == null ? "" : s;
+        }
     }
 }

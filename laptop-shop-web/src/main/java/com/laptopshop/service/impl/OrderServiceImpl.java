@@ -1,5 +1,6 @@
 package com.laptopshop.service.impl;
 
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.OrderItemRequest;
 import com.laptopshop.dto.PlaceOrderRequest;
 import com.laptopshop.entity.*;
@@ -7,6 +8,8 @@ import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
 import com.laptopshop.repository.*;
 import com.laptopshop.service.OrderService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+    private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
     private static final AtomicInteger ORDER_SEQ = new AtomicInteger(1000);
 
     private final OrderRepository orderRepository;
@@ -43,20 +47,27 @@ public class OrderServiceImpl implements OrderService {
         this.historyRepository = historyRepository;
     }
 
-    /**
-     * Đặt hàng có kiểm soát đồng thời (Concurrency Control) bằng Pessimistic Write Lock
-     * và quản lý giao dịch (@Transactional) trên CSDL QL_Laptop.
-     * Nếu bất kỳ mặt hàng nào không đủ tồn kho (StockQuantity), toàn bộ giao dịch sẽ Rollback.
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Order placeOrder(PlaceOrderRequest request) {
+        return placeOrder(request, null);
+    }
+
+    /**
+     * Đặt hàng có kiểm soát đồng thời (Concurrency Control) bằng Pessimistic Write Lock
+     * và quản lý giao dịch (@Transactional) trên CSDL QL_Laptop.
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Order placeOrder(PlaceOrderRequest request, Integer createdByAccountId) {
+        String threadName = Thread.currentThread().getName();
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng ID: " + request.getCustomerId()));
 
         Order order = new Order();
         order.setOrderCode(generateUniqueOrderCode());
         order.setCustomer(customer);
+        order.setCreatedBy(createdByAccountId);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
 
@@ -80,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (OrderItemRequest itemReq : sortedItems) {
-            // Thu thập khóa PESSIMISTIC_WRITE trên dòng dữ liệu Laptops
+            log.info("[ORDER | THREAD: {}] Khóa PESSIMISTIC_WRITE laptop ID={}", threadName, itemReq.getLaptopId());
             Laptop laptop = laptopRepository.findByIdForUpdate(itemReq.getLaptopId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Laptop ID: " + itemReq.getLaptopId()));
 
@@ -94,12 +105,10 @@ public class OrderServiceImpl implements OrderService {
                         laptop.getName(), laptop.getSku(), itemReq.getQuantity(), laptop.getStockQuantity()));
             }
 
-            // Trừ tồn kho an toàn trong vùng khóa
             laptop.setStockQuantity(laptop.getStockQuantity() - itemReq.getQuantity());
             laptop.setUpdatedAt(LocalDateTime.now());
             laptopRepository.save(laptop);
 
-            // Tạo chi tiết đơn hàng (OrderDetails) với thông tin Snapshot theo thiết kế của TV1
             OrderDetail detail = new OrderDetail(
                     order,
                     laptop,
@@ -107,7 +116,6 @@ public class OrderServiceImpl implements OrderService {
                     laptop.getSalePrice()
             );
             order.addDetail(detail);
-
             subtotal = subtotal.add(detail.getLineTotal());
         }
 
@@ -123,7 +131,6 @@ public class OrderServiceImpl implements OrderService {
         order.setShippingFee(shippingFee);
         order.setTotalAmount(totalAmount);
 
-        // Tạo bản ghi thanh toán (Payments)
         Payment payment = new Payment(
                 order,
                 request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.CASH,
@@ -133,26 +140,29 @@ public class OrderServiceImpl implements OrderService {
         );
         order.addPayment(payment);
 
-        // Ghi lịch sử trạng thái đơn hàng (OrderStatusHistory)
         OrderStatusHistory history = new OrderStatusHistory(
                 order,
                 null,
                 OrderStatus.PENDING,
                 "Khởi tạo đơn hàng mới " + order.getOrderCode()
         );
+        history.setChangedBy(createdByAccountId);
         order.addStatusHistory(history);
 
-        return orderRepository.save(order);
+        Order saved = orderRepository.save(order);
+        log.info("[ORDER | THREAD: {}] Đặt hàng thành công: {}", threadName, saved.getOrderCode());
+        return saved;
     }
 
-    /**
-     * Cập nhật trạng thái đơn hàng.
-     * Nếu chuyển sang CANCELLED hoặc RETURNED, tự động hoàn trả lại số lượng tồn kho (StockQuantity)
-     * và ghi nhận lịch sử vào bảng OrderStatusHistory.
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Order updateOrderStatus(Integer orderId, OrderStatus newStatus) {
+        return updateOrderStatus(orderId, newStatus, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Order updateOrderStatus(Integer orderId, OrderStatus newStatus, Integer changedByAccountId) {
         Order order = orderRepository.findWithCustomerById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + orderId));
 
@@ -168,9 +178,9 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Đơn hàng đã hoàn thành không thể thay đổi trạng thái.");
         }
 
-        // Hoàn lại tồn kho nếu hủy đơn hoặc hoàn trả
         if (newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.RETURNED) {
             List<OrderDetail> sortedDetails = order.getDetails().stream()
+                    .filter(d -> d.getLaptop() != null)
                     .sorted(Comparator.comparing(d -> d.getLaptop().getId()))
                     .toList();
             for (OrderDetail detail : sortedDetails) {
@@ -185,7 +195,6 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(newStatus);
         order.setUpdatedAt(LocalDateTime.now());
 
-        // Đồng bộ trạng thái bảng Payments
         List<Payment> payments = paymentRepository.findByOrderIdOrderByIdAsc(orderId);
         for (Payment payment : payments) {
             if (newStatus == OrderStatus.COMPLETED) {
@@ -201,13 +210,13 @@ public class OrderServiceImpl implements OrderService {
             paymentRepository.save(payment);
         }
 
-        // Lưu vết vào bảng OrderStatusHistory
         OrderStatusHistory history = new OrderStatusHistory(
                 order,
                 currentStatus,
                 newStatus,
                 "Cập nhật trạng thái từ " + currentStatus.name() + " sang " + newStatus.name()
         );
+        history.setChangedBy(changedByAccountId);
         historyRepository.save(history);
 
         return orderRepository.save(order);
@@ -227,7 +236,35 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public Page<Order> getOrders(OrderStatus status, Pageable pageable) {
-        return orderRepository.filterOrders(status, null, pageable);
+        return getOrders(status, null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Order> getOrders(OrderStatus status, String keyword, Pageable pageable) {
+        String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        return orderRepository.filterOrders(status, null, kw, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> getOrdersByCustomerId(Integer customerId) {
+        List<Order> orders = orderRepository.findByCustomerIdOrderByOrderDateDesc(customerId);
+        orders.forEach(o -> o.getPayments().size());
+        return orders;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Order cancelOrderByCustomer(Integer orderId, Integer customerId, Integer accountId) {
+        Order order = getOrderById(orderId);
+        if (order.getCustomer() == null || !order.getCustomer().getId().equals(customerId)) {
+            throw new BusinessException("Bạn không có quyền hủy đơn hàng này.");
+        }
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BusinessException("Chỉ có thể hủy đơn hàng khi đang ở trạng thái Chờ xác nhận (PENDING).");
+        }
+        return updateOrderStatus(orderId, OrderStatus.CANCELLED, accountId);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.laptopshop.controller;
 
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.service.StatisticsService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,19 +21,14 @@ public class StatisticsController {
     }
 
     @GetMapping
-    public String showStatistics(
-            @RequestParam(required = false) Integer year,
-            Model model) {
-
+    public String showStatistics(@RequestParam(required = false) Integer year, Model model) {
         int selectedYear = (year != null) ? year : LocalDate.now().getYear();
-
         model.addAttribute("selectedYear", selectedYear);
         model.addAttribute("totalRevenue", statisticsService.getTotalRevenue());
         model.addAttribute("monthlyRevenues", statisticsService.getMonthlyRevenue(selectedYear));
         model.addAttribute("topSellingLaptops", statisticsService.getTopSellingLaptops(5));
         model.addAttribute("statusCounts", statisticsService.getOrderStatusCounts());
         model.addAttribute("lowStockLaptops", statisticsService.getLowStockLaptops(5));
-
-        return "statistics/index";
+        return "admin/statistics/index";
     }
 }

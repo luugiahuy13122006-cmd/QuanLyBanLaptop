@@ -1,8 +1,6 @@
 package com.laptopshop.repository;
 
-// Thành viên phụ trách: TV4
-// Repository thao tác dữ liệu bảng OrderDetails (Chi tiết đơn hàng) trong CSDL QL_Laptop.
-
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.TopSellingLaptopDTO;
 import com.laptopshop.entity.OrderDetail;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +13,8 @@ import java.util.List;
 @Repository
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, Integer> {
 
-    // Truy vấn nghiệp vụ Top 10 laptop bán chạy nhất (khớp truy vấn trong QL_LAPTOP.sql)
+    long countByLaptopId(Integer laptopId);
+
     @Query("SELECT new com.laptopshop.dto.TopSellingLaptopDTO(" +
            "d.laptop.id, d.skuSnapshot, d.laptopNameSnapshot, d.laptop.brand.name, SUM(d.quantity), SUM(d.lineTotal)) " +
            "FROM OrderDetail d " +

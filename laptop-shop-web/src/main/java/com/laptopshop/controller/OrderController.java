@@ -1,5 +1,7 @@
 package com.laptopshop.controller;
 
+// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
+import com.laptopshop.config.CustomUserDetails;
 import com.laptopshop.dto.OrderItemRequest;
 import com.laptopshop.dto.PlaceOrderRequest;
 import com.laptopshop.entity.Order;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -37,22 +40,32 @@ public class OrderController {
         this.laptopRepository = laptopRepository;
     }
 
-    // ==================== GIAO DIỆN QUẢN TRỊ ĐƠN HÀNG ====================
-
     @GetMapping("/admin/orders")
     public String listOrders(
             @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size,
+            @RequestParam(defaultValue = "orderDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
             Model model) {
 
-        Page<Order> orderPage = orderService.getOrders(
-                status, PageRequest.of(page, size, Sort.by("orderDate").descending()));
+        String sortField = switch (sortBy) {
+            case "orderCode", "totalAmount", "status", "id" -> sortBy;
+            default -> "orderDate";
+        };
+        Sort sort = "asc".equalsIgnoreCase(direction)
+                ? Sort.by(sortField).ascending()
+                : Sort.by(sortField).descending();
 
+        Page<Order> orderPage = orderService.getOrders(status, keyword, PageRequest.of(page, size, sort));
         model.addAttribute("orderPage", orderPage);
         model.addAttribute("selectedStatus", status);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
         model.addAttribute("statuses", OrderStatus.values());
-        return "orders/list";
+        return "admin/orders/list";
     }
 
     @GetMapping("/admin/orders/{id}")
@@ -62,7 +75,7 @@ public class OrderController {
         model.addAttribute("statuses", OrderStatus.values());
         model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
         model.addAttribute("histories", orderService.getOrderStatusHistory(id));
-        return "orders/detail";
+        return "admin/orders/detail";
     }
 
     @GetMapping("/admin/orders/create")
@@ -70,7 +83,7 @@ public class OrderController {
         model.addAttribute("customers", customerService.getAllCustomers());
         model.addAttribute("laptops", laptopRepository.findAllActiveWithDetails());
         model.addAttribute("paymentMethods", PaymentMethod.values());
-        return "orders/create";
+        return "admin/orders/create";
     }
 
     @PostMapping("/admin/orders/create")
@@ -85,6 +98,7 @@ public class OrderController {
             @RequestParam(defaultValue = "30000") BigDecimal shippingFee,
             @RequestParam(defaultValue = "CASH") PaymentMethod paymentMethod,
             @RequestParam(required = false) String note,
+            @AuthenticationPrincipal CustomUserDetails currentUser,
             RedirectAttributes redirectAttributes) {
         try {
             PlaceOrderRequest req = new PlaceOrderRequest();
@@ -98,7 +112,8 @@ public class OrderController {
             req.setNote(note);
             req.setItems(List.of(new OrderItemRequest(laptopId, quantity)));
 
-            Order created = orderService.placeOrder(req);
+            Integer accountId = currentUser != null ? currentUser.getAccountId() : null;
+            Order created = orderService.placeOrder(req, accountId);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Tạo đơn hàng thành công! Mã đơn: " + created.getOrderCode());
             return "redirect:/admin/orders/" + created.getId();
@@ -112,9 +127,11 @@ public class OrderController {
     public String updateStatus(
             @PathVariable Integer id,
             @RequestParam OrderStatus status,
+            @AuthenticationPrincipal CustomUserDetails currentUser,
             RedirectAttributes redirectAttributes) {
         try {
-            orderService.updateOrderStatus(id, status);
+            Integer accountId = currentUser != null ? currentUser.getAccountId() : null;
+            orderService.updateOrderStatus(id, status, accountId);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Cập nhật trạng thái đơn hàng thành công sang: " + status.getDisplayName());
         } catch (Exception ex) {
@@ -122,8 +139,6 @@ public class OrderController {
         }
         return "redirect:/admin/orders/" + id;
     }
-
-    // ==================== API ĐẶT HÀNG (HỖ TRỢ ĐA LUỒNG) ====================
 
     @PostMapping("/orders/place")
     @ResponseBody

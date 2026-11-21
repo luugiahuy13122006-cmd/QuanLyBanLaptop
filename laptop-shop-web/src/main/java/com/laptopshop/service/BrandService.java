@@ -1,4 +1,6 @@
 package com.laptopshop.service;
+
+// Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
 import com.laptopshop.dto.BrandDTO;
 import com.laptopshop.entity.Brand;
 import com.laptopshop.exception.BusinessException;
@@ -10,37 +12,47 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
 public class BrandService {
     private final BrandRepository repo;
-    public BrandService(BrandRepository repo) { this.repo = repo; }
+
+    public BrandService(BrandRepository repo) {
+        this.repo = repo;
+    }
 
     public List<Brand> getAllBrands() {
         return repo.findByIsActiveTrueOrderByNameAsc();
     }
 
     public Page<Brand> getBrands(String keyword, int page, int size, String sortBy, String direction) {
-        Sort sort = direction.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        String sortField = switch (sortBy) {
+            case "id", "country", "isActive" -> sortBy;
+            default -> "name";
+        };
+        Sort sort = "desc".equalsIgnoreCase(direction) ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        return repo.searchByKeyword(keyword == null ? "" : keyword, pageable);
+        return repo.searchByKeyword(keyword == null ? "" : keyword.trim(), pageable);
     }
 
     public Brand getBrandById(Integer id) {
-        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu ID: " + id));
+        return repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu ID: " + id));
     }
 
     @Transactional
     public Brand createBrand(BrandDTO dto) {
-        if (repo.findByName(dto.getName()).isPresent()) {
-            throw new BusinessException("Tên thương hiệu '" + dto.getName() + "' đã tồn tại!");
+        String name = dto.getName().trim();
+        if (repo.existsByNameIgnoreCase(name)) {
+            throw new BusinessException("Tên thương hiệu '" + name + "' đã tồn tại!");
         }
         Brand b = new Brand();
-        b.setName(dto.getName());
-        b.setCountry(dto.getCountry());
-        b.setDescription(dto.getDescription());
+        b.setName(name);
+        b.setCountry(dto.getCountry() != null ? dto.getCountry().trim() : null);
+        b.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : null);
         b.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return repo.save(b);
     }
@@ -48,12 +60,13 @@ public class BrandService {
     @Transactional
     public Brand updateBrand(Integer id, BrandDTO dto) {
         Brand b = getBrandById(id);
-        if (repo.existsByNameAndIdNot(dto.getName(), id)) {
-            throw new BusinessException("Tên thương hiệu '" + dto.getName() + "' đã được sử dụng!");
+        String name = dto.getName().trim();
+        if (repo.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new BusinessException("Tên thương hiệu '" + name + "' đã được sử dụng!");
         }
-        b.setName(dto.getName());
-        b.setCountry(dto.getCountry());
-        b.setDescription(dto.getDescription());
+        b.setName(name);
+        b.setCountry(dto.getCountry() != null ? dto.getCountry().trim() : null);
+        b.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : null);
         b.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return repo.save(b);
     }

@@ -1,168 +1,159 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<!-- Thành viên phụ trách: TV2 - Phạm Hữu Hiệu -->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"/><title>Form Laptop</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
-    <style>body{background:#f8f9fa}.sidebar{min-height:100vh;background:#212529}.sidebar .nav-link{color:#adb5bd}.sidebar .nav-link:hover,.sidebar .nav-link.active{color:#fff;background:rgba(255,255,255,.1);border-radius:6px}.brand-title{color:#fff;font-weight:700;font-size:1.2rem;padding:1rem;border-bottom:1px solid rgba(255,255,255,.1)}.main-content{padding:2rem}</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop'}">Form Laptop</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
 </head>
 <body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
-<div class="row">
-  <nav class="col-md-2 sidebar p-3">
-    <div class="brand-title"><i class="bi bi-laptop me-2"></i>QL Laptop</div>
-    <ul class="nav flex-column mt-3">
-      <li><a class="nav-link active" th:href="@{/admin/laptops}"><i class="bi bi-pc-display"></i> Laptop</a></li>
-      <li><a class="nav-link" th:href="@{/admin/categories}"><i class="bi bi-tags"></i> Danh mục</a></li>
-      <li><a class="nav-link" th:href="@{/admin/brands}"><i class="bi bi-award"></i> Thương hiệu</a></li>
-    </ul>
-  </nav>
-  <main class="col-md-10 main-content">
-    <div class="d-flex align-items-center mb-3">
-      <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-      <h2 th:text="${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop Mới'}"></h2>
-    </div>
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-4">
+      <div class="d-flex align-items-center mb-3">
+        <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+        <h2 class="fw-bold mb-0" th:text="${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop Mới'}"></h2>
+      </div>
+      <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-    <div th:if="${errorMessage}" class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span></div>
-
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <form th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
-              th:object="${laptopDTO}" method="post" novalidate>
-
-          <div class="row g-3">
-            <!-- SKU -->
-            <div class="col-md-3">
-              <label class="form-label fw-bold">SKU <span class="text-danger">*</span></label>
-              <input type="text" th:field="*{sku}" class="form-control"
-                     th:classappend="${#fields.hasErrors('sku')} ? 'is-invalid' : ''"
-                     placeholder="VD: LT021"/>
-              <div class="invalid-feedback" th:errors="*{sku}"></div>
-            </div>
-            <!-- Tên -->
-            <div class="col-md-9">
-              <label class="form-label fw-bold">Tên laptop <span class="text-danger">*</span></label>
-              <input type="text" th:field="*{name}" class="form-control"
-                     th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
-                     placeholder="VD: Dell Inspiron 15"/>
-              <div class="invalid-feedback" th:errors="*{name}"></div>
-            </div>
-            <!-- Danh mục -->
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
-              <select th:field="*{categoryId}" class="form-select"
-                      th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid' : ''">
-                <option value="">-- Chọn danh mục --</option>
-                <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
-              </select>
-              <div class="invalid-feedback" th:errors="*{categoryId}"></div>
-            </div>
-            <!-- Thương hiệu -->
-            <div class="col-md-4">
-              <label class="form-label fw-bold">Thương hiệu <span class="text-danger">*</span></label>
-              <select th:field="*{brandId}" class="form-select"
-                      th:classappend="${#fields.hasErrors('brandId')} ? 'is-invalid' : ''">
-                <option value="">-- Chọn thương hiệu --</option>
-                <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
-              </select>
-              <div class="invalid-feedback" th:errors="*{brandId}"></div>
-            </div>
-            <!-- Màu -->
-            <div class="col-md-4">
-              <label class="form-label">Màu sắc</label>
-              <input type="text" th:field="*{color}" class="form-control" placeholder="VD: Bạc"/>
-            </div>
-            <!-- CPU -->
-            <div class="col-md-4">
-              <label class="form-label">CPU</label>
-              <input type="text" th:field="*{cpu}" class="form-control" placeholder="VD: Intel Core i5-1235U"/>
-            </div>
-            <!-- RAM -->
-            <div class="col-md-2">
-              <label class="form-label">RAM (GB)</label>
-              <input type="number" th:field="*{ramGb}" class="form-control"
-                     th:classappend="${#fields.hasErrors('ramGb')} ? 'is-invalid' : ''"
-                     min="1" placeholder="8"/>
-              <div class="invalid-feedback" th:errors="*{ramGb}"></div>
-            </div>
-            <!-- Storage -->
-            <div class="col-md-2">
-              <label class="form-label">Lưu trữ (GB)</label>
-              <input type="number" th:field="*{storageGb}" class="form-control"
-                     th:classappend="${#fields.hasErrors('storageGb')} ? 'is-invalid' : ''"
-                     min="1" placeholder="512"/>
-              <div class="invalid-feedback" th:errors="*{storageGb}"></div>
-            </div>
-            <!-- GPU -->
-            <div class="col-md-4">
-              <label class="form-label">GPU</label>
-              <input type="text" th:field="*{gpu}" class="form-control" placeholder="VD: RTX 4050"/>
-            </div>
-            <!-- Screen Size -->
-            <div class="col-md-2">
-              <label class="form-label">Màn hình (inch)</label>
-              <input type="number" th:field="*{screenSize}" class="form-control" step="0.1" min="10" placeholder="15.6"/>
-            </div>
-            <!-- OS -->
-            <div class="col-md-4">
-              <label class="form-label">Hệ điều hành</label>
-              <input type="text" th:field="*{operatingSystem}" class="form-control" placeholder="VD: Windows 11"/>
-            </div>
-            <!-- Purchase Price -->
-            <div class="col-md-3">
-              <label class="form-label fw-bold">Giá nhập (đ) <span class="text-danger">*</span></label>
-              <input type="number" th:field="*{purchasePrice}" class="form-control"
-                     th:classappend="${#fields.hasErrors('purchasePrice')} ? 'is-invalid' : ''"
-                     min="0" step="100000"/>
-              <div class="invalid-feedback" th:errors="*{purchasePrice}"></div>
-            </div>
-            <!-- Sale Price -->
-            <div class="col-md-3">
-              <label class="form-label fw-bold">Giá bán (đ) <span class="text-danger">*</span></label>
-              <input type="number" th:field="*{salePrice}" class="form-control"
-                     th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid' : ''"
-                     min="0" step="100000"/>
-              <div class="invalid-feedback" th:errors="*{salePrice}"></div>
-            </div>
-            <!-- Stock -->
-            <div class="col-md-2">
-              <label class="form-label fw-bold">Tồn kho <span class="text-danger">*</span></label>
-              <input type="number" th:field="*{stockQuantity}" class="form-control"
-                     th:classappend="${#fields.hasErrors('stockQuantity')} ? 'is-invalid' : ''"
-                     min="0"/>
-              <div class="invalid-feedback" th:errors="*{stockQuantity}"></div>
-            </div>
-            <!-- Image URL -->
-            <div class="col-md-4">
-              <label class="form-label">URL Hình ảnh</label>
-              <input type="text" th:field="*{imageUrl}" class="form-control" placeholder="https://..."/>
-            </div>
-            <!-- Active -->
-            <div class="col-md-2 d-flex align-items-end">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" th:field="*{isActive}" id="isActive"/>
-                <label class="form-check-label" for="isActive">Đang bán</label>
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <form th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
+                th:object="${laptopDTO}" method="post" novalidate>
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label fw-bold">SKU <span class="text-danger">*</span></label>
+                <input type="text" th:field="*{sku}" class="form-control" th:classappend="${#fields.hasErrors('sku')} ? 'is-invalid'" placeholder="VD: LT021"/>
+                <div class="invalid-feedback" th:errors="*{sku}"></div>
+              </div>
+              <div class="col-md-9">
+                <label class="form-label fw-bold">Tên laptop <span class="text-danger">*</span></label>
+                <input type="text" th:field="*{name}" class="form-control" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'" placeholder="VD: Dell Inspiron 15"/>
+                <div class="invalid-feedback" th:errors="*{name}"></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
+                <select th:field="*{categoryId}" class="form-select" th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid'">
+                  <option value="">-- Chọn danh mục --</option>
+                  <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{categoryId}"></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Thương hiệu <span class="text-danger">*</span></label>
+                <select th:field="*{brandId}" class="form-select" th:classappend="${#fields.hasErrors('brandId')} ? 'is-invalid'">
+                  <option value="">-- Chọn thương hiệu --</option>
+                  <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{brandId}"></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Màu sắc</label>
+                <select th:field="*{color}" class="form-select">
+                  <option value="">-- Chọn màu sắc --</option>
+                  <option th:if="${laptopDTO.color != null && !#lists.contains(colorOptions, laptopDTO.color)}"
+                          th:value="${laptopDTO.color}" th:text="${laptopDTO.color}"></option>
+                  <option th:each="col : ${colorOptions}" th:value="${col}" th:text="${col}"></option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">CPU</label>
+                <select th:field="*{cpu}" class="form-select">
+                  <option value="">-- Chọn CPU --</option>
+                  <option th:if="${laptopDTO.cpu != null && !#lists.contains(cpuOptions, laptopDTO.cpu)}"
+                          th:value="${laptopDTO.cpu}" th:text="${laptopDTO.cpu}"></option>
+                  <option th:each="cOpt : ${cpuOptions}" th:value="${cOpt}" th:text="${cOpt}"></option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-bold">RAM (GB)</label>
+                <select th:field="*{ramGb}" class="form-select" th:classappend="${#fields.hasErrors('ramGb')} ? 'is-invalid'">
+                  <option th:each="r : ${ramOptions}" th:value="${r}" th:text="${r + ' GB'}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{ramGb}"></div>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-bold">Ổ cứng SSD</label>
+                <select th:field="*{storageGb}" class="form-select" th:classappend="${#fields.hasErrors('storageGb')} ? 'is-invalid'">
+                  <option th:each="s : ${storageOptions}" th:value="${s}"
+                          th:text="${s >= 1024 ? (s / 1024) + ' TB SSD' : s + ' GB SSD'}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{storageGb}"></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Card đồ họa (GPU)</label>
+                <select th:field="*{gpu}" class="form-select">
+                  <option value="">-- Chọn GPU --</option>
+                  <option th:if="${laptopDTO.gpu != null && !#lists.contains(gpuOptions, laptopDTO.gpu)}"
+                          th:value="${laptopDTO.gpu}" th:text="${laptopDTO.gpu}"></option>
+                  <option th:each="gOpt : ${gpuOptions}" th:value="${gOpt}" th:text="${gOpt}"></option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-bold">Màn hình</label>
+                <select th:field="*{screenSize}" class="form-select" th:classappend="${#fields.hasErrors('screenSize')} ? 'is-invalid'">
+                  <option th:each="scr : ${screenOptions}" th:value="${scr}" th:text="${scr + ' inch'}"></option>
+                </select>
+                <div class="invalid-feedback" th:errors="*{screenSize}"></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Hệ điều hành</label>
+                <select th:field="*{operatingSystem}" class="form-select">
+                  <option value="">-- Chọn hệ điều hành --</option>
+                  <option th:if="${laptopDTO.operatingSystem != null && !#lists.contains(osOptions, laptopDTO.operatingSystem)}"
+                          th:value="${laptopDTO.operatingSystem}" th:text="${laptopDTO.operatingSystem}"></option>
+                  <option th:each="oOpt : ${osOptions}" th:value="${oOpt}" th:text="${oOpt}"></option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-bold">Tồn kho <span class="text-danger">*</span></label>
+                <input type="number" th:field="*{stockQuantity}" class="form-control" th:classappend="${#fields.hasErrors('stockQuantity')} ? 'is-invalid'" min="0"/>
+                <div class="invalid-feedback" th:errors="*{stockQuantity}"></div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Giá nhập (đ) <span class="text-danger">*</span></label>
+                <input type="number" th:field="*{purchasePrice}" class="form-control" th:classappend="${#fields.hasErrors('purchasePrice')} ? 'is-invalid'" min="0" step="10000"/>
+                <div class="invalid-feedback" th:errors="*{purchasePrice}"></div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Giá niêm yết (đ) <span class="text-danger">*</span></label>
+                <input type="number" th:field="*{listPrice}" class="form-control" th:classappend="${#fields.hasErrors('listPrice')} ? 'is-invalid'" min="0" step="10000"/>
+                <div class="invalid-feedback" th:errors="*{listPrice}"></div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Giá bán / KM (đ) <span class="text-danger">*</span></label>
+                <input type="number" th:field="*{salePrice}" class="form-control" th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid'" min="0" step="10000"/>
+                <div class="invalid-feedback" th:errors="*{salePrice}"></div>
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" th:field="*{isActive}" id="isActive"/>
+                  <label class="form-check-label fw-semibold" for="isActive">Đang mở bán</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">URL Hình ảnh</label>
+                <input type="text" th:field="*{imageUrl}" class="form-control" placeholder="Để trống dùng ảnh mặc định theo SKU"/>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Mô tả</label>
+                <textarea th:field="*{description}" class="form-control" rows="3"></textarea>
               </div>
             </div>
-            <!-- Description -->
-            <div class="col-12">
-              <label class="form-label">Mô tả</label>
-              <textarea th:field="*{description}" class="form-control" rows="3"></textarea>
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i><span th:text="${isEdit ? 'Cập nhật' : 'Thêm mới'}"></span></button>
+              <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary px-4">Hủy</a>
             </div>
-          </div>
-
-          <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-primary px-4">
-              <i class="bi bi-save me-1"></i>
-              <span th:text="${isEdit ? 'Cập nhật' : 'Thêm mới'}"></span>
-            </button>
-            <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary px-4">Hủy</a>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
-  </main>
-</div>
+    </main>
+  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -1,28 +1,56 @@
-package com.example.laptopshop.security;
+package com.laptopshop.config;
 
-import com.example.laptopshop.service.UserService;
+// Thành viên phụ trách: TV5 - Vũ Gia Bảo
+// Đảm bảo các vai trò chuẩn (ADMIN, STAFF, CUSTOMER) và tài khoản mẫu có mật khẩu BCrypt hợp lệ khi khởi chạy.
+
+import com.laptopshop.entity.Role;
+import com.laptopshop.repository.AccountRepository;
+import com.laptopshop.repository.RoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.dao.DataAccessException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-/** Tự tạo 2 tài khoản mẫu khi chạy ứng dụng lần đầu. */
 @Component
 public class DataInitializer implements CommandLineRunner {
-    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
-    private final UserService userService;
 
-    public DataInitializer(UserService userService) { this.userService = userService; }
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
+    private final RoleRepository roleRepository;
+    private final AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(RoleRepository roleRepository,
+                           AccountRepository accountRepository,
+                           PasswordEncoder passwordEncoder) {
+        this.roleRepository = roleRepository;
+        this.accountRepository = accountRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
+    @Transactional
     public void run(String... args) {
-        try {
-            userService.createIfMissing("admin", "Admin@123", "Quản trị viên", "admin@laptopshop.local", UserService.ROLE_ADMIN);
-            userService.createIfMissing("user", "User@123", "Khách hàng mẫu", "user@laptopshop.local", UserService.ROLE_USER);
-            log.info("Tài khoản mẫu: admin / Admin@123  và  user / User@123");
-        } catch (DataAccessException e) {
-            log.error("Không tạo được tài khoản mẫu. Bạn đã chạy file database/laptop_shop.sql (bảng users) chưa?", e);
+        ensureRole("ADMIN", "Quản trị hệ thống");
+        ensureRole("STAFF", "Nhân viên cửa hàng");
+        ensureRole("CUSTOMER", "Khách hàng");
+
+        // Nếu chạy trên CSDL cũ có chuỗi hash minh họa chưa khớp "123456", chuẩn hóa lại sang BCrypt("123456")
+        String legacyPlaceholderHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+        accountRepository.findAll().forEach(acc -> {
+            if (legacyPlaceholderHash.equals(acc.getPasswordHash())) {
+                acc.setPasswordHash(passwordEncoder.encode("123456"));
+                accountRepository.save(acc);
+                log.info("[INIT] Đã chuẩn hóa mật khẩu BCrypt (123456) cho tài khoản '{}'", acc.getUsername());
+            }
+        });
+    }
+
+    private void ensureRole(String roleName, String description) {
+        if (roleRepository.findByRoleNameIgnoreCase(roleName).isEmpty()) {
+            roleRepository.save(new Role(roleName, description));
         }
     }
 }
