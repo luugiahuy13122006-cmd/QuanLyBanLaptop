@@ -218,6 +218,6 @@ Bộ kiểm thử sử dụng H2 in-memory chế độ tương thích SQL Server
 mvn test
 ```
 
-Gồm 2 bộ kiểm thử chính:
-1. `ConcurrencyOrderTest` (TV4): kiểm thử 10 luồng đặt hàng đồng thời tranh 5 laptop (chỉ 5 đơn thành công, tồn kho = 0, không âm kho) và kiểm thử hủy đơn hoàn kho + thống kê doanh thu.
-2. `SystemIntegrationTest` (TV5): kiểm thử đăng ký & BCrypt, phân quyền Spring Security (`ADMIN` / `STAFF` / `CUSTOMER`), ràng buộc khóa ngoại & trùng mã, cập nhật tồn kho đa luồng (`updateStockSafe`), và `SocketServer` phục vụ đồng thời 3 client TCP.
+Gồm 2 bộ kiểm thử chính (`10/10` ca đạt, `BUILD SUCCESS`):
+1. `ConcurrencyOrderTest` (TV4 – 2 ca): kiểm thử 10 luồng đặt hàng đồng thời tranh 5 laptop (chỉ 5 đơn thành công, tồn kho = 0, không âm kho) và kiểm thử hủy đơn hoàn kho + thống kê doanh thu.
+2. `SystemIntegrationTest` (TV5 – 8 ca): kiểm thử đăng ký & BCrypt, phân quyền Spring Security (`ADMIN` / `STAFF` / `CUSTOMER`), ràng buộc khóa ngoại & trùng mã, cập nhật tồn kho đa luồng (`updateStockSafe`), từ chối cấu hình RAM/SSD sai chuẩn, `SocketServer` phục vụ đồng thời 3 client TCP, và upload bắt buộc 5 ảnh khi thêm mới / ẩn URL khi cập nhật laptop.

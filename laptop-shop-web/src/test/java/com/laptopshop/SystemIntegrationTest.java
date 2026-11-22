@@ -4,6 +4,7 @@ package com.laptopshop;
 // Kiểm thử tổng thể toàn hệ thống: Phân quyền (Spring Security), Tài khoản (BCrypt), Ràng buộc dữ liệu (CRUD),
 // Đa luồng tồn kho (TV2) và Giao tiếp Socket Server với 3 Client đồng thời (TV2).
 
+import com.laptopshop.config.WebConfig;
 import com.laptopshop.dto.*;
 import com.laptopshop.entity.*;
 import com.laptopshop.exception.BusinessException;
@@ -16,15 +17,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.math.BigDecimal;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -32,8 +39,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -297,5 +306,110 @@ class SystemIntegrationTest {
         server.stop();
 
         assertEquals(3, successClients.get(), "Cả 3 Socket Client đồng thời phải giao tiếp thành công với Server");
+    }
+
+    @Test
+    @DisplayName("TV2: Kiểm thử upload bắt buộc 5 ảnh khi thêm mới Laptop và ẩn URL / giữ ảnh khi cập nhật")
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testUploadFiveLaptopImagesAndKeepImagesOnEdit() throws Exception {
+        String testSku = "TEST-UP-999";
+        ByteArrayOutputStream imgBaos = new ByteArrayOutputStream();
+        BufferedImage dummyImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
+        ImageIO.write(dummyImg, "jpg", imgBaos);
+        byte[] jpgBytes = imgBaos.toByteArray();
+
+        MockMultipartFile[] onlyFour = new MockMultipartFile[4];
+        for (int i = 0; i < 4; i++) {
+            onlyFour[i] = new MockMultipartFile("imageFiles", "pic" + (i + 1) + ".jpg", "image/jpeg", jpgBytes);
+        }
+        LaptopDTO invalidDto = new LaptopDTO();
+        invalidDto.setSku(testSku);
+        invalidDto.setName("Laptop Thieu Anh");
+        invalidDto.setCategoryId(categoryId);
+        invalidDto.setBrandId(brandId);
+        invalidDto.setSalePrice(new BigDecimal("18000000"));
+        assertThrows(BusinessException.class, () -> laptopService.createLaptopWithImages(invalidDto, onlyFour),
+                "Bắt buộc phải từ chối khi không đủ 5 ảnh sản phẩm");
+
+        MockMultipartFile badExt = new MockMultipartFile("imageFiles", "virus.txt", "text/plain", "bad".getBytes());
+        assertThrows(BusinessException.class, () -> laptopService.saveUploadedLaptopImages(testSku, new MockMultipartFile[]{
+                onlyFour[0], onlyFour[1], onlyFour[2], onlyFour[3], badExt
+        }), "Bắt buộc từ chối định dạng tệp không phải .jpg/.png/.webp");
+
+        Path srcUploadDir = WebConfig.resolveLaptopImagesBaseDir().resolve(testSku);
+        Path targetBase = WebConfig.resolveTargetLaptopImagesBaseDir();
+        Path targetUploadDir = targetBase != null ? targetBase.resolve(testSku) : null;
+        try {
+            mockMvc.perform(multipart("/admin/laptops/add")
+                            .file(new MockMultipartFile("imageFiles", "1.jpg", "image/jpeg", jpgBytes))
+                            .file(new MockMultipartFile("imageFiles", "2.jpg", "image/jpeg", jpgBytes))
+                            .file(new MockMultipartFile("imageFiles", "3.jpg", "image/jpeg", jpgBytes))
+                            .file(new MockMultipartFile("imageFiles", "4.jpg", "image/jpeg", jpgBytes))
+                            .file(new MockMultipartFile("imageFiles", "5.png", "image/png", jpgBytes))
+                            .param("sku", testSku)
+                            .param("name", "Dell Upload 5 Images")
+                            .param("categoryId", String.valueOf(categoryId))
+                            .param("brandId", String.valueOf(brandId))
+                            .param("ramGb", "16")
+                            .param("storageGb", "512")
+                            .param("screenSize", "15.6")
+                            .param("purchasePrice", "15000000")
+                            .param("listPrice", "20000000")
+                            .param("salePrice", "18500000")
+                            .param("stockQuantity", "5")
+                            .param("isActive", "true")
+                            .with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/admin/laptops"));
+
+            Laptop saved = laptopRepository.findAllWithDetails().stream()
+                    .filter(l -> testSku.equals(l.getSku()))
+                    .findFirst()
+                    .orElseThrow();
+
+            String expectedCsv = "/images/laptops/" + testSku + "/1.jpg,/images/laptops/" + testSku + "/2.jpg,/images/laptops/"
+                    + testSku + "/3.jpg,/images/laptops/" + testSku + "/4.jpg,/images/laptops/" + testSku + "/5.jpg";
+            assertEquals(expectedCsv, saved.getImageUrl());
+            assertEquals("/images/laptops/" + testSku + "/1.jpg", saved.getDisplayImageUrl());
+            assertEquals(5, laptopService.getGalleryImages(saved).size());
+            for (int i = 1; i <= 5; i++) {
+                assertTrue(Files.exists(srcUploadDir.resolve(i + ".jpg")), "Thiếu file ảnh lưu trên đĩa: " + i + ".jpg");
+            }
+
+            // Trang Cập nhật ẩn hoàn toàn ô URL Hình ảnh
+            String editHtml = mockMvc.perform(get("/admin/laptops/edit/" + saved.getId()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertFalse(editHtml.contains("name=\"imageUrl\""), "Trang cập nhật không được chứa ô URL Hình ảnh");
+
+            // Cập nhật không gửi imageUrl vẫn giữ nguyên 5 đường dẫn ảnh cũ
+            LaptopDTO updateDto = new LaptopDTO();
+            updateDto.setSku(saved.getSku());
+            updateDto.setName("Dell Upload 5 Images Updated");
+            updateDto.setCategoryId(categoryId);
+            updateDto.setBrandId(brandId);
+            updateDto.setRamGb(16);
+            updateDto.setStorageGb(512);
+            updateDto.setScreenSize(new BigDecimal("15.6"));
+            updateDto.setPurchasePrice(new BigDecimal("15000000"));
+            updateDto.setListPrice(new BigDecimal("20000000"));
+            updateDto.setSalePrice(new BigDecimal("17900000"));
+            updateDto.setStockQuantity(5);
+            updateDto.setIsActive(true);
+            updateDto.setImageUrl(null);
+            Laptop updated = laptopService.updateLaptop(saved.getId(), updateDto);
+            assertEquals(expectedCsv, updated.getImageUrl());
+        } finally {
+            deleteDirectoryQuietly(srcUploadDir);
+            deleteDirectoryQuietly(targetUploadDir);
+        }
+    }
+
+    private void deleteDirectoryQuietly(Path dir) throws IOException {
+        if (dir != null && Files.exists(dir)) {
+            try (var stream = Files.walk(dir)) {
+                stream.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            }
+        }
     }
 }
