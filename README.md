@@ -51,7 +51,8 @@ QuanLyBanLaptop/
 │       │   │   │   ├── SecurityConfig.java
 │       │   │   │   ├── CustomUserDetails.java
 │       │   │   │   ├── CustomUserDetailsService.java
-│       │   │   │   └── DataInitializer.java
+│       │   │   │   ├── DataInitializer.java
+│       │   │   │   └── WebConfig.java
 │       │   │   ├── controller/
 │       │   │   │   ├── StoreController.java
 │       │   │   │   ├── AuthController.java

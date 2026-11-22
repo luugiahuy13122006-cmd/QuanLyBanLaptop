@@ -23,8 +23,9 @@
 
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
-          <form th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
-                th:object="${laptopDTO}" method="post" novalidate>
+          <form id="laptopForm"
+                th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
+                th:object="${laptopDTO}" method="post" enctype="multipart/form-data" novalidate>
             <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label fw-bold">SKU <span class="text-danger">*</span></label>
@@ -136,9 +137,61 @@
                   <label class="form-check-label fw-semibold" for="isActive">Đang mở bán</label>
                 </div>
               </div>
-              <div class="col-12">
-                <label class="form-label">URL Hình ảnh</label>
-                <input type="text" th:field="*{imageUrl}" class="form-control" placeholder="Để trống dùng ảnh mặc định theo SKU"/>
+              <!-- Khu vực tải lên 5 ảnh sản phẩm (CHỈ hiển thị ở trang Thêm mới, đã ẩn khỏi trang Cập nhật) -->
+              <div class="col-12" th:if="${!isEdit}">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                  <div>
+                    <label class="form-label fw-bold mb-0">Hình ảnh sản phẩm <span class="text-danger">*</span></label>
+                    <div class="small text-muted">Bắt buộc chọn đủ <strong>5 ảnh</strong> (.jpg, .png, .webp). Ảnh số 1 là ảnh đại diện.</div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span id="imageCountBadge" class="badge bg-secondary">Đã chọn: 0 / 5 ảnh</span>
+                    <button type="button" id="btnBulkPick" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-folder2-open me-1"></i>Chọn nhanh 5 ảnh
+                    </button>
+                    <input type="file" id="bulkImagePicker" class="d-none" multiple
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"/>
+                  </div>
+                </div>
+
+                <div class="row row-cols-2 row-cols-md-5 g-3" id="imageUploadGrid">
+                  <div class="col" th:each="slotIdx : ${#numbers.sequence(1, 5)}">
+                    <div class="border rounded-3 p-2 bg-light h-100 d-flex flex-column justify-content-between image-slot-card"
+                         th:attr="data-slot=${slotIdx}"
+                         style="border-style: dashed !important; border-width: 2px !important;">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge"
+                              th:classappend="${slotIdx == 1} ? 'bg-primary' : 'bg-secondary'"
+                              th:text="${slotIdx == 1} ? 'Ảnh 1 (Đại diện)' : 'Ảnh ' + ${slotIdx}"></span>
+                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 d-none btn-clear-slot"
+                                title="Xóa ảnh này" th:attr="data-slot=${slotIdx}">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </div>
+
+                      <div class="slot-preview-box d-flex flex-column align-items-center justify-content-center bg-white rounded border position-relative overflow-hidden"
+                           th:attr="data-slot=${slotIdx}"
+                           style="height: 120px; cursor: pointer;">
+                        <div class="slot-placeholder text-center text-muted p-2">
+                          <i class="bi bi-cloud-arrow-up fs-3 d-block text-primary"></i>
+                          <small>Nhấn chọn ảnh</small>
+                        </div>
+                        <img src="" alt="Xem trước" class="slot-preview-img d-none w-100 h-100"
+                             style="object-fit: contain; padding: 4px;"/>
+                      </div>
+
+                      <div class="mt-2 d-flex justify-content-between align-items-center gap-1">
+                        <small class="text-muted text-truncate slot-filename" style="max-width: 95px;">Chưa chọn</small>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 btn-pick-slot"
+                                th:attr="data-slot=${slotIdx}">Chọn</button>
+                      </div>
+                      <input type="file" name="imageFiles" class="d-none slot-file-input"
+                             th:attr="data-slot=${slotIdx}"
+                             accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"/>
+                    </div>
+                  </div>
+                </div>
+                <div id="imageUploadError" class="alert alert-danger py-2 px-3 small mt-2 d-none mb-0"></div>
               </div>
               <div class="col-12">
                 <label class="form-label">Mô tả</label>
@@ -156,5 +209,156 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script th:if="${!isEdit}">
+  (function () {
+    const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp'];
+    const form = document.getElementById('laptopForm');
+    const bulkBtn = document.getElementById('btnBulkPick');
+    const bulkInput = document.getElementById('bulkImagePicker');
+    const countBadge = document.getElementById('imageCountBadge');
+    const errorBox = document.getElementById('imageUploadError');
+    const slotInputs = {};
+    for (let i = 1; i <= 5; i++) {
+      slotInputs[i] = document.querySelector(`.slot-file-input[data-slot="${i}"]`);
+    }
+
+    function showError(msg) {
+      if (!msg) {
+        errorBox.classList.add('d-none');
+        errorBox.textContent = '';
+      } else {
+        errorBox.textContent = msg;
+        errorBox.classList.remove('d-none');
+      }
+    }
+
+    function isValidImageFile(file) {
+      if (!file) return false;
+      const parts = file.name.split('.');
+      const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+      return ALLOWED_EXT.includes(ext);
+    }
+
+    function setFileToInput(input, file) {
+      const dt = new DataTransfer();
+      if (file) dt.items.add(file);
+      input.files = dt.files;
+    }
+
+    function renderSlot(slotIdx) {
+      const input = slotInputs[slotIdx];
+      const file = input.files && input.files.length > 0 ? input.files[0] : null;
+      const card = document.querySelector(`.image-slot-card[data-slot="${slotIdx}"]`);
+      const img = card.querySelector('.slot-preview-img');
+      const placeholder = card.querySelector('.slot-placeholder');
+      const filenameEl = card.querySelector('.slot-filename');
+      const clearBtn = card.querySelector('.btn-clear-slot');
+      const pickBtn = card.querySelector('.btn-pick-slot');
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          img.src = e.target.result;
+          img.classList.remove('d-none');
+          placeholder.classList.add('d-none');
+        };
+        reader.readAsDataURL(file);
+        filenameEl.textContent = file.name;
+        filenameEl.title = file.name;
+        clearBtn.classList.remove('d-none');
+        pickBtn.textContent = 'Đổi';
+        card.classList.remove('border-danger');
+        card.classList.add('border-success');
+      } else {
+        img.src = '';
+        img.classList.add('d-none');
+        placeholder.classList.remove('d-none');
+        filenameEl.textContent = 'Chưa chọn';
+        filenameEl.title = '';
+        clearBtn.classList.add('d-none');
+        pickBtn.textContent = 'Chọn';
+        card.classList.remove('border-success');
+      }
+      updateCount();
+    }
+
+    function updateCount() {
+      let count = 0;
+      for (let i = 1; i <= 5; i++) {
+        if (slotInputs[i].files && slotInputs[i].files.length > 0) count++;
+      }
+      countBadge.textContent = `Đã chọn: ${count} / 5 ảnh`;
+      countBadge.className = count === 5 ? 'badge bg-success' : 'badge bg-secondary';
+      if (count === 5) showError('');
+    }
+
+    for (let i = 1; i <= 5; i++) {
+      const previewBox = document.querySelector(`.slot-preview-box[data-slot="${i}"]`);
+      const pickBtn = document.querySelector(`.btn-pick-slot[data-slot="${i}"]`);
+      const clearBtn = document.querySelector(`.btn-clear-slot[data-slot="${i}"]`);
+      const input = slotInputs[i];
+
+      previewBox.addEventListener('click', () => input.click());
+      pickBtn.addEventListener('click', () => input.click());
+      clearBtn.addEventListener('click', () => {
+        setFileToInput(input, null);
+        renderSlot(i);
+      });
+      input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        if (!isValidImageFile(file)) {
+          setFileToInput(input, null);
+          renderSlot(i);
+          showError(`Ảnh số ${i} ("${file.name}") không hợp lệ! Chỉ chấp nhận định dạng .jpg, .png, .webp.`);
+          return;
+        }
+        showError('');
+        renderSlot(i);
+      });
+    }
+
+    bulkBtn.addEventListener('click', () => bulkInput.click());
+    bulkInput.addEventListener('change', () => {
+      const files = Array.from(bulkInput.files || []);
+      bulkInput.value = '';
+      if (files.length === 0) return;
+      if (files.length !== 5) {
+        showError(`Bạn vừa chọn ${files.length} ảnh. Vui lòng chọn đúng 5 ảnh sản phẩm (không thiếu, không thừa)!`);
+        return;
+      }
+      for (let i = 0; i < files.length; i++) {
+        if (!isValidImageFile(files[i])) {
+          showError(`Tệp "${files[i].name}" không đúng định dạng! Chỉ chấp nhận .jpg, .png, .webp.`);
+          return;
+        }
+      }
+      for (let i = 1; i <= 5; i++) {
+        setFileToInput(slotInputs[i], files[i - 1]);
+        renderSlot(i);
+      }
+      showError('');
+    });
+
+    form.addEventListener('submit', function (e) {
+      let missing = [];
+      for (let i = 1; i <= 5; i++) {
+        const file = slotInputs[i].files && slotInputs[i].files[0];
+        const card = document.querySelector(`.image-slot-card[data-slot="${i}"]`);
+        if (!file || !isValidImageFile(file)) {
+          missing.push(i);
+          card.classList.add('border-danger');
+        } else {
+          card.classList.remove('border-danger');
+        }
+      }
+      if (missing.length > 0) {
+        e.preventDefault();
+        showError(`Bắt buộc chọn đủ 5 ảnh sản phẩm hợp lệ (.jpg, .png, .webp). Còn thiếu ảnh số: ${missing.join(', ')}.`);
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  })();
+</script>
 </body>
 </html>

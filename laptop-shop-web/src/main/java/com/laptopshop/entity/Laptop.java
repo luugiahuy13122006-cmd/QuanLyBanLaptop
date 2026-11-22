@@ -189,7 +189,10 @@ public class Laptop {
 
     public String getDisplayImageUrl() {
         if (imageUrl != null && !imageUrl.isBlank()) {
-            return imageUrl;
+            String first = imageUrl.split(",")[0].trim();
+            if (!first.isEmpty()) {
+                return first;
+            }
         }
         if (sku != null && !sku.isBlank()
                 && new ClassPathResource("static/images/laptops/" + sku.trim() + "/1.jpg").exists()) {

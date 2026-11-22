@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
@@ -90,15 +91,17 @@ public class LaptopController {
 
     @PostMapping("/add")
     public String create(@Valid @ModelAttribute("laptopDTO") LaptopDTO laptopDTO,
-                         BindingResult br, Model model, RedirectAttributes ra) {
+                         BindingResult br,
+                         @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+                         Model model, RedirectAttributes ra) {
         if (br.hasErrors()) {
             model.addAttribute("isEdit", false);
             options(model);
             return "admin/laptops/form";
         }
         try {
-            service.createLaptop(laptopDTO);
-            ra.addFlashAttribute("successMessage", "Thêm laptop thành công!");
+            service.createLaptopWithImages(laptopDTO, imageFiles);
+            ra.addFlashAttribute("successMessage", "Thêm laptop và tải lên 5 ảnh sản phẩm thành công!");
             return "redirect:/admin/laptops";
         } catch (RuntimeException e) {
             model.addAttribute("errorMessage", e.getMessage());
@@ -129,7 +132,6 @@ public class LaptopController {
             d.setListPrice(l.getListPrice());
             d.setSalePrice(l.getSalePrice());
             d.setStockQuantity(l.getStockQuantity());
-            d.setImageUrl(l.getImageUrl());
             d.setDescription(l.getDescription());
             d.setIsActive(l.getIsActive());
             model.addAttribute("laptopDTO", d);

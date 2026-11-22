@@ -1,6 +1,7 @@
 package com.laptopshop.service;
 
 // Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
+import com.laptopshop.config.WebConfig;
 import com.laptopshop.dto.LaptopDTO;
 import com.laptopshop.entity.Brand;
 import com.laptopshop.entity.Category;
@@ -21,11 +22,23 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -106,25 +119,34 @@ public class LaptopService {
         return laptopRepo.searchByKeyword(keyword == null ? "" : keyword.trim());
     }
 
-    // Lấy danh sách ít nhất 5 ảnh cho trang chi tiết laptop theo mã SKU
+    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+
+    // Lấy danh sách ít nhất 5 ảnh cho trang chi tiết laptop theo mã SKU (hỗ trợ cả nhiều đường dẫn ngăn cách bằng dấu phẩy)
     public List<String> getGalleryImages(Laptop laptop) {
-        List<String> images = new ArrayList<>();
+        LinkedHashSet<String> images = new LinkedHashSet<>();
         if (laptop.getImageUrl() != null && !laptop.getImageUrl().isBlank()) {
-            images.add(laptop.getImageUrl().trim());
+            for (String part : laptop.getImageUrl().split(",")) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) {
+                    images.add(trimmed);
+                }
+            }
         }
         String sku = laptop.getSku() != null ? laptop.getSku().trim() : "";
         if (!sku.isEmpty()) {
+            Path diskDir = WebConfig.resolveLaptopImagesBaseDir().resolve(sku);
             for (int i = 1; i <= 5; i++) {
+                String url = "/images/laptops/" + sku + "/" + i + ".jpg";
                 String relPath = "static/images/laptops/" + sku + "/" + i + ".jpg";
-                if (new ClassPathResource(relPath).exists()) {
-                    images.add("/images/laptops/" + sku + "/" + i + ".jpg");
+                if (Files.exists(diskDir.resolve(i + ".jpg")) || new ClassPathResource(relPath).exists()) {
+                    images.add(url);
                 }
             }
         }
         if (images.isEmpty()) {
             images.add("/images/laptop-default.svg");
         }
-        return images;
+        return new ArrayList<>(images);
     }
 
     // Gợi ý các sản phẩm liên quan (cùng danh mục hoặc cùng thương hiệu)
@@ -162,9 +184,121 @@ public class LaptopService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!"));
         Brand brand = brandRepo.findById(dto.getBrandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu!"));
-        Laptop l = buildLaptop(new Laptop(), dto, cat, brand);
+        Laptop l = buildLaptop(new Laptop(), dto, cat, brand, false);
         l.setSku(sku);
         return laptopRepo.save(l);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public Laptop createLaptopWithImages(LaptopDTO dto, MultipartFile[] imageFiles) {
+        validateRealHardwareSpecs(dto);
+        String sku = dto.getSku().trim();
+        if (laptopRepo.existsBySkuIgnoreCase(sku)) {
+            throw new BusinessException("SKU '" + sku + "' đã tồn tại!");
+        }
+        Category cat = categoryRepo.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!"));
+        Brand brand = brandRepo.findById(dto.getBrandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu!"));
+
+        String savedPathsCsv = saveUploadedLaptopImages(sku, imageFiles);
+        dto.setImageUrl(savedPathsCsv);
+
+        Laptop l = buildLaptop(new Laptop(), dto, cat, brand, false);
+        l.setSku(sku);
+        return laptopRepo.save(l);
+    }
+
+    public String saveUploadedLaptopImages(String rawSku, MultipartFile[] imageFiles) {
+        String safeSku = rawSku == null ? "" : rawSku.trim();
+        if (safeSku.isEmpty() || !safeSku.matches("[A-Za-z0-9_-]+")) {
+            throw new BusinessException("Mã SKU chỉ được chứa chữ cái, chữ số, dấu gạch ngang (-) hoặc gạch dưới (_).");
+        }
+
+        List<MultipartFile> validFiles = new ArrayList<>();
+        if (imageFiles != null) {
+            for (MultipartFile f : imageFiles) {
+                if (f != null && !f.isEmpty()) {
+                    validFiles.add(f);
+                }
+            }
+        }
+        if (validFiles.size() != 5) {
+            throw new BusinessException("Bắt buộc chọn đủ 5 ảnh sản phẩm (hiện có " + validFiles.size() + "/5 ảnh).");
+        }
+
+        for (int i = 0; i < validFiles.size(); i++) {
+            MultipartFile file = validFiles.get(i);
+            String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename().trim() : "";
+            String ext = "";
+            int dot = originalName.lastIndexOf('.');
+            if (dot >= 0 && dot < originalName.length() - 1) {
+                ext = originalName.substring(dot + 1).toLowerCase(Locale.ROOT);
+            }
+            if (!ALLOWED_IMAGE_EXTENSIONS.contains(ext)) {
+                throw new BusinessException("Ảnh số " + (i + 1) + " ('" + originalName + "') không đúng định dạng! Chỉ chấp nhận .jpg, .png, .webp.");
+            }
+            String contentType = file.getContentType();
+            if (contentType != null && !contentType.isBlank()
+                    && !contentType.toLowerCase(Locale.ROOT).startsWith("image/")
+                    && !contentType.equalsIgnoreCase("application/octet-stream")) {
+                throw new BusinessException("Tệp ảnh số " + (i + 1) + " không phải là tệp hình ảnh hợp lệ.");
+            }
+        }
+
+        Path staticDir = WebConfig.resolveLaptopImagesBaseDir().resolve(safeSku);
+        Path targetBase = WebConfig.resolveTargetLaptopImagesBaseDir();
+        Path targetDir = targetBase != null ? targetBase.resolve(safeSku) : null;
+
+        List<String> relativeUrls = new ArrayList<>();
+        try {
+            Files.createDirectories(staticDir);
+            if (targetDir != null) {
+                Files.createDirectories(targetDir);
+            }
+            for (int i = 0; i < 5; i++) {
+                MultipartFile file = validFiles.get(i);
+                String fileName = (i + 1) + ".jpg";
+                Path destFile = staticDir.resolve(fileName);
+                writeAsJpgOrRaw(file, destFile);
+                if (targetDir != null) {
+                    Files.copy(destFile, targetDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+                }
+                relativeUrls.add("/images/laptops/" + safeSku + "/" + fileName);
+            }
+        } catch (IOException e) {
+            log.error("[UPLOAD] Lỗi lưu ảnh laptop SKU={}: {}", safeSku, e.getMessage());
+            throw new BusinessException("Không thể lưu tệp ảnh sản phẩm lên máy chủ: " + e.getMessage());
+        }
+
+        return String.join(",", relativeUrls);
+    }
+
+    private void writeAsJpgOrRaw(MultipartFile file, Path destFile) throws IOException {
+        String name = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase(Locale.ROOT) : "";
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, destFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return;
+        }
+        try (InputStream in = file.getInputStream()) {
+            BufferedImage img = ImageIO.read(in);
+            if (img != null) {
+                BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
+                Graphics2D g = rgb.createGraphics();
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, img.getWidth(), img.getHeight());
+                g.drawImage(img, 0, 0, null);
+                g.dispose();
+                ImageIO.write(rgb, "jpg", destFile.toFile());
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+        try (InputStream in = file.getInputStream()) {
+            Files.copy(in, destFile, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     @Transactional
@@ -180,7 +314,7 @@ public class LaptopService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!"));
         Brand brand = brandRepo.findById(dto.getBrandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu!"));
-        buildLaptop(l, dto, cat, brand);
+        buildLaptop(l, dto, cat, brand, true);
         l.setSku(sku);
         l.setUpdatedAt(LocalDateTime.now());
         return laptopRepo.save(l);
@@ -244,7 +378,7 @@ public class LaptopService {
         }
     }
 
-    private Laptop buildLaptop(Laptop l, LaptopDTO dto, Category cat, Brand brand) {
+    private Laptop buildLaptop(Laptop l, LaptopDTO dto, Category cat, Brand brand, boolean keepExistingImageWhenBlank) {
         l.setName(dto.getName().trim());
         l.setCategory(cat);
         l.setBrand(brand);
@@ -261,7 +395,9 @@ public class LaptopService {
         l.setListPrice(listPrice);
         l.setSalePrice(dto.getSalePrice());
         l.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
-        l.setImageUrl(dto.getImageUrl());
+        if (!keepExistingImageWhenBlank || (dto.getImageUrl() != null && !dto.getImageUrl().isBlank())) {
+            l.setImageUrl(dto.getImageUrl());
+        }
         l.setDescription(dto.getDescription());
         l.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return l;
