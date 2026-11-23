@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -140,6 +141,12 @@ class SystemIntegrationTest {
     void testStaffAccessControl() throws Exception {
         mockMvc.perform(get("/admin/laptops")).andExpect(status().isOk());
         mockMvc.perform(get("/admin/orders")).andExpect(status().isOk());
+        mockMvc.perform(get("/admin/laptops/add")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/laptops/edit/" + laptopId)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/admin/laptops/delete/" + laptopId).with(csrf())).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/categories/add")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/brands/add")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/stock/test")).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/accounts")).andExpect(status().isForbidden());
     }
 

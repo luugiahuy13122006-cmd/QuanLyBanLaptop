@@ -48,7 +48,13 @@ public class SecurityConfig {
                     "/css/**", "/images/**", "/js/**",
                     "/orders/place"
                 ).permitAll()
-                .requestMatchers("/admin/accounts/**").hasRole("ADMIN")
+                .requestMatchers("/admin/accounts/**", "/admin/stock/**").hasRole("ADMIN")
+                .requestMatchers(
+                    "/admin/laptops/add/**", "/admin/laptops/edit/**", "/admin/laptops/delete/**",
+                    "/admin/categories/add/**", "/admin/categories/edit/**", "/admin/categories/delete/**",
+                    "/admin/brands/add/**", "/admin/brands/edit/**", "/admin/brands/delete/**",
+                    "/admin/customers/delete/**"
+                ).hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
                 .requestMatchers("/don-hang-cua-toi/**", "/tai-khoan/**").authenticated()
                 .anyRequest().authenticated()
