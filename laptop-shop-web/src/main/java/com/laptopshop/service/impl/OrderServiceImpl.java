@@ -172,14 +172,27 @@ public class OrderServiceImpl implements OrderService {
         PaymentStatus payStatus = latest != null ? latest.getPaymentStatus() : PaymentStatus.UNPAID;
 
         if (newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.RETURNED) {
+            if (newStatus == OrderStatus.RETURNED && current != OrderStatus.SHIPPING) {
+                throw new BusinessException("Chỉ đơn hàng đang ở trạng thái 'Đang giao hàng' mới có thể chuyển sang 'Đã trả hàng'. Hãy dùng 'Đã hủy' nếu chưa xuất kho giao.");
+            }
+            if (newStatus == OrderStatus.CANCELLED && current == OrderStatus.SHIPPING) {
+                throw new BusinessException("Đơn đang giao hàng không thể hủy trực tiếp; hãy chuyển sang 'Đã trả hàng' nếu giao không thành công.");
+            }
             if (bank && payStatus == PaymentStatus.PAID) {
                 throw new BusinessException("Đơn đã thanh toán chuyển khoản. Hãy xử lý qua luồng hoàn tiền.");
             }
             if (bank && payStatus == PaymentStatus.PENDING_CONFIRMATION) {
                 throw new BusinessException("Đơn đang chờ xác nhận thanh toán. Hãy xác nhận hoặc từ chối ảnh minh chứng trước.");
             }
-            return cancelOrReturn(order, newStatus, "Hủy bởi nhân viên", changedByAccountId,
+            String reason = newStatus == OrderStatus.RETURNED ? "Giao không thành công / Trả hàng" : "Hủy bởi nhân viên";
+            return cancelOrReturn(order, newStatus, reason, changedByAccountId,
                     "Cập nhật trạng thái từ " + current.name() + " sang " + newStatus.name());
+        }
+
+        if ((current == OrderStatus.CONFIRMED && newStatus == OrderStatus.PENDING)
+                || (current == OrderStatus.SHIPPING && (newStatus == OrderStatus.PENDING || newStatus == OrderStatus.CONFIRMED))) {
+            throw new BusinessException("Không thể chuyển ngược trạng thái đơn hàng từ '"
+                    + current.getDisplayName() + "' về '" + newStatus.getDisplayName() + "'.");
         }
 
         if (bank && payStatus != PaymentStatus.PAID) {

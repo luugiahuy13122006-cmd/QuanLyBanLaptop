@@ -523,7 +523,7 @@ JOIN Laptop l
 WHERE l.MaLaptop BETWEEN 1 AND 20;
 GO
 
--- 9. THANH TOÁN (20 BẢN GHI - HÀNG GIÁ TRỊ CAO CHỈ CHUYỂN KHOẢN NGÂN HÀNG)
+-- 9. THANH TOÁN (20 BẢN GHI MẪU - HỖ TRỢ CHUYỂN KHOẢN VIETQR & TIỀN MẶT COD)
 INSERT INTO ThanhToan
 (MaDonHang, PhuongThucThanhToan, TrangThaiThanhToan, SoTien, MaGiaoDich, ThoiGianThanhToan)
 SELECT

@@ -13,7 +13,7 @@
   <script>document.documentElement.classList.add('nx-js')</script>
   <script th:src="@{/js/nexora.js}" defer></script>
 </head>
-<body>
+<body th:with="isCodPending=${payment != null and payment.paymentMethod.name() == 'CASH' and payment.paymentStatus.name() != 'PAID'}">
 <canvas id="confettiCanvas" style="position: fixed; inset: 0; pointer-events: none; z-index: 1090;"></canvas>
 <div th:replace="~{fragments/header :: header}"></div>
 
@@ -23,7 +23,10 @@
     <div class="pro-step-line"></div>
     <div class="pro-step done"><span class="pro-step-num"><i class="bi bi-check-lg"></i></span>Đặt hàng &amp; Thanh toán</div>
     <div class="pro-step-line"></div>
-    <div class="pro-step done"><span class="pro-step-num"><i class="bi bi-check-lg"></i></span>Thanh toán thành công</div>
+    <div class="pro-step done">
+      <span class="pro-step-num"><i class="bi bi-check-lg"></i></span>
+      <span th:text="${isCodPending ? 'Đặt hàng thành công (COD)' : 'Thanh toán thành công'}">Thanh toán thành công</span>
+    </div>
   </div>
 
   <div class="pro-card mx-auto p-4 p-md-5 anim-pop-in position-relative overflow-hidden" style="max-width: 780px;">
@@ -33,11 +36,15 @@
         <circle class="success-check-circle" cx="26" cy="26" r="24"/>
         <path class="success-check-tick" d="M15 27 L23 35 L38 19"/>
       </svg>
-      <span class="badge-soft badge-soft-success mb-2">
-        <i class="bi bi-patch-check-fill"></i> Giao dịch chuyển khoản hoàn tất
+      <span class="badge-soft mb-2" th:classappend="${isCodPending ? 'badge-soft-info' : 'badge-soft-success'}">
+        <i class="bi" th:classappend="${isCodPending ? 'bi-cash-coin' : 'bi-patch-check-fill'}"></i>
+        <span th:text="${isCodPending ? 'Đặt hàng thành công • Thanh toán tiền mặt khi nhận hàng (COD)' : 'Giao dịch chuyển khoản hoàn tất'}"></span>
       </span>
-      <h2 class="fw-bold text-success mb-1">Thanh toán thành công!</h2>
-      <p class="text-muted small mb-0">
+      <h2 class="fw-bold text-success mb-1" th:text="${isCodPending ? 'Đặt hàng thành công!' : 'Thanh toán thành công!'}">Thanh toán thành công!</h2>
+      <p class="text-muted small mb-0" th:if="${isCodPending}">
+        Cảm ơn bạn đã đặt hàng tại Nexora Laptop. Đơn hàng COD của bạn đã được giữ tồn kho và đang chờ cửa hàng xác nhận giao hàng; bạn sẽ thanh toán tiền mặt trực tiếp khi nhận máy.
+      </p>
+      <p class="text-muted small mb-0" th:unless="${isCodPending}">
         Cảm ơn bạn đã mua sắm tại Nexora Laptop. Đơn hàng của bạn đã được xác nhận tự động và sẵn sàng xử lý giao hàng.
       </p>
     </div>
@@ -93,10 +100,11 @@
             <td class="text-end tabular-nums fw-semibold" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
           </tr>
         </tbody>
-        <tfoot style="background: #ECFDF5;">
+        <tfoot th:style="${isCodPending ? 'background: #EFF6FF;' : 'background: #ECFDF5;'}">
           <tr>
-            <th colspan="2" class="text-end py-3 text-success">Tổng tiền đã thanh toán:</th>
-            <th class="text-end py-3 fs-5 text-success tabular-nums fw-bold"
+            <th colspan="2" class="text-end py-3" th:classappend="${isCodPending ? 'text-primary' : 'text-success'}"
+                th:text="${isCodPending ? 'Số tiền thanh toán khi nhận hàng (COD):' : 'Tổng tiền đã thanh toán:'}">Tổng tiền đã thanh toán:</th>
+            <th class="text-end py-3 fs-5 tabular-nums fw-bold" th:classappend="${isCodPending ? 'text-primary' : 'text-success'}"
                 th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></th>
           </tr>
         </tfoot>

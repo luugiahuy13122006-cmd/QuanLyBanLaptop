@@ -29,7 +29,7 @@
     <div class="pro-step-line"></div>
     <div class="pro-step active"><span class="pro-step-num">2</span>Đặt hàng &amp; Thanh toán</div>
     <div class="pro-step-line"></div>
-    <div class="pro-step"><span class="pro-step-num">3</span>Quét QR &amp; Xác nhận CK</div>
+    <div class="pro-step"><span class="pro-step-num">3</span><span id="checkoutStep3Text">Quét QR &amp; Xác nhận CK</span></div>
   </div>
 
   <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
@@ -74,22 +74,38 @@
 
             <div class="mb-3">
               <label class="form-label fw-semibold small">Phương thức thanh toán <span class="text-danger">*</span></label>
-              <input type="hidden" name="paymentMethod" value="BANK_TRANSFER"/>
-              <div class="pro-pay-option selected">
-                <div class="mt-1">
-                  <i class="bi bi-check-circle-fill text-primary fs-5"></i>
-                </div>
-                <div class="flex-grow-1">
-                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
-                    <span class="fw-bold text-dark"><i class="bi bi-qr-code-scan text-primary me-1"></i>Chuyển khoản ngân hàng (VietQR)</span>
-                    <span class="badge-soft badge-soft-info">Áp dụng cho sản phẩm giá trị cao</span>
+              <div class="d-flex flex-column gap-2" id="payMethodGroup">
+                <label class="pro-pay-option" for="pmBankTransfer"
+                       th:classappend="${checkoutForm.paymentMethod == null || checkoutForm.paymentMethod.name() == 'BANK_TRANSFER'} ? 'selected'">
+                  <input class="form-check-input mt-1 flex-shrink-0" type="radio" th:field="*{paymentMethod}"
+                         id="pmBankTransfer" value="BANK_TRANSFER"/>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+                      <span class="fw-bold text-dark"><i class="bi bi-qr-code-scan text-primary me-1"></i>Chuyển khoản ngân hàng (VietQR)</span>
+                      <span class="badge-soft badge-soft-info">Xác nhận tức thì</span>
+                    </div>
+                    <div class="small text-muted">
+                      Quét mã <strong>VietQR</strong> bằng điện thoại và bấm <strong>Xác nhận đã chuyển khoản</strong> ở bước tiếp theo (giữ đơn 30 phút).
+                    </div>
                   </div>
-                  <div class="small text-muted">
-                    Đơn hàng Laptop giá trị cao chỉ áp dụng thanh toán chuyển khoản ngân hàng (không hỗ trợ thu tiền mặt khi nhận hàng).
-                    Mã <strong>VietQR</strong> và nút <strong>Xác nhận đã chuyển khoản</strong> sẽ hiển thị <strong>ngay ở bước tiếp theo</strong>.
+                </label>
+
+                <label class="pro-pay-option" for="pmCash"
+                       th:classappend="${checkoutForm.paymentMethod != null && checkoutForm.paymentMethod.name() == 'CASH'} ? 'selected'">
+                  <input class="form-check-input mt-1 flex-shrink-0" type="radio" th:field="*{paymentMethod}"
+                         id="pmCash" value="CASH"/>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+                      <span class="fw-bold text-dark"><i class="bi bi-cash-coin text-success me-1"></i>Thanh toán tiền mặt khi nhận hàng (COD)</span>
+                      <span class="badge-soft badge-soft-success">Kiểm tra máy khi nhận</span>
+                    </div>
+                    <div class="small text-muted">
+                      Không cần thanh toán trước. Kiểm tra sản phẩm nguyên seal rồi thanh toán tiền mặt trực tiếp cho nhân viên giao hàng.
+                    </div>
                   </div>
-                </div>
+                </label>
               </div>
+              <div class="text-danger small mt-1" th:if="${#fields.hasErrors('paymentMethod')}" th:errors="*{paymentMethod}"></div>
             </div>
 
             <div class="mb-4">
@@ -99,8 +115,9 @@
 
             <div class="d-flex justify-content-between align-items-center pt-2 gap-2 flex-wrap">
               <a th:href="@{/gio-hang}" class="btn btn-outline-secondary px-3"><i class="bi bi-arrow-left me-1"></i>Quay lại giỏ hàng</a>
-              <button type="submit" class="btn btn-pv-primary px-4 py-2">
-                <i class="bi bi-qr-code me-1"></i>ĐẶT HÀNG &amp; THANH TOÁN QR
+              <button type="submit" id="checkoutSubmitBtn" class="btn btn-pv-primary px-4 py-2">
+                <i class="bi bi-qr-code me-1" id="checkoutSubmitIcon"></i>
+                <span id="checkoutSubmitText">ĐẶT HÀNG &amp; QUÉT MÃ QR</span>
               </button>
             </div>
           </form>
@@ -143,5 +160,32 @@
 
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  (function () {
+    var radios = document.querySelectorAll('input[name="paymentMethod"]');
+    var icon = document.getElementById('checkoutSubmitIcon');
+    var txt = document.getElementById('checkoutSubmitText');
+    var step3 = document.getElementById('checkoutStep3Text');
+    function syncPaymentUi() {
+      radios.forEach(function (r) {
+        var card = r.closest('.pro-pay-option');
+        if (card) card.classList.toggle('selected', r.checked);
+        if (r.checked && icon && txt) {
+          if (r.value === 'CASH') {
+            icon.className = 'bi bi-check2-circle me-1';
+            txt.textContent = 'XÁC NHẬN ĐẶT HÀNG (COD)';
+            if (step3) step3.textContent = 'Hoàn tất đặt hàng (COD)';
+          } else {
+            icon.className = 'bi bi-qr-code me-1';
+            txt.textContent = 'ĐẶT HÀNG & QUÉT MÃ QR';
+            if (step3) step3.textContent = 'Quét QR & Xác nhận CK';
+          }
+        }
+      });
+    }
+    radios.forEach(function (r) { r.addEventListener('change', syncPaymentUi); });
+    syncPaymentUi();
+  })();
+</script>
 </body>
 </html>

@@ -558,6 +558,83 @@ class SystemIntegrationTest {
         mockMvc.perform(get("/thong-tin/chinh-sach-bao-hanh")).andExpect(status().isOk());
     }
 
+    @Test
+    @DisplayName("Thanh toán tiền mặt khi nhận hàng (COD): đặt hàng, vòng đời trạng thái và chặn thao tác sai nghiệp vụ")
+    void testCashOnDeliveryBusinessFlowAndGuards() throws Exception {
+        RegisterDTO reg = new RegisterDTO();
+        reg.setUsername("khach_cod_test");
+        reg.setPassword("123456");
+        reg.setConfirmPassword("123456");
+        reg.setFullName("Lê Hoàng Nam");
+        reg.setEmail("codtest@test.com");
+        reg.setPhone("0966554433");
+        reg.setAddress("Quận 5, TP.HCM");
+        Account acc = accountService.registerCustomer(reg);
+        Customer cus = customerRepository.findByAccountId(acc.getId()).orElseThrow();
+        CustomUserDetails principal = new CustomUserDetails(acc, cus.getId());
+
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+        mockMvc.perform(post("/gio-hang/them/" + laptopId).with(user(principal)).with(csrf()).session(session)
+                        .param("quantity", "1"))
+                .andExpect(status().is3xxRedirection());
+
+        mockMvc.perform(get("/dat-hang").with(user(principal)).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"CASH\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"BANK_TRANSFER\"")));
+
+        var res = mockMvc.perform(post("/dat-hang").with(user(principal)).with(csrf()).session(session)
+                        .param("recipientName", "Lê Hoàng Nam")
+                        .param("recipientPhone", "0966554433")
+                        .param("email", "codtest@test.com")
+                        .param("deliveryAddress", "Quận 5, TP.HCM")
+                        .param("paymentMethod", "CASH"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        String redirectUrl = res.getResponse().getRedirectedUrl();
+        assertNotNull(redirectUrl);
+        assertTrue(redirectUrl.endsWith("/thanh-cong"), "Đơn COD phải đi tới trang đặt hàng thành công: " + redirectUrl);
+
+        mockMvc.perform(get(redirectUrl).with(user(principal)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đặt hàng thành công!")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("COD")));
+
+        Order codOrder = orderService.getOrdersByCustomerId(cus.getId()).get(0);
+        Payment codPay = orderService.getPaymentByOrderId(codOrder.getId()).orElseThrow();
+        assertEquals(PaymentMethod.CASH, codPay.getPaymentMethod());
+        assertEquals(PaymentStatus.UNPAID, codPay.getPaymentStatus());
+        assertNull(codOrder.getPaymentExpiresAt());
+
+        // Đơn COD không được mở trang QR hay xác nhận qua QR / yêu cầu hoàn tiền trước thanh toán
+        mockMvc.perform(get("/thanh-toan/" + codOrder.getId()).with(user(principal)))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/thanh-toan/" + codOrder.getId() + "/thanh-cong"));
+
+        String badToken = qrCodeService.createToken(codOrder.getId(), codOrder.getOrderCode(), codPay.getTransactionCode());
+        assertThrows(BusinessException.class, () -> orderService.confirmBankTransferByQrToken(codOrder.getId(), badToken));
+
+        RefundRequestDTO refundDto = new RefundRequestDTO();
+        refundDto.setReason("Thử hoàn tiền COD chưa trả");
+        refundDto.setBankName("MB Bank");
+        refundDto.setAccountNumber("0123456789");
+        refundDto.setAccountHolder("LE HOANG NAM");
+        assertThrows(BusinessException.class, () -> orderService.requestRefund(codOrder.getId(), acc.getId(), refundDto));
+
+        // Kiểm thử chuyển trạng thái hợp lệ & chặn chuyển sai logic
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(codOrder.getId(), OrderStatus.RETURNED));
+        orderService.updateOrderStatus(codOrder.getId(), OrderStatus.CONFIRMED);
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(codOrder.getId(), OrderStatus.PENDING));
+        orderService.updateOrderStatus(codOrder.getId(), OrderStatus.SHIPPING);
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(codOrder.getId(), OrderStatus.CONFIRMED));
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(codOrder.getId(), OrderStatus.CANCELLED));
+
+        orderService.updateOrderStatus(codOrder.getId(), OrderStatus.COMPLETED);
+        Payment finishedPay = orderService.getPaymentByOrderId(codOrder.getId()).orElseThrow();
+        assertEquals(PaymentStatus.PAID, finishedPay.getPaymentStatus());
+    }
+
     private void deleteDirectoryQuietly(Path dir) throws IOException {
         if (dir != null && Files.exists(dir)) {
             try (var stream = Files.walk(dir)) {

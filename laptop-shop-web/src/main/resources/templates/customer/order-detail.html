@@ -103,11 +103,25 @@
           </div>
         </div>
 
+        <div th:if="${payment.paymentMethod.name() == 'CASH' and payment.paymentStatus.name() == 'UNPAID' and !order.status.closed and order.status.name() != 'REFUND_REQUESTED'}"
+             class="p-3 rounded-4 mb-3" style="background: #F0FDF4; border: 1px solid #BBF7D0;">
+          <div class="d-flex align-items-start gap-2 small">
+            <i class="bi bi-cash-coin text-success fs-5"></i>
+            <div>
+              <div class="fw-bold text-success mb-1">Thanh toán tiền mặt khi nhận hàng (COD)</div>
+              <div class="text-muted">
+                Vui lòng chuẩn bị <strong class="text-dark tabular-nums" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
+                để thanh toán trực tiếp cho nhân viên giao hàng sau khi kiểm tra sản phẩm nguyên seal.
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div th:if="${payment.paymentMethod.name() == 'BANK_TRANSFER' and payment.paymentStatus.name() != 'PAID' and order.status.name() == 'PENDING'}"
              class="p-3 rounded-4 mb-3" style="background: #F8FAFC; border: 1px solid #DBEAFE;">
           <div class="row g-3 align-items-center">
             <div class="col-sm-5 text-center">
-              <img th:src="@{https://img.vietqr.io/image/{bin}-{acc}-compact2.png(bin=${shopProperties.payment.bankBin},acc=${shopProperties.payment.accountNumber},amount=${order.totalAmount.intValue()},addInfo=${order.orderCode})}"
+              <img th:src="@{/thanh-toan/{id}/qr.png(id=${order.id})}"
                    alt="Mã QR chuyển khoản" style="max-width: 155px;" class="img-fluid rounded-3 border bg-white p-1 shadow-xs"/>
             </div>
             <div class="col-sm-7 small d-flex flex-column gap-1">

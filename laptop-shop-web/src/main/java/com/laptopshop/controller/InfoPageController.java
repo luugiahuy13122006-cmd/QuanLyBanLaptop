@@ -71,8 +71,8 @@ public class InfoPageController {
                                 "Phân khúc: văn phòng, gaming, đồ họa, mỏng nhẹ, cao cấp, sinh viên, doanh nhân, 2 trong 1, workstation.",
                                 "Mọi sản phẩm đều chính hãng, nguyên seal, có hóa đơn và bảo hành điện tử."),
                         Section.list("Vì sao chọn " + name + "?", null,
-                                "Thanh toán chuyển khoản VietQR an toàn: quét mã QR bằng điện thoại, xác nhận chỉ trong vài giây.",
-                                "Đơn hàng giá trị cao không thu tiền mặt khi giao nhận, hạn chế rủi ro cho cả hai bên.",
+                                "Thanh toán linh hoạt: chuyển khoản VietQR xác nhận tức thì hoặc trả tiền mặt khi nhận hàng (COD).",
+                                "Kiểm tra hàng nguyên seal trước khi thanh toán khi chọn giao hàng thu tiền mặt (COD).",
                                 "Hệ thống giữ tồn kho chính xác ngay cả khi nhiều khách đặt cùng lúc, tránh tình trạng bán quá số lượng.",
                                 "Đội ngũ tư vấn hỗ trợ trong giờ làm việc: " + shop.getWorkingHours() + "."),
                         Section.text("Thông tin liên hệ",
@@ -101,30 +101,34 @@ public class InfoPageController {
                                 "Bước 1 - Tìm sản phẩm: dùng ô tìm kiếm hoặc thanh danh mục (Gaming, Văn phòng, Đồ họa, Mỏng nhẹ...). Có thể lọc theo thương hiệu, khoảng giá và chỉ xem sản phẩm giảm giá.",
                                 "Bước 2 - Thêm vào giỏ hàng: mở trang chi tiết để xem cấu hình, chọn số lượng rồi bấm \"Thêm vào giỏ\" hoặc \"Mua ngay\".",
                                 "Bước 3 - Đăng nhập / Đăng ký: bạn cần có tài khoản để đặt hàng và theo dõi đơn. Đăng ký miễn phí chỉ mất một phút.",
-                                "Bước 4 - Đặt hàng: kiểm tra giỏ hàng, nhập họ tên, số điện thoại, địa chỉ nhận hàng rồi bấm \"Xác nhận đặt hàng\".",
-                                "Bước 5 - Thanh toán: hệ thống hiển thị mã VietQR. Quét mã bằng điện thoại và bấm \"Xác nhận đã chuyển khoản\" (xem mục Hướng dẫn thanh toán).",
+                                "Bước 4 - Đặt hàng & chọn thanh toán: nhập họ tên, SĐT, địa chỉ nhận hàng và chọn Chuyển khoản ngân hàng (VietQR) hoặc Tiền mặt khi nhận hàng (COD).",
+                                "Bước 5 - Thanh toán / Xác nhận đơn: nếu chọn VietQR, quét mã QR trên điện thoại và bấm \"Xác nhận đã chuyển khoản\"; nếu chọn COD, đơn chuyển sang chờ cửa hàng xác nhận và bạn trả tiền mặt khi nhận máy.",
                                 "Bước 6 - Theo dõi đơn hàng: vào \"Đơn hàng của tôi\" để xem trạng thái xử lý và giao hàng.")),
                         Section.text("Lưu ý",
                                 "Số lượng trong giỏ không được vượt quá tồn kho hiện có. Khi nhiều khách cùng đặt một sản phẩm, hệ thống ưu tiên theo thứ tự đặt hàng thành công.")
                 )));
 
-        pages.put("huong-dan-thanh-toan", new InfoPage("huong-dan-thanh-toan", "Hướng dẫn thanh toán VietQR", "bi-qr-code-scan",
-                "Laptop là sản phẩm giá trị cao nên " + name + " chỉ áp dụng hình thức chuyển khoản ngân hàng qua VietQR, không thu tiền mặt khi nhận hàng (COD).",
+        pages.put("huong-dan-thanh-toan", new InfoPage("huong-dan-thanh-toan", "Hướng dẫn thanh toán (VietQR & COD)", "bi-qr-code-scan",
+                name + " hỗ trợ linh hoạt hai hình thức thanh toán chính: Chuyển khoản ngân hàng qua VietQR và Trả tiền mặt khi nhận hàng (COD).",
                 List.of(
-                        Section.of("Quy trình thanh toán", List.of(), List.of(
-                                "Sau khi bấm \"Xác nhận đặt hàng\", màn hình hiển thị mã QR kèm thông tin tài khoản nhận, số tiền và nội dung chuyển khoản (chính là mã đơn hàng).",
-                                "Dùng camera điện thoại hoặc ứng dụng ngân hàng quét mã QR - trang xác nhận thanh toán sẽ mở ngay trên điện thoại của bạn.",
-                                "Thực hiện chuyển khoản đúng số tiền và đúng nội dung theo hướng dẫn.",
-                                "Bấm \"Xác nhận đã chuyển khoản\" trên điện thoại. Màn hình máy tính sẽ tự động chuyển sang \"Thanh toán thành công\" ngay lập tức.")),
-                        Section.list("Thông tin tài khoản nhận tiền", null,
+                        Section.of("Cách 1: Chuyển khoản ngân hàng (VietQR)", List.of(), List.of(
+                                "Sau khi bấm \"Đặt hàng & Quét mã QR\", màn hình hiển thị mã QR kèm số tài khoản, số tiền và nội dung chuyển khoản (mã đơn hàng).",
+                                "Dùng camera điện thoại quét mã QR để mở trang xác nhận thanh toán.",
+                                "Thực hiện chuyển khoản đúng số tiền & nội dung rồi bấm \"Xác nhận đã chuyển khoản\" trên điện thoại.",
+                                "Màn hình máy tính tự động chuyển sang \"Thanh toán thành công\" ngay lập tức.")),
+                        Section.of("Cách 2: Tiền mặt khi nhận hàng (COD)", List.of(), List.of(
+                                "Chọn phương thức \"Thanh toán tiền mặt khi nhận hàng (COD)\" ở bước đặt hàng.",
+                                "Đơn hàng được giữ tồn kho ngay và chuyển sang trạng thái Chờ xác nhận.",
+                                "Khi nhân viên giao hàng giao máy tới địa chỉ của bạn, bạn kiểm tra tình trạng niêm phong bên ngoài rồi thanh toán tiền mặt trực tiếp cho nhân viên giao hàng.",
+                                "Sau khi giao & thu tiền thành công, trạng thái đơn chuyển sang Hoàn thành và thanh toán được ghi nhận là Thành công.")),
+                        Section.list("Thông tin tài khoản nhận tiền (khi chọn VietQR)", null,
                                 "Ngân hàng: " + pay.getBankName(),
                                 "Số tài khoản: " + pay.getAccountNumber(),
                                 "Chủ tài khoản: " + pay.getAccountName(),
                                 "Nội dung chuyển khoản: mã đơn hàng hiển thị trên màn hình thanh toán."),
-                        Section.list("Thời hạn thanh toán", "Để đảm bảo công bằng cho các khách hàng khác:",
-                                "Đơn hàng được giữ tồn kho trong " + expire + " phút kể từ lúc đặt.",
-                                "Quá thời hạn mà chưa thanh toán, đơn tự động hủy và sản phẩm được trả lại kho.",
-                                "Bạn có thể đặt lại đơn mới bất cứ lúc nào.")
+                        Section.list("Thời hạn thanh toán đối với đơn VietQR", "Để đảm bảo công bằng cho các khách hàng khác:",
+                                "Đơn chuyển khoản được giữ tồn kho trong " + expire + " phút kể từ lúc đặt nếu chưa thanh toán.",
+                                "Quá thời hạn mà chưa chuyển khoản, đơn tự động hủy và sản phẩm được trả lại kho. (Đơn COD không bị giới hạn 30 phút này).")
                 )));
 
         pages.put("chinh-sach-bao-hanh", new InfoPage("chinh-sach-bao-hanh", "Chính sách bảo hành", "bi-shield-check",
@@ -165,13 +169,13 @@ public class InfoPageController {
                         Section.list("Thời gian giao hàng", null,
                                 "Nội thành TP. Hồ Chí Minh và Hà Nội: 1 - 2 ngày làm việc.",
                                 "Các tỉnh thành khác: 2 - 5 ngày làm việc tùy khu vực.",
-                                "Đơn hàng chỉ được xử lý giao sau khi thanh toán thành công."),
+                                "Đơn chuyển khoản (VietQR) được xử lý giao ngay sau khi xác nhận thanh toán; đơn COD được xác nhận và giao trực tiếp tới địa chỉ nhận hàng."),
                         Section.list("Kiểm tra hàng khi nhận", null,
                                 "Vui lòng kiểm tra tình trạng bên ngoài của kiện hàng, mở hộp và đối chiếu sản phẩm trước khi ký nhận.",
                                 "Nên quay video quá trình mở hộp để làm bằng chứng nếu có sai sót.",
                                 "Nếu phát hiện hư hỏng/sai sản phẩm, từ chối nhận và liên hệ hotline " + shop.getPhone() + " ngay."),
-                        Section.text("Phí vận chuyển",
-                                "Miễn phí hoàn toàn cho khách hàng trên toàn quốc, không phụ thu. Đơn hàng không thu tiền mặt khi giao (không COD).")
+                        Section.text("Phí vận chuyển & thanh toán khi nhận",
+                                "Miễn phí giao hàng toàn quốc, không phụ thu. Nếu chọn COD, khách hàng thanh toán đúng giá trị đơn hàng bằng tiền mặt khi nhận sản phẩm.")
                 )));
 
         pages.put("chinh-sach-bao-mat", new InfoPage("chinh-sach-bao-mat", "Chính sách bảo mật", "bi-lock",

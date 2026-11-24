@@ -86,7 +86,9 @@ public class OrderController {
     public String viewOrderDetail(@PathVariable Integer id, Model model) {
         Order order = orderService.getOrderById(id);
         model.addAttribute("order", order);
-        model.addAttribute("statuses", OrderStatus.values());
+        model.addAttribute("statuses", java.util.Arrays.stream(OrderStatus.values())
+                .filter(s -> s != OrderStatus.REFUND_REQUESTED && s != OrderStatus.REFUNDED)
+                .toList());
         model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
         model.addAttribute("histories", orderService.getOrderStatusHistory(id));
         return "admin/orders/detail";
@@ -96,7 +98,7 @@ public class OrderController {
     public String showCreateOrderForm(Model model) {
         model.addAttribute("customers", customerService.getAllCustomers());
         model.addAttribute("laptops", laptopRepository.findAllActiveWithDetails());
-        model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+        model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER, PaymentMethod.CASH));
         return "admin/orders/create";
     }
 
@@ -120,7 +122,7 @@ public class OrderController {
             req.setRecipientPhone(recipientPhone);
             req.setDeliveryAddress(deliveryAddress);
             req.setDiscount(discount);
-            req.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+            req.setPaymentMethod(paymentMethod != null ? paymentMethod : PaymentMethod.BANK_TRANSFER);
             req.setNote(note);
             req.setItems(List.of(new OrderItemRequest(laptopId, quantity)));
 

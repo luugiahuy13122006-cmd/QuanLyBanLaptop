@@ -184,7 +184,7 @@ public class StoreController {
         model.addAttribute("items", items);
         model.addAttribute("subtotal", subtotal);
         model.addAttribute("totalAmount", subtotal);
-        model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+        model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER, PaymentMethod.CASH));
         model.addAttribute("shopProperties", shopProperties);
         return "store/checkout";
     }
@@ -206,7 +206,7 @@ public class StoreController {
             model.addAttribute("items", items);
             model.addAttribute("subtotal", subtotal);
             model.addAttribute("totalAmount", subtotal);
-            model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+            model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER, PaymentMethod.CASH));
             model.addAttribute("shopProperties", shopProperties);
             return "store/checkout";
         }
@@ -219,13 +219,15 @@ public class StoreController {
                     checkoutForm.getRecipientPhone(),
                     checkoutForm.getDeliveryAddress()
             );
+            PaymentMethod method = checkoutForm.getPaymentMethod() != null
+                    ? checkoutForm.getPaymentMethod()
+                    : PaymentMethod.BANK_TRANSFER;
             PlaceOrderRequest req = new PlaceOrderRequest();
             req.setCustomerId(customer.getId());
             req.setRecipientName(checkoutForm.getRecipientName());
             req.setRecipientPhone(checkoutForm.getRecipientPhone());
             req.setDeliveryAddress(checkoutForm.getDeliveryAddress());
-            // Sản phẩm laptop giá trị cao chỉ áp dụng chuyển khoản ngân hàng
-            req.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+            req.setPaymentMethod(method);
             req.setDiscount(BigDecimal.ZERO);
             req.setNote(checkoutForm.getNote());
             req.setItems(items.stream()
@@ -234,13 +236,16 @@ public class StoreController {
 
             Order createdOrder = orderService.placeOrder(req, accountId);
             session.removeAttribute("cart");
+            if (method == PaymentMethod.CASH) {
+                return "redirect:/thanh-toan/" + createdOrder.getId() + "/thanh-cong";
+            }
             return "redirect:/thanh-toan/" + createdOrder.getId();
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("items", items);
             model.addAttribute("subtotal", subtotal);
             model.addAttribute("totalAmount", subtotal);
-            model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+            model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER, PaymentMethod.CASH));
             model.addAttribute("shopProperties", shopProperties);
             return "store/checkout";
         }
@@ -254,8 +259,8 @@ public class StoreController {
         if (currentUser == null) return "redirect:/login";
         Order order = orderService.getOrderForCustomer(id, currentUser.getAccountId());
         var payment = orderService.getPaymentByOrderId(id).orElse(null);
-        if (payment != null && payment.getPaymentStatus() != null
-                && "PAID".equals(payment.getPaymentStatus().name())) {
+        if (payment != null && (payment.getPaymentMethod() == PaymentMethod.CASH
+                || (payment.getPaymentStatus() != null && "PAID".equals(payment.getPaymentStatus().name())))) {
             return "redirect:/thanh-toan/" + id + "/thanh-cong";
         }
         String token = payment != null
