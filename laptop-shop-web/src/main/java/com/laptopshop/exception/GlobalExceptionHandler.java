@@ -4,6 +4,7 @@ package com.laptopshop.exception;
 // Xử lý ngoại lệ tập trung (@ControllerAdvice) và cung cấp thuộc tính dùng chung (currentUri, cartCount) cho mọi giao diện.
 
 import com.laptopshop.config.CustomUserDetails;
+import com.laptopshop.config.ShopProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -24,6 +25,18 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private final ShopProperties shopProperties;
+
+    public GlobalExceptionHandler(ShopProperties shopProperties) {
+        this.shopProperties = shopProperties;
+    }
+
+    /** Thông tin cửa hàng (tên, hotline, địa chỉ, email, giờ làm việc) dùng chung cho header, footer, báo cáo. */
+    @ModelAttribute("shop")
+    public ShopProperties.ShopInfo shop() {
+        return shopProperties.getShop();
+    }
 
     @ModelAttribute("currentUri")
     public String currentUri(HttpServletRequest request) {

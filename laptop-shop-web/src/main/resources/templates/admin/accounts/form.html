@@ -8,6 +8,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <link th:href="@{/css/style.css}" rel="stylesheet"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
+  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
+  <script>document.documentElement.classList.add('nx-js')</script>
+  <script th:src="@{/js/nexora.js}" defer></script>
 </head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
@@ -69,11 +73,15 @@
                 <div class="col-md-6">
                   <label class="form-label fw-semibold small">Vai trò <span class="text-danger">*</span></label>
                   <select th:field="*{roleId}" class="form-select"
+                          th:disabled="${lockRole}"
                           th:classappend="${#fields.hasErrors('roleId')} ? 'is-invalid'">
                     <option value="">-- Chọn vai trò --</option>
                     <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.roleName + ' (' + r.description + ')'}"></option>
                   </select>
+                  <input type="hidden" name="roleId" th:if="${lockRole}" th:value="${accountDTO.roleId}"/>
                   <div class="invalid-feedback" th:errors="*{roleId}"></div>
+                  <div class="form-text" th:if="${lockRole}">Tài khoản khách hàng không thể đổi vai trò.</div>
+                  <div class="form-text" th:unless="${lockRole}">Chỉ cấp vai trò nhân viên (STAFF) hoặc quản trị (ADMIN). Khách hàng tự đăng ký trên website.</div>
                 </div>
                 <div class="col-md-6 d-flex align-items-end">
                   <div class="form-check form-switch mb-2">

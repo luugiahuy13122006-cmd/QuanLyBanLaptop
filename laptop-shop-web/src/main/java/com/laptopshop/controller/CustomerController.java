@@ -49,10 +49,13 @@ public class CustomerController {
         return "admin/customers/list";
     }
 
+    // Quản trị / nhân viên KHÔNG được thêm khách hàng thủ công: khách hàng chỉ phát sinh khi tự đăng ký tài khoản
+    // hoặc đặt hàng trên website (đảm bảo mỗi khách hàng gắn với đúng một tài khoản đăng nhập).
     @GetMapping("/create")
-    public String showCreateForm(Model model) {
-        model.addAttribute("customerDTO", new CustomerDTO());
-        return "admin/customers/form";
+    public String createNotAllowed(RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage",
+                "Không thể thêm khách hàng trong khu vực quản trị. Khách hàng tự đăng ký tài khoản trên website; bạn chỉ có thể xem, cập nhật thông tin liên hệ hoặc xóa khách hàng chưa có đơn.");
+        return "redirect:/admin/customers";
     }
 
     @GetMapping("/edit/{id}")
@@ -77,6 +80,11 @@ public class CustomerController {
             Model model,
             RedirectAttributes redirectAttributes) {
 
+        if (customerDTO.getId() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Không thể thêm khách hàng mới trong khu vực quản trị. Khách hàng tự đăng ký tài khoản trên website.");
+            return "redirect:/admin/customers";
+        }
         if (bindingResult.hasErrors()) {
             return "admin/customers/form";
         }

@@ -5,8 +5,14 @@ import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.service.AccountService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -68,7 +74,7 @@ public class AuthController {
         if (currentUser == null) return "redirect:/login";
         Account account = accountService.findByUsername(currentUser.getUsername());
         model.addAttribute("account", account);
-        model.addAttribute("profileDTO", new ProfileUpdateDTO());
+        model.addAttribute("profileDTO", accountService.getProfileForm(currentUser.getUsername()));
         return "auth/profile";
     }
 
@@ -77,7 +83,9 @@ public class AuthController {
                                 @Valid @ModelAttribute("profileDTO") ProfileUpdateDTO profileDTO,
                                 BindingResult bindingResult,
                                 Model model,
-                                RedirectAttributes ra) {
+                                RedirectAttributes ra,
+                                HttpServletRequest request,
+                                HttpServletResponse response) {
         if (currentUser == null) return "redirect:/login";
         if (bindingResult.hasErrors()) {
             Account account = accountService.findByUsername(currentUser.getUsername());
@@ -85,12 +93,31 @@ public class AuthController {
             return "auth/profile";
         }
         try {
-            accountService.updateProfile(currentUser.getUsername(), profileDTO);
+            Account updated = accountService.updateProfile(currentUser.getUsername(), profileDTO);
+            refreshPrincipal(updated, currentUser.getCustomerId(), request, response);
             ra.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
+            return "redirect:/tai-khoan";
         } catch (RuntimeException ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
+            // Giữ nguyên dữ liệu người dùng vừa nhập và hiển thị lỗi ngay trên form (không redirect làm mất dữ liệu)
+            profileDTO.setCurrentPassword(null);
+            profileDTO.setNewPassword(null);
+            profileDTO.setConfirmNewPassword(null);
+            model.addAttribute("account", accountService.findByUsername(currentUser.getUsername()));
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/profile";
         }
-        return "redirect:/tai-khoan";
+    }
+
+    /** Làm mới thông tin người dùng đang đăng nhập (họ tên trên header...) ngay sau khi cập nhật hồ sơ, không cần đăng nhập lại. */
+    private void refreshPrincipal(Account account, Integer customerId,
+                                  HttpServletRequest request, HttpServletResponse response) {
+        CustomUserDetails fresh = new CustomUserDetails(account, customerId);
+        UsernamePasswordAuthenticationToken token =
+                UsernamePasswordAuthenticationToken.authenticated(fresh, null, fresh.getAuthorities());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(token);
+        SecurityContextHolder.setContext(context);
+        new HttpSessionSecurityContextRepository().saveContext(context, request, response);
     }
 
     @GetMapping("/403")

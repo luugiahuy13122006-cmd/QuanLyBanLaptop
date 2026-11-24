@@ -2,10 +2,12 @@ package com.laptopshop.controller;
 
 // Thành viên phụ trách: TV5 - Vũ Gia Bảo
 // Quản lý tài khoản & phân quyền người dùng (chỉ dành cho vai trò ADMIN).
+// Nghiệp vụ: quản trị chỉ cấp tài khoản nhân viên (STAFF) / quản trị (ADMIN). Tài khoản khách hàng (CUSTOMER) do khách tự đăng ký.
 
 import com.laptopshop.config.CustomUserDetails;
 import com.laptopshop.dto.AccountDTO;
 import com.laptopshop.entity.Account;
+import com.laptopshop.entity.Role;
 import com.laptopshop.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/admin/accounts")
 public class AccountController {
@@ -26,6 +30,28 @@ public class AccountController {
 
     public AccountController(AccountService accountService) {
         this.accountService = accountService;
+    }
+
+    /** Vai trò được phép cấp trong khu vực quản trị: chỉ ADMIN / STAFF. */
+    private List<Role> staffRoles() {
+        return accountService.getAllRoles().stream()
+                .filter(r -> !"CUSTOMER".equalsIgnoreCase(r.getRoleName()))
+                .toList();
+    }
+
+    /** Chuẩn bị dữ liệu dùng chung cho form thêm/sửa tài khoản (danh sách vai trò, khóa vai trò của khách hàng). */
+    private void prepareForm(Model model, boolean isEdit, Integer accountId) {
+        boolean lockRole = false;
+        if (isEdit && accountId != null) {
+            try {
+                lockRole = "CUSTOMER".equalsIgnoreCase(accountService.getAccountById(accountId).getRole().getRoleName());
+            } catch (RuntimeException ignored) {
+                // tài khoản không tồn tại: thao tác lưu sẽ báo lỗi phù hợp
+            }
+        }
+        model.addAttribute("roles", lockRole ? accountService.getAllRoles() : staffRoles());
+        model.addAttribute("lockRole", lockRole);
+        model.addAttribute("isEdit", isEdit);
     }
 
     @GetMapping
@@ -57,8 +83,7 @@ public class AccountController {
     @GetMapping("/add")
     public String addForm(Model model) {
         model.addAttribute("accountDTO", new AccountDTO());
-        model.addAttribute("roles", accountService.getAllRoles());
-        model.addAttribute("isEdit", false);
+        prepareForm(model, false, null);
         return "admin/accounts/form";
     }
 
@@ -66,8 +91,7 @@ public class AccountController {
     public String createAccount(@Valid @ModelAttribute("accountDTO") AccountDTO accountDTO,
                                 BindingResult br, Model model, RedirectAttributes ra) {
         if (br.hasErrors()) {
-            model.addAttribute("roles", accountService.getAllRoles());
-            model.addAttribute("isEdit", false);
+            prepareForm(model, false, null);
             return "admin/accounts/form";
         }
         try {
@@ -76,8 +100,7 @@ public class AccountController {
             return "redirect:/admin/accounts";
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
-            model.addAttribute("roles", accountService.getAllRoles());
-            model.addAttribute("isEdit", false);
+            prepareForm(model, false, null);
             return "admin/accounts/form";
         }
     }
@@ -95,8 +118,7 @@ public class AccountController {
             dto.setRoleId(a.getRole().getId());
             dto.setIsActive(a.getIsActive());
             model.addAttribute("accountDTO", dto);
-            model.addAttribute("roles", accountService.getAllRoles());
-            model.addAttribute("isEdit", true);
+            prepareForm(model, true, id);
             return "admin/accounts/form";
         } catch (RuntimeException ex) {
             ra.addFlashAttribute("errorMessage", ex.getMessage());
@@ -109,8 +131,7 @@ public class AccountController {
                                 @Valid @ModelAttribute("accountDTO") AccountDTO accountDTO,
                                 BindingResult br, Model model, RedirectAttributes ra) {
         if (br.hasErrors()) {
-            model.addAttribute("roles", accountService.getAllRoles());
-            model.addAttribute("isEdit", true);
+            prepareForm(model, true, id);
             return "admin/accounts/form";
         }
         try {
@@ -119,8 +140,7 @@ public class AccountController {
             return "redirect:/admin/accounts";
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
-            model.addAttribute("roles", accountService.getAllRoles());
-            model.addAttribute("isEdit", true);
+            prepareForm(model, true, id);
             return "admin/accounts/form";
         }
     }

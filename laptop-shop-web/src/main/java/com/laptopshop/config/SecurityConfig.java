@@ -96,7 +96,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/", "/san-pham/**", "/tim-kiem",
+                    "/", "/san-pham/**", "/tim-kiem", "/thong-tin/**",
                     "/qr-pay/**",
                     "/login", "/register", "/403", "/error", "/error/**",
                     "/css/**", "/images/**", "/js/**"

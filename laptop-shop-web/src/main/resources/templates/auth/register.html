@@ -4,10 +4,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Đăng ký tài khoản - LaptopShop</title>
+  <title>Đăng ký tài khoản - Nexora Laptop</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <link th:href="@{/css/style.css}" rel="stylesheet"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
+  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
+  <script>document.documentElement.classList.add('nx-js')</script>
+  <script th:src="@{/js/nexora.js}" defer></script>
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
@@ -18,7 +22,7 @@
       <div class="col-md-8 col-lg-6">
         <div class="pro-auth-card">
           <div class="px-4 pt-4 pb-3 text-center border-bottom" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);">
-            <span class="pro-brand-mark mx-auto mb-2" style="width: 46px; height: 46px; font-size: 1.35rem;"><i class="bi bi-person-plus"></i></span>
+            <div class="d-flex justify-content-center mb-2"><span th:replace="~{fragments/brand :: mark(54)}"></span></div>
             <h4 class="fw-bold text-white mb-1">Đăng ký tài khoản</h4>
             <p class="small mb-0" style="color: #CBD5E1;">Tạo tài khoản Khách hàng để theo dõi đơn hàng &amp; thanh toán nhanh</p>
           </div>

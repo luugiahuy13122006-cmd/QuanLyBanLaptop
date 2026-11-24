@@ -4,10 +4,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Thông tin Khách hàng - QL Laptop</title>
+  <title>Thông tin Khách hàng - Nexora Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <link th:href="@{/css/style.css}" rel="stylesheet"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
+  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
+  <script>document.documentElement.classList.add('nx-js')</script>
+  <script th:src="@{/js/nexora.js}" defer></script>
 </head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
@@ -17,7 +21,7 @@
     <main class="col-lg-10 p-0">
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-          <h4 class="fw-bold mb-0" th:text="${customerDTO.customerId == null ? 'Thêm Khách Hàng Mới' : 'Cập Nhật Khách Hàng #' + customerDTO.customerId}"></h4>
+          <h4 class="fw-bold mb-0" th:text="'Cập nhật Khách hàng #' + ${customerDTO.customerId}"></h4>
           <div class="small text-muted">Cập nhật hồ sơ thông tin liên hệ và địa chỉ giao hàng</div>
         </div>
         <a th:href="@{/admin/customers}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
@@ -60,8 +64,11 @@
               </div>
 
               <div class="mb-4">
-                <label class="form-label fw-semibold small">Mã tài khoản liên kết (AccountID - Tùy chọn)</label>
-                <input type="number" th:field="*{accountId}" class="form-control" placeholder="Để trống nếu là khách mua lẻ"/>
+                <label class="form-label fw-semibold small">Tài khoản đăng nhập liên kết</label>
+                <input type="hidden" th:field="*{accountId}"/>
+                <input type="text" class="form-control bg-light" readonly disabled
+                       th:value="${customerDTO.accountId != null ? 'Tài khoản #' + customerDTO.accountId : 'Khách lẻ (không có tài khoản)'}"/>
+                <div class="form-text">Liên kết tài khoản được tạo tự động khi khách đăng ký, không thể chỉnh sửa thủ công.</div>
               </div>
 
               <div class="d-flex gap-2">

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<!-- Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang -->
+<!-- Báo cáo doanh thu chuẩn A4: tên cửa hàng, người xuất, ngày xuất, mã báo cáo, bảng số liệu và khối chữ ký. In trực tiếp hoặc tải PDF. -->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="'Báo cáo doanh thu năm ' + ${year} + ' - ' + ${shop.name}">Báo cáo doanh thu</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <style>
+    :root { --ink: #0F172A; --muted: #475569; --line: #CBD5E1; --brand: #1D4ED8; --soft: #F1F5F9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #E2E8F0; color: var(--ink); font-family: 'Times New Roman', 'Noto Serif', Georgia, serif; font-size: 13px; line-height: 1.45; }
+    .toolbar {
+      position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+      padding: 12px 22px; background: #0F172A; color: #fff; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; box-shadow: 0 6px 18px rgba(15,23,42,.3);
+    }
+    .toolbar .title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+    .toolbar .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .toolbar select { padding: 8px 10px; border-radius: 9px; border: 1px solid #334155; background: #1E293B; color: #fff; font-size: 13px; }
+    .tbtn {
+      display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border: 0; border-radius: 10px; cursor: pointer;
+      font: 600 13px 'Inter', 'Segoe UI', Arial, sans-serif; color: #fff; text-decoration: none; transition: transform .15s, box-shadow .2s, background .2s;
+    }
+    .tbtn:hover { transform: translateY(-2px); }
+    .tbtn:disabled { opacity: .65; cursor: wait; transform: none; }
+    .tbtn-print { background: linear-gradient(135deg, #2563EB, #4F46E5); box-shadow: 0 8px 18px -6px rgba(37,99,235,.7); }
+    .tbtn-pdf { background: linear-gradient(135deg, #DC2626, #EA580C); box-shadow: 0 8px 18px -6px rgba(220,38,38,.6); }
+    .tbtn-csv { background: #059669; }
+    .tbtn-back { background: #334155; }
+
+    .sheet {
+      width: 194mm; margin: 22px auto 40px; padding: 12mm 11mm 10mm; background: #fff; box-shadow: 0 18px 50px -12px rgba(15,23,42,.35);
+      position: relative; overflow: hidden;
+      animation: sheetIn .6s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes sheetIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+    .sheet::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #2563EB, #6D28D9, #06B6D4); }
+    .watermark {
+      position: absolute; top: 48%; left: 50%; width: 120mm; height: 120mm; transform: translate(-50%, -50%) rotate(-14deg);
+      opacity: .045; pointer-events: none; background: url('/images/brand/nexora-mark.svg') center/contain no-repeat; z-index: 0;
+    }
+    .sheet > *:not(.watermark) { position: relative; z-index: 1; }
+
+    .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 52px; height: 52px; }
+    .brand .name { font: 800 21px 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; letter-spacing: .05em; }
+    .brand .name em { font-style: normal; color: #6D28D9; }
+    .brand .sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+    .meta { font-size: 12px; min-width: 62mm; }
+    .meta table { width: 100%; border-collapse: collapse; }
+    .meta td { padding: 2.5px 0; vertical-align: top; }
+    .meta td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
+    .meta td:last-child { font-weight: 700; text-align: right; }
+
+    .doc-title { text-align: center; margin: 14px 0 4px; }
+    .doc-title h1 { margin: 0; font-size: 20px; letter-spacing: .03em; text-transform: uppercase; }
+    .doc-title .period { color: var(--muted); font-style: italic; margin-top: 3px; }
+
+    h2 { font: 700 14px 'Inter', 'Segoe UI', Arial, sans-serif; margin: 16px 0 7px; padding: 5px 10px; background: var(--soft); border-left: 4px solid var(--brand); text-transform: uppercase; letter-spacing: .02em; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .kpi { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+    .kpi .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .kpi .v { font: 800 16px 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .kpi .s { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+    .pos { color: #047857; } .neg { color: #B91C1C; }
+
+    table.data { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { border: 1px solid var(--line); padding: 4.5px 7px; }
+    table.data thead th { background: #E2E8F0; font: 700 11.5px 'Inter', 'Segoe UI', Arial, sans-serif; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
+    table.data td.num { text-align: right; } table.data td.ctr { text-align: center; }
+    table.data tfoot td { font-weight: 700; background: var(--soft); }
+    table.data tr { page-break-inside: avoid; }
+    .bar { height: 9px; border-radius: 5px; background: linear-gradient(90deg, #2563EB, #06B6D4); min-width: 1px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .note { font-size: 11.5px; color: var(--muted); margin-top: 10px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 6px; }
+    .note ul { margin: 4px 0 0 18px; padding: 0; }
+
+    .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 22px; text-align: center; page-break-inside: avoid; }
+    .sign .role { font-weight: 700; text-transform: uppercase; font-size: 12px; }
+    .sign .hint { font-size: 11px; color: var(--muted); font-style: italic; }
+    .sign .space { height: 24mm; }
+    .sign .who { font-weight: 700; }
+    .sign-date { text-align: right; font-style: italic; margin-top: 16px; padding-right: 6mm; }
+    .foot { margin-top: 14px; padding-top: 6px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); }
+
+    @page { size: A4; margin: 10mm; }
+    @media print {
+      body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .sheet { width: auto; margin: 0; padding: 0; box-shadow: none; animation: none; }
+      .sheet::before { display: none; }
+    }
+    @media (max-width: 800px) {
+      .sheet { width: auto; margin: 10px; padding: 14px; }
+      .head, .two { grid-template-columns: 1fr; flex-direction: column; }
+      .kpis { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <div class="title"><i class="bi bi-file-earmark-bar-graph"></i>Xuất báo cáo doanh thu</div>
+  <div class="actions">
+    <label for="yearSelect" style="font-size:13px;">Năm:</label>
+    <select id="yearSelect" onchange="window.location.href='?year=' + this.value">
+      <option th:each="y : ${years}" th:value="${y}" th:text="${y}" th:selected="${y == year}">2026</option>
+    </select>
+    <button type="button" class="tbtn tbtn-print" onclick="window.print()"><i class="bi bi-printer"></i>In báo cáo</button>
+    <button type="button" class="tbtn tbtn-pdf" id="btnPdf"><i class="bi bi-file-earmark-pdf"></i>Tải file PDF</button>
+    <a class="tbtn tbtn-csv" th:href="@{/admin/statistics/report.csv(year=${year})}"><i class="bi bi-file-earmark-spreadsheet"></i>Tải Excel (CSV)</a>
+    <a class="tbtn tbtn-back" th:href="@{/admin/statistics(year=${year})}"><i class="bi bi-arrow-left"></i>Quay lại</a>
+  </div>
+</div>
+
+<div class="sheet" id="reportSheet">
+  <div class="watermark"></div>
+
+  <!-- Đầu trang: cửa hàng + thông tin xuất -->
+  <div class="head">
+    <div class="brand">
+      <img th:src="@{/images/brand/nexora-mark.svg}" alt="Logo"/>
+      <div>
+        <div class="name">NEX<em>ORA</em> <span style="font-size:13px;letter-spacing:.12em;color:#475569;">LAPTOP</span></div>
+        <div class="sub" th:text="${shop.address}">Địa chỉ</div>
+        <div class="sub">Hotline: <span th:text="${shop.phone}">0901 234 567</span> · <span th:text="${shop.email}">email</span></div>
+      </div>
+    </div>
+    <div class="meta">
+      <table>
+        <tr><td>Mã báo cáo:</td><td th:text="${reportCode}">BC-DT-2026-0101-0000</td></tr>
+        <tr><td>Người xuất:</td><td th:text="${exporterName}">Nguyễn Văn A</td></tr>
+        <tr><td>Chức vụ:</td><td th:text="${exporterRole}">ADMIN</td></tr>
+        <tr><td>Ngày xuất:</td><td th:text="${#temporals.format(exportedAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 08:00</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="doc-title">
+    <h1 th:text="'Báo cáo doanh thu năm ' + ${year}">Báo cáo doanh thu năm</h1>
+    <div class="period" th:text="'Kỳ báo cáo: 01/01/' + ${year} + ' - 31/12/' + ${year}">Kỳ báo cáo</div>
+  </div>
+
+  <!-- I. Tổng quan -->
+  <h2>I. Tổng quan kết quả kinh doanh</h2>
+  <div class="kpis keep">
+    <div class="kpi"><div class="l">Doanh thu</div>
+      <div class="v" th:text="${#numbers.formatDecimal(yearRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+      <div class="s">Đơn đã thanh toán / hoàn tất</div></div>
+    <div class="kpi"><div class="l">Số đơn ghi nhận</div>
+      <div class="v" th:text="${totalOrders}">0</div>
+      <div class="s" th:text="'Trung bình ' + ${#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT')} + ' ₫/đơn'">TB</div></div>
+    <div class="kpi"><div class="l">Chi phí nhập kho</div>
+      <div class="v" th:text="${#numbers.formatDecimal(yearImportCost, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+      <div class="s" th:text="${totalReceipts} + ' phiếu nhập đã duyệt'">phiếu</div></div>
+    <div class="kpi"><div class="l">Chênh lệch thu - chi nhập</div>
+      <div class="v" th:classappend="${yearBalance.signum() >= 0} ? 'pos' : 'neg'"
+           th:text="${#numbers.formatDecimal(yearBalance, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+      <div class="s">Doanh thu trừ chi phí nhập kho</div></div>
+  </div>
+
+  <!-- II. Theo tháng -->
+  <h2>II. Doanh thu và chi phí nhập kho theo tháng</h2>
+  <table class="data keep">
+    <thead>
+      <tr><th style="width:11%">Tháng</th><th style="width:9%">Số đơn</th><th style="width:20%">Doanh thu (₫)</th>
+          <th style="width:10%">Phiếu nhập</th><th style="width:20%">Chi phí nhập (₫)</th><th style="width:20%">Chênh lệch (₫)</th><th>Tỷ trọng</th></tr>
+    </thead>
+    <tbody>
+      <tr th:each="m : ${monthRows}">
+        <td class="ctr" th:text="'Tháng ' + ${m.month}">Tháng 1</td>
+        <td class="ctr" th:text="${m.orders}">0</td>
+        <td class="num" th:text="${#numbers.formatDecimal(m.revenue, 0, 'COMMA', 0, 'POINT')}">0</td>
+        <td class="ctr" th:text="${m.receipts}">0</td>
+        <td class="num" th:text="${#numbers.formatDecimal(m.importCost, 0, 'COMMA', 0, 'POINT')}">0</td>
+        <td class="num" th:classappend="${m.balance.signum() < 0} ? 'neg'" th:text="${#numbers.formatDecimal(m.balance, 0, 'COMMA', 0, 'POINT')}">0</td>
+        <td><div class="bar" th:style="'width:' + ${m.revenuePct} + '%'"></div></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="ctr">Tổng</td>
+        <td class="ctr" th:text="${totalOrders}">0</td>
+        <td class="num" th:text="${#numbers.formatDecimal(yearRevenue, 0, 'COMMA', 0, 'POINT')}">0</td>
+        <td class="ctr" th:text="${totalReceipts}">0</td>
+        <td class="num" th:text="${#numbers.formatDecimal(yearImportCost, 0, 'COMMA', 0, 'POINT')}">0</td>
+        <td class="num" th:classappend="${yearBalance.signum() < 0} ? 'neg'" th:text="${#numbers.formatDecimal(yearBalance, 0, 'COMMA', 0, 'POINT')}">0</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- III + IV -->
+  <div class="two">
+    <div class="keep">
+      <h2>III. Đơn hàng theo trạng thái</h2>
+      <table class="data">
+        <thead><tr><th>Trạng thái</th><th style="width:28%">Số đơn</th></tr></thead>
+        <tbody>
+          <tr th:each="s : ${statusCounts}">
+            <td th:text="${s.status.displayName}">Trạng thái</td>
+            <td class="ctr" th:text="${s.count}">0</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(statusCounts)}"><td colspan="2" class="ctr">Chưa có dữ liệu</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="keep">
+      <h2>IV. Sản phẩm sắp hết hàng (≤ 5)</h2>
+      <table class="data">
+        <thead><tr><th>Sản phẩm</th><th style="width:22%">Tồn kho</th></tr></thead>
+        <tbody>
+          <tr th:each="l : ${lowStockLaptops}">
+            <td th:text="${l.sku + ' - ' + l.name}">SKU - Tên</td>
+            <td class="ctr" th:text="${l.stockQuantity}">0</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(lowStockLaptops)}"><td colspan="2" class="ctr">Tồn kho ổn định</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- V -->
+  <h2>V. Top 5 laptop bán chạy nhất</h2>
+  <table class="data keep">
+    <thead><tr><th style="width:6%">STT</th><th style="width:16%">Mã SKU</th><th>Tên sản phẩm</th><th style="width:12%">SL bán</th><th style="width:22%">Doanh thu (₫)</th></tr></thead>
+    <tbody>
+      <tr th:each="t, st : ${topSellingLaptops}">
+        <td class="ctr" th:text="${st.count}">1</td>
+        <td th:text="${t.sku}">SKU</td>
+        <td th:text="${t.laptopName}">Tên</td>
+        <td class="ctr" th:text="${t.totalQuantitySold}">0</td>
+        <td class="num" th:text="${#numbers.formatDecimal(t.totalRevenue, 0, 'COMMA', 0, 'POINT')}">0</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(topSellingLaptops)}"><td colspan="5" class="ctr">Chưa có dữ liệu bán hàng</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note keep">
+    <strong>Ghi chú:</strong>
+    <ul>
+      <li>Doanh thu chỉ tính các đơn hàng đã thanh toán / hoàn tất; đơn đã hủy hoặc hoàn tiền không được ghi nhận.</li>
+      <li>Chi phí nhập kho chỉ tính các phiếu nhập đã được quản trị viên duyệt.</li>
+      <li>"Chênh lệch thu - chi nhập" = Doanh thu - Chi phí nhập kho trong năm, là chỉ số tham khảo, không phải lợi nhuận kế toán.</li>
+      <li>Số liệu được trích xuất trực tiếp từ hệ thống tại thời điểm xuất báo cáo.</li>
+    </ul>
+  </div>
+
+  <div class="sign-date" th:text="'TP. Hồ Chí Minh, ngày ' + ${#temporals.format(exportedAt, 'dd')} + ' tháng ' + ${#temporals.format(exportedAt, 'MM')} + ' năm ' + ${#temporals.format(exportedAt, 'yyyy')}">TP. Hồ Chí Minh, ngày ... tháng ... năm ...</div>
+  <div class="sign keep">
+    <div>
+      <div class="role">Người lập báo cáo</div>
+      <div class="hint">(Ký, ghi rõ họ tên)</div>
+      <div class="space"></div>
+      <div class="who" th:text="${exporterName}">Người xuất</div>
+    </div>
+    <div>
+      <div class="role">Kế toán / Quản lý kho</div>
+      <div class="hint">(Ký, ghi rõ họ tên)</div>
+      <div class="space"></div>
+      <div class="who">&nbsp;</div>
+    </div>
+    <div>
+      <div class="role">Chủ cửa hàng / Giám đốc</div>
+      <div class="hint">(Ký, ghi rõ họ tên, đóng dấu)</div>
+      <div class="space"></div>
+      <div class="who">&nbsp;</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span th:text="${shop.name} + ' · ' + ${reportCode}">Nexora Laptop</span>
+    <span th:text="'In lúc ' + ${#temporals.format(exportedAt, 'HH:mm dd/MM/yyyy')} + ' · Báo cáo được xuất tự động từ hệ thống'">footer</span>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  (function () {
+    var btn = document.getElementById('btnPdf');
+    var reportYear = /*[[${year}]]*/ 2026;
+    var reportCode = /*[[${reportCode}]]*/ 'BC';
+    var fileName = 'BaoCao_DoanhThu_' + reportYear + '_' + reportCode + '.pdf';
+    btn.addEventListener('click', function () {
+      var el = document.getElementById('reportSheet');
+      if (!window.html2pdf) { window.print(); return; }
+      var label = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split"></i>Đang tạo PDF...';
+      function done() { btn.disabled = false; btn.innerHTML = label; }
+      window.html2pdf().set({
+        margin: [6, 6, 6, 6],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.keep', '.sign'] }
+      }).from(el).save().then(done).catch(function () { done(); window.print(); });
+    });
+  })();
+</script>
+</body>
+</html>

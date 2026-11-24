@@ -4,6 +4,7 @@ package com.laptopshop;
 // Kiểm thử tổng thể toàn hệ thống: Phân quyền (Spring Security), Tài khoản (BCrypt), Ràng buộc dữ liệu (CRUD),
 // Đa luồng tồn kho (TV2) và Giao tiếp Socket Server với 3 Client đồng thời (TV2).
 
+import com.laptopshop.config.CustomUserDetails;
 import com.laptopshop.config.WebConfig;
 import com.laptopshop.dto.*;
 import com.laptopshop.entity.*;
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -468,6 +470,92 @@ class SystemIntegrationTest {
         Order refunded = orderService.confirmRefund(order.getId(), adminAcc.getId());
         assertEquals(OrderStatus.REFUNDED, refunded.getStatus());
         assertEquals(14, laptopRepository.findById(laptopId).orElseThrow().getStockQuantity());
+    }
+
+    @Test
+    @DisplayName("Hồ sơ cá nhân đồng bộ Customer và chặn thêm khách hàng/tài khoản CUSTOMER ở quản trị")
+    void testProfileUpdateAndCustomerCreationGuard() throws Exception {
+        RegisterDTO reg = new RegisterDTO();
+        reg.setUsername("khach_profile_test");
+        reg.setPassword("123456");
+        reg.setConfirmPassword("123456");
+        reg.setFullName("Nguyễn Minh Khôi");
+        reg.setEmail("minhkhoi@test.com");
+        reg.setPhone("0977111222");
+        reg.setAddress("Quận 3, TP.HCM");
+        Account acc = accountService.registerCustomer(reg);
+        Customer cus = customerRepository.findByAccountId(acc.getId()).orElseThrow();
+        CustomUserDetails principal = new CustomUserDetails(acc, cus.getId());
+
+        mockMvc.perform(get("/tai-khoan").with(user(principal)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Nguyễn Minh Khôi")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Quận 3, TP.HCM")));
+
+        // Sai mật khẩu hiện tại: giữ dữ liệu trên form + báo lỗi rõ ràng
+        mockMvc.perform(post("/tai-khoan").with(user(principal)).with(csrf())
+                        .param("fullName", "Nguyễn Minh Khôi Mới")
+                        .param("email", "minhkhoi@test.com")
+                        .param("phone", "0977111222")
+                        .param("address", "Quận 10, TP.HCM")
+                        .param("currentPassword", "wrongpass"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("errorMessage"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Quận 10, TP.HCM")));
+
+        // Đúng mật khẩu: cập nhật cả Account lẫn Customer
+        mockMvc.perform(post("/tai-khoan").with(user(principal)).with(csrf())
+                        .param("fullName", "Nguyễn Minh Khôi Updated")
+                        .param("email", "minhkhoi@test.com")
+                        .param("phone", "0977111222")
+                        .param("address", "Quận 7, TP.HCM")
+                        .param("currentPassword", "123456"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/tai-khoan"));
+
+        Customer refreshedCus = customerRepository.findByAccountId(acc.getId()).orElseThrow();
+        assertEquals("Nguyễn Minh Khôi Updated", refreshedCus.getCustomerName());
+        assertEquals("Quận 7, TP.HCM", refreshedCus.getAddress());
+
+        // Chặn tạo tài khoản CUSTOMER trong AccountService
+        Role customerRole = roleRepository.findByRoleNameIgnoreCase("CUSTOMER").orElseThrow();
+        AccountDTO badAcc = new AccountDTO();
+        badAcc.setUsername("admin_create_cus");
+        badAcc.setPassword("123456");
+        badAcc.setFullName("Khách Admin Tạo");
+        badAcc.setRoleId(customerRole.getId());
+        assertThrows(BusinessException.class, () -> accountService.createAccount(badAcc));
+    }
+
+    @Test
+    @DisplayName("Chặn thêm khách hàng trên route quản trị, xuất báo cáo doanh thu & trang thông tin công khai")
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testAdminCustomerGuardReportAndInfoPages() throws Exception {
+        mockMvc.perform(get("/admin/customers/create"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/customers"));
+
+        mockMvc.perform(post("/admin/customers/save").with(csrf())
+                        .param("customerName", "Khách Tạo Lậu")
+                        .param("phone", "0909888777")
+                        .param("address", "TP.HCM"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/customers"));
+
+        mockMvc.perform(get("/admin/statistics/report").param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("NEX")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("BC-DT-2026-")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Người lập báo cáo")));
+
+        mockMvc.perform(get("/admin/statistics/report.csv").param("year", "2026"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("BAO CAO DOANH THU NAM 2026")));
+
+        mockMvc.perform(get("/thong-tin/gioi-thieu")).andExpect(status().isOk());
+        mockMvc.perform(get("/thong-tin/huong-dan-thanh-toan")).andExpect(status().isOk());
+        mockMvc.perform(get("/thong-tin/chinh-sach-bao-hanh")).andExpect(status().isOk());
     }
 
     private void deleteDirectoryQuietly(Path dir) throws IOException {

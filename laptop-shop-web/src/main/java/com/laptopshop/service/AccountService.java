@@ -21,4 +21,6 @@ public interface AccountService {
     void toggleActive(Integer id, Integer currentAccountId);
     void deleteAccount(Integer id, Integer currentAccountId);
     Account updateProfile(String username, ProfileUpdateDTO dto);
+    /** Dựng sẵn dữ liệu form hồ sơ cá nhân (họ tên, email, SĐT, địa chỉ giao hàng nếu là khách hàng). */
+    ProfileUpdateDTO getProfileForm(String username);
 }

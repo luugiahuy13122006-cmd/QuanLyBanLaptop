@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Đơn hàng của tôi - LaptopShop</title>
+  <title>Đơn hàng của tôi - Nexora Laptop</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <link th:href="@{/css/style.css}" rel="stylesheet"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
+  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
+  <script>document.documentElement.classList.add('nx-js')</script>
+  <script th:src="@{/js/nexora.js}" defer></script>
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
@@ -29,7 +33,7 @@
       <i class="bi bi-receipt"></i>
     </div>
     <h5 class="fw-bold mb-1">Chưa có đơn hàng nào</h5>
-    <p class="text-muted small mb-3">Bạn chưa đặt đơn hàng nào tại LaptopShop.</p>
+    <p class="text-muted small mb-3">Bạn chưa đặt đơn hàng nào tại Nexora Laptop.</p>
     <a th:href="@{/}" class="btn btn-pv-primary px-4">Mua sắm ngay</a>
   </div>
 

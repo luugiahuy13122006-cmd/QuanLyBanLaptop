@@ -15,6 +15,9 @@ public class ProfileUpdateDTO {
     @Pattern(regexp = "^$|^(0|\\+84)[0-9]{8,10}$", message = "Số điện thoại không hợp lệ (VD: 0912345678)")
     private String phone;
 
+    @Size(max = 300, message = "Địa chỉ tối đa 300 ký tự")
+    private String address;
+
     @NotBlank(message = "Vui lòng nhập mật khẩu hiện tại để xác nhận thay đổi")
     private String currentPassword;
 
@@ -29,6 +32,8 @@ public class ProfileUpdateDTO {
     public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
     public String getCurrentPassword() { return currentPassword; }
     public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
     public String getNewPassword() { return newPassword; }

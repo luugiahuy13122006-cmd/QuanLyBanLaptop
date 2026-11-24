@@ -126,6 +126,10 @@ public class AccountServiceImpl implements AccountService {
         }
         Role role = roleRepository.findById(dto.getRoleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò ID: " + dto.getRoleId()));
+        if ("CUSTOMER".equalsIgnoreCase(role.getRoleName())) {
+            throw new BusinessException("Không được tạo tài khoản khách hàng trong khu vực quản trị. "
+                    + "Khách hàng tự đăng ký tài khoản trên website; quản trị chỉ tạo tài khoản nhân viên (STAFF) hoặc quản trị viên (ADMIN).");
+        }
 
         Account account = new Account();
         account.setUsername(username);
@@ -152,6 +156,12 @@ public class AccountServiceImpl implements AccountService {
         }
         Role role = roleRepository.findById(dto.getRoleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò ID: " + dto.getRoleId()));
+        boolean wasCustomer = "CUSTOMER".equalsIgnoreCase(account.getRole().getRoleName());
+        boolean toCustomer = "CUSTOMER".equalsIgnoreCase(role.getRoleName());
+        if (wasCustomer != toCustomer) {
+            throw new BusinessException("Không thể chuyển tài khoản khách hàng thành nhân viên/quản trị (hoặc ngược lại). "
+                    + "Hãy khóa tài khoản và tạo tài khoản nhân viên mới nếu cần.");
+        }
 
         account.setUsername(username);
         if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
@@ -201,6 +211,21 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ProfileUpdateDTO getProfileForm(String username) {
+        Account account = findByUsername(username);
+        ProfileUpdateDTO dto = new ProfileUpdateDTO();
+        dto.setFullName(account.getFullName());
+        dto.setEmail(account.getEmail());
+        dto.setPhone(account.getPhone());
+        if ("CUSTOMER".equalsIgnoreCase(account.getRole().getRoleName())) {
+            customerRepository.findByAccountId(account.getId())
+                    .ifPresent(c -> dto.setAddress(c.getAddress()));
+        }
+        return dto;
+    }
+
+    @Override
     @Transactional
     public Account updateProfile(String username, ProfileUpdateDTO dto) {
         Account account = findByUsername(username);
@@ -212,9 +237,29 @@ public class AccountServiceImpl implements AccountService {
         if (cleanEmail != null && accountRepository.existsByEmailIgnoreCaseAndIdNot(cleanEmail, account.getId())) {
             throw new BusinessException("Email '" + cleanEmail + "' đã được tài khoản khác sử dụng!");
         }
+        String cleanPhone = dto.getPhone() != null && !dto.getPhone().isBlank() ? dto.getPhone().trim() : null;
         account.setFullName(dto.getFullName().trim());
         account.setEmail(cleanEmail);
-        account.setPhone(dto.getPhone() != null && !dto.getPhone().isBlank() ? dto.getPhone().trim() : null);
+        account.setPhone(cleanPhone);
+
+        // Đồng bộ hồ sơ khách hàng (tên, email, SĐT, địa chỉ giao hàng) để đơn hàng & quản trị luôn thấy thông tin mới nhất
+        if ("CUSTOMER".equalsIgnoreCase(account.getRole().getRoleName())) {
+            customerRepository.findByAccountId(account.getId()).ifPresent(customer -> {
+                if (cleanEmail != null && customerRepository.existsByEmailIgnoreCaseAndIdNot(cleanEmail, customer.getId())) {
+                    throw new BusinessException("Email '" + cleanEmail + "' đã được khách hàng khác sử dụng!");
+                }
+                if (cleanPhone != null && customerRepository.existsByPhoneAndIdNot(cleanPhone, customer.getId())) {
+                    throw new BusinessException("Số điện thoại '" + cleanPhone + "' đã được khách hàng khác sử dụng!");
+                }
+                customer.setCustomerName(account.getFullName());
+                customer.setEmail(cleanEmail);
+                if (cleanPhone != null) customer.setPhone(cleanPhone);
+                if (dto.getAddress() != null && !dto.getAddress().isBlank()) {
+                    customer.setAddress(dto.getAddress().trim());
+                }
+                customerRepository.save(customer);
+            });
+        }
 
         String newPassword = dto.getNewPassword();
         if (newPassword != null && !newPassword.isBlank()) {

@@ -7,8 +7,8 @@
 <!-- Mobile Navbar -->
 <nav th:fragment="adminTopbar" class="navbar navbar-dark d-lg-none px-3 py-2" style="background: #0F172A; border-bottom: 1px solid rgba(255,255,255,0.08);">
   <a class="navbar-brand fw-bold d-flex align-items-center gap-2" th:href="@{/admin/dashboard}">
-    <span class="pro-brand-mark" style="width: 32px; height: 32px; font-size: 0.95rem;"><i class="bi bi-laptop"></i></span>
-    <span class="fs-6">QL Laptop Admin</span>
+    <span th:replace="~{fragments/brand :: mark(32)}"></span>
+    <span class="fs-6">NEXORA Admin</span>
   </a>
   <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileMenu">
     <span class="navbar-toggler-icon"></span>
@@ -38,12 +38,8 @@
 
 <!-- Desktop Figma Dark-Slate Sidebar -->
 <nav th:fragment="adminSidebar" class="col-lg-2 d-none d-lg-flex flex-column sidebar pro-sidebar sticky-lg-top" style="max-height: 100vh; overflow-y: auto;">
-  <div class="d-flex align-items-center gap-2 px-2 pb-3 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
-    <span class="pro-brand-mark" style="width: 36px; height: 36px; font-size: 1.05rem;"><i class="bi bi-laptop"></i></span>
-    <div class="lh-sm">
-      <div class="fw-bold text-white" style="font-size: 0.95rem;">QL LAPTOP</div>
-      <small style="font-size: 0.68rem; color: #94A3B8;">Admin Workspace</small>
-    </div>
+  <div class="px-2 pb-3 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+    <div th:replace="~{fragments/brand :: lockup(true, 'Admin Workspace', '/admin/dashboard')}"></div>
   </div>
 
   <div class="flex-grow-1">
