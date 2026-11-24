@@ -14,15 +14,22 @@
 <div class="container-fluid">
   <div class="row">
     <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
-    <main class="col-lg-10 p-4">
-      <div class="d-flex align-items-center mb-3">
-        <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-        <h2 class="fw-bold mb-0" th:text="${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop Mới'}"></h2>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0" th:text="${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop Mới'}"></h4>
+          <div class="small text-muted">Cấu hình phần cứng, định giá bán &amp; quản lý hình ảnh sản phẩm</div>
+        </div>
+        <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
       </div>
+      <div class="p-3 p-md-4">
       <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-      <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
+      <div class="pro-card">
+        <div class="pro-card-header">
+          <h6><i class="bi bi-laptop text-primary me-2"></i>Thông tin chi tiết Laptop</h6>
+        </div>
+        <div class="p-4">
           <form id="laptopForm"
                 th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
                 th:object="${laptopDTO}" method="post" enctype="multipart/form-data" novalidate>
@@ -199,11 +206,12 @@
               </div>
             </div>
             <div class="mt-4 d-flex gap-2">
-              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i><span th:text="${isEdit ? 'Cập nhật' : 'Thêm mới'}"></span></button>
+              <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-save me-1"></i><span th:text="${isEdit ? 'Cập nhật' : 'Thêm mới'}"></span></button>
               <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary px-4">Hủy</a>
             </div>
           </form>
         </div>
+      </div>
       </div>
     </main>
   </div>

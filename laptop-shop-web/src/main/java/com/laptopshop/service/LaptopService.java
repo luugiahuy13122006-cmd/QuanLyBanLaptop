@@ -1,6 +1,5 @@
 package com.laptopshop.service;
 
-// Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
 import com.laptopshop.config.WebConfig;
 import com.laptopshop.dto.LaptopDTO;
 import com.laptopshop.entity.Brand;
@@ -10,6 +9,7 @@ import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
 import com.laptopshop.repository.BrandRepository;
 import com.laptopshop.repository.CategoryRepository;
+import com.laptopshop.repository.ImportReceiptDetailRepository;
 import com.laptopshop.repository.LaptopRepository;
 import com.laptopshop.repository.OrderDetailRepository;
 import org.slf4j.Logger;
@@ -25,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,15 +60,18 @@ public class LaptopService {
     private final CategoryRepository categoryRepo;
     private final BrandRepository brandRepo;
     private final OrderDetailRepository orderDetailRepo;
+    private final ImportReceiptDetailRepository importReceiptDetailRepo;
 
     public LaptopService(LaptopRepository laptopRepo,
                          CategoryRepository categoryRepo,
                          BrandRepository brandRepo,
-                         OrderDetailRepository orderDetailRepo) {
+                         OrderDetailRepository orderDetailRepo,
+                         ImportReceiptDetailRepository importReceiptDetailRepo) {
         this.laptopRepo = laptopRepo;
         this.categoryRepo = categoryRepo;
         this.brandRepo = brandRepo;
         this.orderDetailRepo = orderDetailRepo;
+        this.importReceiptDetailRepo = importReceiptDetailRepo;
     }
 
     public Page<Laptop> filterLaptops(String keyword, Integer categoryId, Integer brandId,
@@ -121,7 +123,6 @@ public class LaptopService {
 
     private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
 
-    // Lấy danh sách ít nhất 5 ảnh cho trang chi tiết laptop theo mã SKU (hỗ trợ cả nhiều đường dẫn ngăn cách bằng dấu phẩy)
     public List<String> getGalleryImages(Laptop laptop) {
         LinkedHashSet<String> images = new LinkedHashSet<>();
         if (laptop.getImageUrl() != null && !laptop.getImageUrl().isBlank()) {
@@ -149,7 +150,6 @@ public class LaptopService {
         return new ArrayList<>(images);
     }
 
-    // Gợi ý các sản phẩm liên quan (cùng danh mục hoặc cùng thương hiệu)
     public List<Laptop> getRelatedLaptops(Laptop current, int limit) {
         List<Laptop> all = laptopRepo.findAllActiveWithDetails();
         List<Laptop> related = new ArrayList<>();
@@ -343,6 +343,9 @@ public class LaptopService {
         long orderRefs = orderDetailRepo.countByLaptopId(id);
         if (orderRefs > 0) {
             throw new BusinessException("Không thể xóa! Laptop đang được tham chiếu trong " + orderRefs + " chi tiết đơn hàng.");
+        }
+        if (importReceiptDetailRepo.existsByLaptopId(id)) {
+            throw new BusinessException("Không thể xóa! Laptop đã được nhập kho qua phiếu nhập. Hãy ẩn sản phẩm thay vì xóa.");
         }
         laptopRepo.delete(l);
     }

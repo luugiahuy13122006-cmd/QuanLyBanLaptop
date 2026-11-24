@@ -14,53 +14,62 @@
 <div class="container-fluid">
   <div class="row">
     <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
-    <main class="col-lg-10 p-4">
-      <div class="d-flex align-items-center mb-3">
-        <a th:href="@{/admin/customers}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-        <h2 class="fw-bold mb-0" th:text="${customerDTO.customerId == null ? 'Thêm Khách Hàng Mới' : 'Cập Nhật Khách Hàng #' + customerDTO.customerId}"></h2>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0" th:text="${customerDTO.customerId == null ? 'Thêm Khách Hàng Mới' : 'Cập Nhật Khách Hàng #' + customerDTO.customerId}"></h4>
+          <div class="small text-muted">Cập nhật hồ sơ thông tin liên hệ và địa chỉ giao hàng</div>
+        </div>
+        <a th:href="@{/admin/customers}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
       </div>
-      <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-      <div class="card shadow-sm border-0" style="max-width: 650px;">
-        <div class="card-body p-4">
-          <form th:action="@{/admin/customers/save}" th:object="${customerDTO}" method="post" novalidate>
-            <input type="hidden" th:field="*{customerId}"/>
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
-              <input type="text" th:field="*{customerName}" class="form-control" th:classappend="${#fields.hasErrors('customerName')} ? 'is-invalid'"/>
-              <div class="invalid-feedback" th:errors="*{customerName}"></div>
-            </div>
+        <div class="pro-card" style="max-width: 680px;">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-person-lines-fill text-primary me-2"></i>Thông tin Khách hàng</h6>
+          </div>
+          <div class="p-4">
+            <form th:action="@{/admin/customers/save}" th:object="${customerDTO}" method="post" novalidate>
+              <input type="hidden" th:field="*{customerId}"/>
 
-            <div class="row g-3">
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-                <input type="text" th:field="*{phone}" class="form-control" th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'"/>
-                <div class="invalid-feedback" th:errors="*{phone}"></div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Họ và tên <span class="text-danger">*</span></label>
+                <input type="text" th:field="*{customerName}" class="form-control" th:classappend="${#fields.hasErrors('customerName')} ? 'is-invalid'"/>
+                <div class="invalid-feedback" th:errors="*{customerName}"></div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">Email</label>
-                <input type="email" th:field="*{email}" class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"/>
-                <div class="invalid-feedback" th:errors="*{email}"></div>
+
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold small">Số điện thoại <span class="text-danger">*</span></label>
+                  <input type="text" th:field="*{phone}" class="form-control" th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'"/>
+                  <div class="invalid-feedback" th:errors="*{phone}"></div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold small">Email</label>
+                  <input type="email" th:field="*{email}" class="form-control" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"/>
+                  <div class="invalid-feedback" th:errors="*{email}"></div>
+                </div>
               </div>
-            </div>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
-              <textarea th:field="*{address}" rows="3" class="form-control" th:classappend="${#fields.hasErrors('address')} ? 'is-invalid'"></textarea>
-              <div class="invalid-feedback" th:errors="*{address}"></div>
-            </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Địa chỉ <span class="text-danger">*</span></label>
+                <textarea th:field="*{address}" rows="3" class="form-control" th:classappend="${#fields.hasErrors('address')} ? 'is-invalid'"></textarea>
+                <div class="invalid-feedback" th:errors="*{address}"></div>
+              </div>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Mã tài khoản liên kết (AccountID - Tùy chọn)</label>
-              <input type="number" th:field="*{accountId}" class="form-control" placeholder="Để trống nếu là khách mua lẻ"/>
-            </div>
+              <div class="mb-4">
+                <label class="form-label fw-semibold small">Mã tài khoản liên kết (AccountID - Tùy chọn)</label>
+                <input type="number" th:field="*{accountId}" class="form-control" placeholder="Để trống nếu là khách mua lẻ"/>
+              </div>
 
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i>Lưu thông tin</button>
-              <a th:href="@{/admin/customers}" class="btn btn-outline-secondary">Hủy</a>
-            </div>
-          </form>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-save me-1"></i>Lưu thông tin</button>
+                <a th:href="@{/admin/customers}" class="btn btn-outline-secondary px-4">Hủy</a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </main>

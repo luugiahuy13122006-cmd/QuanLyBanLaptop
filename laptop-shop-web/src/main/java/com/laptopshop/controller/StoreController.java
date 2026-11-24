@@ -1,9 +1,7 @@
 package com.laptopshop.controller;
 
-// Thành viên phụ trách: TV3 - Trương Xuân Đạt (tích hợp hoàn chỉnh với TV1/TV2/TV4/TV5)
-// Điều khiển giao diện Website khách hàng: Trang chủ, Chi tiết sản phẩm, Tìm kiếm/Lọc, Giỏ hàng, Đặt hàng thật & Đơn hàng của tôi.
-
 import com.laptopshop.config.CustomUserDetails;
+import com.laptopshop.config.ShopProperties;
 import com.laptopshop.dto.CartItemDTO;
 import com.laptopshop.dto.CheckoutFormDTO;
 import com.laptopshop.dto.OrderItemRequest;
@@ -13,13 +11,13 @@ import com.laptopshop.entity.Laptop;
 import com.laptopshop.entity.Order;
 import com.laptopshop.entity.PaymentMethod;
 import com.laptopshop.repository.CustomerRepository;
-import com.laptopshop.service.BrandService;
-import com.laptopshop.service.CategoryService;
-import com.laptopshop.service.CustomerService;
-import com.laptopshop.service.LaptopService;
-import com.laptopshop.service.OrderService;
+import com.laptopshop.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,27 +31,31 @@ import java.util.*;
 @Controller
 public class StoreController {
 
-    private static final BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("30000");
-
     private final LaptopService laptopService;
     private final CategoryService categoryService;
     private final BrandService brandService;
     private final CustomerService customerService;
     private final CustomerRepository customerRepository;
     private final OrderService orderService;
+    private final ShopProperties shopProperties;
+    private final QrCodeService qrCodeService;
 
     public StoreController(LaptopService laptopService,
                            CategoryService categoryService,
                            BrandService brandService,
                            CustomerService customerService,
                            CustomerRepository customerRepository,
-                           OrderService orderService) {
+                           OrderService orderService,
+                           ShopProperties shopProperties,
+                           QrCodeService qrCodeService) {
         this.laptopService = laptopService;
         this.categoryService = categoryService;
         this.brandService = brandService;
         this.customerService = customerService;
         this.customerRepository = customerRepository;
         this.orderService = orderService;
+        this.shopProperties = shopProperties;
+        this.qrCodeService = qrCodeService;
     }
 
     @GetMapping({"/", "/tim-kiem"})
@@ -108,15 +110,11 @@ public class StoreController {
         }
         int qtyToAdd = Math.max(1, quantity);
         Map<Integer, Integer> cart = (Map<Integer, Integer>) session.getAttribute("cart");
-        if (cart == null) {
-            cart = new LinkedHashMap<>();
-        }
+        if (cart == null) cart = new LinkedHashMap<>();
         int newQty = Math.min(laptop.getStockQuantity(), cart.getOrDefault(id, 0) + qtyToAdd);
         cart.put(id, newQty);
         session.setAttribute("cart", cart);
-        if (buyNow) {
-            return "redirect:/dat-hang";
-        }
+        if (buyNow) return "redirect:/dat-hang";
         ra.addFlashAttribute("successMessage", "Đã thêm '" + laptop.getName() + "' vào giỏ hàng.");
         return "redirect:/gio-hang";
     }
@@ -150,10 +148,7 @@ public class StoreController {
     @SuppressWarnings("unchecked")
     public String removeFromCart(@PathVariable Integer id, HttpSession session, RedirectAttributes ra) {
         Map<Integer, Integer> cart = (Map<Integer, Integer>) session.getAttribute("cart");
-        if (cart != null) {
-            cart.remove(id);
-            session.setAttribute("cart", cart);
-        }
+        if (cart != null) { cart.remove(id); session.setAttribute("cart", cart); }
         ra.addFlashAttribute("successMessage", "Đã xóa sản phẩm khỏi giỏ hàng.");
         return "redirect:/gio-hang";
     }
@@ -161,9 +156,8 @@ public class StoreController {
     @GetMapping("/gio-hang")
     public String viewCart(HttpSession session, Model model) {
         List<CartItemDTO> items = buildCartItems(session);
-        BigDecimal subtotal = calculateSubtotal(items);
         model.addAttribute("items", items);
-        model.addAttribute("subtotal", subtotal);
+        model.addAttribute("subtotal", calculateSubtotal(items));
         return "store/cart";
     }
 
@@ -189,9 +183,9 @@ public class StoreController {
         model.addAttribute("checkoutForm", form);
         model.addAttribute("items", items);
         model.addAttribute("subtotal", subtotal);
-        model.addAttribute("shippingFee", DEFAULT_SHIPPING_FEE);
-        model.addAttribute("totalAmount", subtotal.add(DEFAULT_SHIPPING_FEE));
-        model.addAttribute("paymentMethods", PaymentMethod.values());
+        model.addAttribute("totalAmount", subtotal);
+        model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+        model.addAttribute("shopProperties", shopProperties);
         return "store/checkout";
     }
 
@@ -211,9 +205,9 @@ public class StoreController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("items", items);
             model.addAttribute("subtotal", subtotal);
-            model.addAttribute("shippingFee", DEFAULT_SHIPPING_FEE);
-            model.addAttribute("totalAmount", subtotal.add(DEFAULT_SHIPPING_FEE));
-            model.addAttribute("paymentMethods", PaymentMethod.values());
+            model.addAttribute("totalAmount", subtotal);
+            model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+            model.addAttribute("shopProperties", shopProperties);
             return "store/checkout";
         }
         try {
@@ -225,14 +219,13 @@ public class StoreController {
                     checkoutForm.getRecipientPhone(),
                     checkoutForm.getDeliveryAddress()
             );
-
             PlaceOrderRequest req = new PlaceOrderRequest();
             req.setCustomerId(customer.getId());
             req.setRecipientName(checkoutForm.getRecipientName());
             req.setRecipientPhone(checkoutForm.getRecipientPhone());
             req.setDeliveryAddress(checkoutForm.getDeliveryAddress());
-            req.setPaymentMethod(checkoutForm.getPaymentMethod());
-            req.setShippingFee(DEFAULT_SHIPPING_FEE);
+            // Sản phẩm laptop giá trị cao chỉ áp dụng chuyển khoản ngân hàng
+            req.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
             req.setDiscount(BigDecimal.ZERO);
             req.setNote(checkoutForm.getNote());
             req.setItems(items.stream()
@@ -241,72 +234,105 @@ public class StoreController {
 
             Order createdOrder = orderService.placeOrder(req, accountId);
             session.removeAttribute("cart");
-            model.addAttribute("order", orderService.getOrderById(createdOrder.getId()));
-            model.addAttribute("payment", orderService.getPaymentByOrderId(createdOrder.getId()).orElse(null));
-            return "store/order-success";
+            return "redirect:/thanh-toan/" + createdOrder.getId();
         } catch (RuntimeException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("items", items);
             model.addAttribute("subtotal", subtotal);
-            model.addAttribute("shippingFee", DEFAULT_SHIPPING_FEE);
-            model.addAttribute("totalAmount", subtotal.add(DEFAULT_SHIPPING_FEE));
-            model.addAttribute("paymentMethods", PaymentMethod.values());
+            model.addAttribute("totalAmount", subtotal);
+            model.addAttribute("paymentMethods", List.of(PaymentMethod.BANK_TRANSFER));
+            model.addAttribute("shopProperties", shopProperties);
             return "store/checkout";
         }
     }
 
-    @GetMapping("/don-hang-cua-toi")
-    public String myOrders(@AuthenticationPrincipal CustomUserDetails currentUser, Model model) {
-        if (currentUser == null) {
-            return "redirect:/login";
+    @GetMapping("/thanh-toan/{id}")
+    public String showPaymentQrPage(@PathVariable Integer id,
+                                    @AuthenticationPrincipal CustomUserDetails currentUser,
+                                    HttpServletRequest request,
+                                    Model model) {
+        if (currentUser == null) return "redirect:/login";
+        Order order = orderService.getOrderForCustomer(id, currentUser.getAccountId());
+        var payment = orderService.getPaymentByOrderId(id).orElse(null);
+        if (payment != null && payment.getPaymentStatus() != null
+                && "PAID".equals(payment.getPaymentStatus().name())) {
+            return "redirect:/thanh-toan/" + id + "/thanh-cong";
         }
-        Customer customer = customerRepository.findByAccountId(currentUser.getAccountId()).orElse(null);
-        List<Order> orders = customer != null
-                ? orderService.getOrdersByCustomerId(customer.getId())
-                : List.of();
-        model.addAttribute("orders", orders);
-        model.addAttribute("customer", customer);
-        return "store/my-orders";
+        String token = payment != null
+                ? qrCodeService.createToken(order.getId(), order.getOrderCode(), payment.getTransactionCode())
+                : "";
+        model.addAttribute("order", order);
+        model.addAttribute("payment", payment);
+        model.addAttribute("shopProperties", shopProperties);
+        model.addAttribute("qrPayUrl", qrCodeService.buildMobilePayUrl(request, order.getId(), token));
+        model.addAttribute("tunnelActive", qrCodeService.isPublicTunnelActive());
+        return "store/order-success";
     }
 
-    @PostMapping("/don-hang-cua-toi/{id}/huy")
-    public String cancelMyOrder(@PathVariable Integer id,
-                                @AuthenticationPrincipal CustomUserDetails currentUser,
-                                RedirectAttributes ra) {
-        if (currentUser == null) {
-            return "redirect:/login";
-        }
-        try {
-            Customer customer = customerRepository.findByAccountId(currentUser.getAccountId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hồ sơ khách hàng."));
-            orderService.cancelOrderByCustomer(id, customer.getId(), currentUser.getAccountId());
-            ra.addFlashAttribute("successMessage", "Đã hủy đơn hàng và hoàn lại tồn kho thành công!");
-        } catch (RuntimeException ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
-        }
-        return "redirect:/don-hang-cua-toi";
+    @GetMapping("/thanh-toan/{id}/qr.png")
+    public ResponseEntity<byte[]> getQrCodeImage(@PathVariable Integer id,
+                                                 @AuthenticationPrincipal CustomUserDetails currentUser,
+                                                 HttpServletRequest request) {
+        if (currentUser == null) return ResponseEntity.status(401).build();
+        Order order = orderService.getOrderForCustomer(id, currentUser.getAccountId());
+        var payment = orderService.getPaymentByOrderId(id).orElse(null);
+        String tx = payment != null ? payment.getTransactionCode() : "";
+        String token = qrCodeService.createToken(order.getId(), order.getOrderCode(), tx);
+        String url = qrCodeService.buildMobilePayUrl(request, order.getId(), token);
+        byte[] png = qrCodeService.generateQrPng(url, 260);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .cacheControl(CacheControl.noStore())
+                .body(png);
+    }
+
+    @GetMapping("/thanh-toan/{id}/status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getPaymentStatus(@PathVariable Integer id,
+                                                                @AuthenticationPrincipal CustomUserDetails currentUser,
+                                                                HttpServletRequest request) {
+        if (currentUser == null) return ResponseEntity.status(401).build();
+        Order order = orderService.getOrderForCustomer(id, currentUser.getAccountId());
+        var payment = orderService.getPaymentByOrderId(id).orElse(null);
+        boolean paid = payment != null && payment.getPaymentStatus() != null
+                && "PAID".equals(payment.getPaymentStatus().name());
+        String tx = payment != null ? payment.getTransactionCode() : "";
+        String token = qrCodeService.createToken(order.getId(), order.getOrderCode(), tx);
+        String qrPayUrl = qrCodeService.buildMobilePayUrl(request, order.getId(), token);
+        return ResponseEntity.ok(Map.of(
+                "paid", paid,
+                "orderStatus", order.getStatus().name(),
+                "redirectUrl", "/thanh-toan/" + id + "/thanh-cong",
+                "qrPayUrl", qrPayUrl,
+                "tunnelActive", qrCodeService.isPublicTunnelActive()
+        ));
+    }
+
+    @GetMapping("/thanh-toan/{id}/thanh-cong")
+    public String showPaymentSuccessPage(@PathVariable Integer id,
+                                         @AuthenticationPrincipal CustomUserDetails currentUser,
+                                         Model model) {
+        if (currentUser == null) return "redirect:/login";
+        Order order = orderService.getOrderForCustomer(id, currentUser.getAccountId());
+        model.addAttribute("order", order);
+        model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
+        model.addAttribute("shopProperties", shopProperties);
+        return "store/payment-success";
     }
 
     @SuppressWarnings("unchecked")
     private List<CartItemDTO> buildCartItems(HttpSession session) {
         Map<Integer, Integer> cart = (Map<Integer, Integer>) session.getAttribute("cart");
-        if (cart == null || cart.isEmpty()) {
-            return List.of();
-        }
+        if (cart == null || cart.isEmpty()) return List.of();
         List<CartItemDTO> items = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : cart.entrySet()) {
-            try {
-                Laptop laptop = laptopService.getLaptopById(entry.getKey());
-                items.add(new CartItemDTO(laptop, entry.getValue()));
-            } catch (Exception ignored) {
-            }
+            try { items.add(new CartItemDTO(laptopService.getLaptopById(entry.getKey()), entry.getValue())); }
+            catch (Exception ignored) {}
         }
         return items;
     }
 
     private BigDecimal calculateSubtotal(List<CartItemDTO> items) {
-        return items.stream()
-                .map(CartItemDTO::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return items.stream().map(CartItemDTO::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

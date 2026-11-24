@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="'Xác nhận chuyển khoản ' + ${order.orderCode} + ' - LaptopShop'">Xác nhận thanh toán QR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body class="pro-auth-bg min-vh-100 py-4 px-3">
+<canvas id="mobileConfetti" th:if="${payment != null and payment.paymentStatus.name() == 'PAID'}"
+        style="position: fixed; inset: 0; pointer-events: none; z-index: 1090;"></canvas>
+
+<div class="mx-auto" style="max-width: 460px;">
+  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+  <div class="pro-auth-card anim-pop-in">
+    <!-- Mobile Banking Top Header -->
+    <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 65%, #2563EB 100%);">
+      <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-2 small"
+           style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2);">
+        <span class="pro-live-dot"></span>
+        <span>Cổng thanh toán VietQR • LaptopShop</span>
+      </div>
+      <div class="small opacity-75">Số tiền thanh toán</div>
+      <div class="display-6 fw-bold tabular-nums my-1"
+           th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+      <div class="small" style="color: #CBD5E1;">
+        Mã đơn: <code class="text-warning fw-bold fs-6" th:text="${order.orderCode}"></code>
+      </div>
+    </div>
+
+    <div class="p-4">
+      <!-- State 1: ALREADY PAID ON PHONE -->
+      <div th:if="${payment != null and payment.paymentStatus.name() == 'PAID'}" class="text-center py-2">
+        <svg class="success-check-svg mb-3" viewBox="0 0 52 52">
+          <circle class="success-check-circle" cx="26" cy="26" r="24"/>
+          <path class="success-check-tick" d="M15 27 L23 35 L38 19"/>
+        </svg>
+        <span class="badge-soft badge-soft-success mb-2"><i class="bi bi-patch-check-fill"></i> Đã hoàn tất</span>
+        <h4 class="fw-bold text-success mb-2">Xác nhận chuyển khoản thành công!</h4>
+        <p class="small text-muted mb-4">
+          Giao dịch <code th:text="${payment.transactionCode}"></code> đã được xác nhận.
+          Màn hình máy tính của bạn sẽ tự động hiển thị <strong>Thanh toán thành công</strong> ngay bây giờ.
+        </p>
+
+        <div class="rounded-4 p-3 text-start small d-flex flex-column gap-2" style="background: #F8FAFC; border: 1px solid var(--brand-border);">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted">Người nhận:</span>
+            <strong th:text="${order.recipientName}"></strong>
+          </div>
+          <div class="d-flex justify-content-between" th:if="${payment.paidAt != null}">
+            <span class="text-muted">Thời gian:</span>
+            <strong class="tabular-nums" th:text="${#temporals.format(payment.paidAt, 'dd/MM/yyyy HH:mm:ss')}"></strong>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted">Trạng thái đơn:</span>
+            <span class="badge-soft badge-soft-info" th:text="${order.status.displayName}"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 2: CANCELLED / EXPIRED -->
+      <div th:if="${(payment == null or payment.paymentStatus.name() != 'PAID') and order.status.name() != 'PENDING'}" class="text-center py-3">
+        <div class="pro-kpi-icon pro-kpi-icon-rose mx-auto mb-3" style="width: 58px; height: 58px; font-size: 1.6rem;">
+          <i class="bi bi-x-circle-fill"></i>
+        </div>
+        <h5 class="fw-bold text-danger">Đơn hàng không còn hiệu lực thanh toán</h5>
+        <p class="small text-muted mb-0">
+          Trạng thái hiện tại: <strong th:text="${order.status.displayName}"></strong>
+        </p>
+      </div>
+
+      <!-- State 3: READY FOR CUSTOMER CONFIRMATION ON PHONE -->
+      <div th:if="${payment != null and payment.paymentStatus.name() != 'PAID' and order.status.name() == 'PENDING'}">
+        <div class="rounded-4 p-3 mb-3 small d-flex flex-column gap-2" style="background: #F8FAFC; border: 1px solid var(--brand-border);">
+          <div class="d-flex justify-content-between gap-2">
+            <span class="text-muted">Ngân hàng:</span>
+            <strong th:text="${shopProperties.payment.bankName}"></strong>
+          </div>
+          <div class="d-flex justify-content-between gap-2">
+            <span class="text-muted">Số tài khoản:</span>
+            <code class="fw-bold text-dark" th:text="${shopProperties.payment.accountNumber}"></code>
+          </div>
+          <div class="d-flex justify-content-between gap-2">
+            <span class="text-muted">Chủ tài khoản:</span>
+            <strong th:text="${shopProperties.payment.accountName}"></strong>
+          </div>
+          <div class="d-flex justify-content-between gap-2">
+            <span class="text-muted">Nội dung CK:</span>
+            <code class="fw-bold text-primary" th:text="${order.orderCode}"></code>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold text-muted text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">Sản phẩm trong đơn</div>
+          <div class="d-flex flex-column gap-2">
+            <div th:each="d : ${order.details}" class="p-2 rounded-3 border bg-white d-flex justify-content-between align-items-center small gap-2">
+              <div>
+                <div class="fw-semibold" th:text="${d.laptopNameSnapshot}"></div>
+                <small class="text-muted" th:text="'SL: ' + ${d.quantity}"></small>
+              </div>
+              <strong class="tabular-nums text-nowrap" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
+            </div>
+          </div>
+        </div>
+
+        <form id="mobileConfirmForm" th:action="@{/qr-pay/{id}/{token}/confirm(id=${order.id},token=${qrToken})}" method="post">
+          <button type="submit" id="mobileConfirmBtn" class="btn btn-pv-primary btn-glow-cta btn-lg w-100 py-3 fw-bold">
+            <i class="bi bi-check2-circle me-2"></i>Xác nhận đã chuyển khoản
+          </button>
+        </form>
+        <div class="text-center small text-muted mt-3">
+          <i class="bi bi-shield-check text-success me-1"></i>Sau khi bấm, trang web trên máy tính sẽ tự động cập nhật thành công.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  (function () {
+    var form = document.getElementById('mobileConfirmForm');
+    var btn = document.getElementById('mobileConfirmBtn');
+    if (form && btn) {
+      form.addEventListener('submit', function () {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xác nhận giao dịch...';
+      });
+    }
+    var canvas = document.getElementById('mobileConfetti');
+    if (canvas) {
+      var ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      var colors = ['#2563EB', '#10B981', '#F59E0B', '#06B6D4'];
+      var parts = [];
+      for (var i = 0; i < 45; i++) {
+        parts.push({
+          x: Math.random() * canvas.width,
+          y: -15 - Math.random() * 140,
+          w: 6, h: 6,
+          vy: 2.4 + Math.random() * 2.8,
+          vx: (Math.random() - 0.5) * 2,
+          color: colors[i % colors.length]
+        });
+      }
+      var start = Date.now();
+      function tick() {
+        var el = Date.now() - start;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        parts.forEach(function (p) {
+          p.x += p.vx;
+          p.y += p.vy;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+        });
+        if (el < 2400) requestAnimationFrame(tick);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      requestAnimationFrame(tick);
+    }
+  })();
+</script>
+</body>
+</html>

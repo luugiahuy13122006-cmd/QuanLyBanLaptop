@@ -1,10 +1,9 @@
 package com.laptopshop.config;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
-// Đảm bảo các vai trò chuẩn (ADMIN, STAFF, CUSTOMER) và tài khoản mẫu có mật khẩu BCrypt hợp lệ khi khởi chạy.
-
+import com.laptopshop.entity.CodeSequence;
 import com.laptopshop.entity.Role;
 import com.laptopshop.repository.AccountRepository;
+import com.laptopshop.repository.CodeSequenceRepository;
 import com.laptopshop.repository.RoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +20,16 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CodeSequenceRepository codeSequenceRepository;
 
     public DataInitializer(RoleRepository roleRepository,
                            AccountRepository accountRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           CodeSequenceRepository codeSequenceRepository) {
         this.roleRepository = roleRepository;
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.codeSequenceRepository = codeSequenceRepository;
     }
 
     @Override
@@ -37,7 +39,9 @@ public class DataInitializer implements CommandLineRunner {
         ensureRole("STAFF", "Nhân viên cửa hàng");
         ensureRole("CUSTOMER", "Khách hàng");
 
-        // Nếu chạy trên CSDL cũ có chuỗi hash minh họa chưa khớp "123456", chuẩn hóa lại sang BCrypt("123456")
+        ensureSequence("DON_HANG");
+        ensureSequence("PHIEU_NHAP");
+
         String legacyPlaceholderHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
         accountRepository.findAll().forEach(acc -> {
             if (legacyPlaceholderHash.equals(acc.getPasswordHash())) {
@@ -51,6 +55,13 @@ public class DataInitializer implements CommandLineRunner {
     private void ensureRole(String roleName, String description) {
         if (roleRepository.findByRoleNameIgnoreCase(roleName).isEmpty()) {
             roleRepository.save(new Role(roleName, description));
+        }
+    }
+
+    private void ensureSequence(String name) {
+        if (codeSequenceRepository.findById(name).isEmpty()) {
+            codeSequenceRepository.save(new CodeSequence(name, 0));
+            log.info("[INIT] Khởi tạo bộ đếm mã '{}' = 0", name);
         }
     }
 }

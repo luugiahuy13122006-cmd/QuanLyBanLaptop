@@ -1,7 +1,7 @@
 package com.laptopshop.service;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
 import com.laptopshop.dto.AccountDTO;
+import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.entity.Role;
@@ -20,5 +20,5 @@ public interface AccountService {
     Account updateAccount(Integer id, AccountDTO dto);
     void toggleActive(Integer id, Integer currentAccountId);
     void deleteAccount(Integer id, Integer currentAccountId);
-    Account updateProfile(String username, String fullName, String email, String phone, String newPassword);
+    Account updateProfile(String username, ProfileUpdateDTO dto);
 }

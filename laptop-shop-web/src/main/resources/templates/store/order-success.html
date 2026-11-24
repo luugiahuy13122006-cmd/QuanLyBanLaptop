@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Đặt hàng thành công - LaptopShop</title>
+  <title th:text="'Thanh toán QR đơn hàng ' + ${order.orderCode} + ' - LaptopShop'">Quét mã QR thanh toán - LaptopShop</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <link th:href="@{/css/style.css}" rel="stylesheet"/>
@@ -12,32 +12,260 @@
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-5">
-  <div class="bg-white rounded-3 border shadow-sm mx-auto p-4 p-md-5 text-center" style="max-width: 720px;">
-    <i class="bi bi-check-circle-fill text-success display-3 mb-3 d-block"></i>
-    <h2 class="fw-bold text-success mb-2">Đặt hàng thành công!</h2>
-    <p class="text-muted mb-4">Đơn hàng của bạn đã được lưu vào CSDL và trừ tồn kho an toàn bằng Pessimistic Lock.</p>
+<main class="container py-4">
+  <div class="pro-stepper mx-auto mb-4 anim-fade-up" style="max-width: 980px;">
+    <div class="pro-step done"><span class="pro-step-num"><i class="bi bi-check-lg"></i></span>Giỏ hàng</div>
+    <div class="pro-step-line"></div>
+    <div class="pro-step done"><span class="pro-step-num"><i class="bi bi-check-lg"></i></span>Đặt hàng &amp; Thanh toán</div>
+    <div class="pro-step-line"></div>
+    <div class="pro-step active"><span class="pro-step-num">3</span>Quét QR trên điện thoại</div>
+  </div>
 
-    <div class="bg-light rounded p-3 text-start mb-4 border">
-      <div class="row g-2 small">
-        <div class="col-sm-6"><strong>Mã đơn hàng:</strong> <code class="fs-6" th:text="${order.orderCode}"></code></div>
-        <div class="col-sm-6"><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark" th:text="${order.status.displayName}"></span></div>
-        <div class="col-sm-6"><strong>Người nhận:</strong> <span th:text="${order.recipientName}"></span></div>
-        <div class="col-sm-6"><strong>SĐT:</strong> <span th:text="${order.recipientPhone}"></span></div>
-        <div class="col-12"><strong>Địa chỉ giao:</strong> <span th:text="${order.deliveryAddress}"></span></div>
-        <div class="col-sm-6" th:if="${payment != null}"><strong>Thanh toán:</strong> <span th:text="${payment.paymentMethod.displayName}"></span></div>
-        <div class="col-sm-6"><strong>Tổng thanh toán:</strong> <strong class="pv-price" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong></div>
+  <div class="mx-auto" style="max-width: 980px;">
+    <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+    <!-- Order Status Strip -->
+    <div class="pro-card p-4 mb-4 anim-fade-up anim-delay-1">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pb-3 mb-3 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+          <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 50px; height: 50px; font-size: 1.45rem;">
+            <i class="bi bi-qr-code-scan"></i>
+          </span>
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="pro-live-dot"></span>
+              <span class="small fw-semibold text-success text-uppercase" style="letter-spacing: 0.04em;">Đang chờ quét mã QR trên điện thoại...</span>
+            </div>
+            <h4 class="fw-bold mb-0">
+              Thanh toán đơn hàng <code class="text-primary fs-5 ms-1" th:text="${order.orderCode}"></code>
+            </h4>
+          </div>
+        </div>
+        <div class="text-md-end">
+          <div class="small text-muted">Số tiền cần thanh toán</div>
+          <div class="pv-price fs-3" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+        </div>
+      </div>
+
+      <div class="row g-3 small align-items-center">
+        <div class="col-sm-4">
+          <span class="text-muted">Người nhận:</span>
+          <div class="fw-semibold" th:text="${order.recipientName + ' (' + order.recipientPhone + ')'}"></div>
+        </div>
+        <div class="col-sm-5">
+          <span class="text-muted">Địa chỉ giao hàng:</span>
+          <div class="fw-semibold" th:text="${order.deliveryAddress}"></div>
+        </div>
+        <div class="col-sm-3 text-sm-end" th:if="${order.paymentExpiresAt != null}">
+          <span class="text-muted d-block">Thời gian giữ đơn còn:</span>
+          <span id="qrCountdownPill" class="badge-soft badge-soft-warning tabular-nums fs-6 mt-1"
+                th:attr="data-expires=${#temporals.format(order.paymentExpiresAt, 'yyyy-MM-dd''T''HH:mm:ss')}">
+            <i class="bi bi-clock-history me-1"></i><span id="qrCountdownText">30:00</span>
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-center gap-2 flex-wrap">
-      <a th:href="@{/}" class="btn btn-pv-primary px-4"><i class="bi bi-house me-1"></i>Về trang chủ</a>
-      <a th:href="@{/don-hang-cua-toi}" class="btn btn-pv-outline px-4"><i class="bi bi-bag-check me-1"></i>Xem đơn hàng của tôi</a>
+    <!-- Main 2-Device QR Payment Card -->
+    <div class="pro-card overflow-hidden anim-fade-up anim-delay-2" th:if="${payment != null}">
+      <div class="row g-0">
+        <!-- Left: Server-generated QR encoding the Mobile Confirm Page URL -->
+        <div class="col-lg-5 p-4 p-md-5 text-center d-flex flex-column align-items-center justify-content-center"
+             style="background: linear-gradient(160deg, #0F172A 0%, #1E3A8A 65%, #1D4ED8 100%); color: #ffffff;">
+          <div class="badge rounded-pill px-3 py-2 mb-3" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);">
+            <i class="bi bi-phone-fill text-info me-1"></i>Quét QR bằng Điện thoại
+          </div>
+
+          <div class="qr-scanner-frame mb-3">
+            <span class="qr-corner qr-corner-tl"></span>
+            <span class="qr-corner qr-corner-tr"></span>
+            <span class="qr-corner qr-corner-bl"></span>
+            <span class="qr-corner qr-corner-br"></span>
+            <div class="qr-scan-beam"></div>
+            <img id="mobilePayQrImg"
+                 th:src="@{/thanh-toan/{id}/qr.png(id=${order.id})}"
+                 alt="Quét QR bằng điện thoại để xác nhận thanh toán"
+                 style="width: 230px; height: 230px; display: block;" class="rounded-2 position-relative"/>
+          </div>
+
+          <div class="small fw-semibold mb-1">Dùng Camera điện thoại hoặc Zalo quét mã</div>
+          <div class="small" style="color: #CBD5E1;">Trang xác nhận chuyển khoản sẽ mở ngay trên điện thoại của bạn</div>
+          <div id="qrScopeBadge"
+               class="badge rounded-pill px-3 py-2 mt-3"
+               th:style="${tunnelActive} ? 'background: rgba(16,185,129,0.18); border: 1px solid rgba(52,211,153,0.45); color: #6EE7B7;' : 'background: rgba(245,158,11,0.18); border: 1px solid rgba(251,191,36,0.45); color: #FDE68A;'">
+            <i id="qrScopeIcon" th:class="${tunnelActive} ? 'bi bi-globe2 me-1' : 'bi bi-wifi me-1'"></i>
+            <span id="qrScopeText" th:text="${tunnelActive} ? 'Kết nối toàn cầu (4G / Mọi Wi-Fi)' : 'Mạng nội bộ (đang mở kết nối toàn cầu...)'"></span>
+          </div>
+        </div>
+
+        <!-- Right: Bank Info + Live Auto-Sync Waiting Status (No self-confirm button on PC!) -->
+        <div class="col-lg-7 p-4 p-md-5 d-flex flex-column justify-content-between bg-white">
+          <div>
+            <h5 class="fw-bold mb-1">Hướng dẫn xác nhận 2 bước</h5>
+            <p class="small text-muted mb-4">
+              Quét mã QR bằng điện thoại của bạn, thực hiện chuyển khoản theo thông tin bên dưới và bấm
+              <strong>Xác nhận đã chuyển khoản</strong> trên điện thoại. Màn hình máy tính này sẽ <strong>tự động chuyển sang Thanh toán thành công</strong>.
+            </p>
+
+            <div class="rounded-4 p-3 p-md-4 mb-4 d-flex flex-column gap-3" style="background: #F8FAFC; border: 1px solid var(--brand-border);">
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <span class="small text-muted">Ngân hàng thụ hưởng</span>
+                <span class="fw-bold text-dark" th:text="${shopProperties.payment.bankName}"></span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <span class="small text-muted">Số tài khoản</span>
+                <div class="d-flex align-items-center gap-2">
+                  <code class="fs-6 fw-bold text-dark" id="bankAccText" th:text="${shopProperties.payment.accountNumber}"></code>
+                  <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" onclick="copyText('bankAccText')">
+                    <i class="bi bi-copy me-1"></i>Copy
+                  </button>
+                </div>
+              </div>
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <span class="small text-muted">Chủ tài khoản</span>
+                <span class="fw-bold text-dark" th:text="${shopProperties.payment.accountName}"></span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center gap-2">
+                <span class="small text-muted">Số tiền cần chuyển</span>
+                <span class="fw-bold text-danger fs-5 tabular-nums" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
+                <span class="small text-muted">Nội dung chuyển khoản</span>
+                <div class="d-flex align-items-center gap-2">
+                  <code class="fs-6 fw-bold text-primary" id="orderCodeText" th:text="${order.orderCode}"></code>
+                  <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" onclick="copyText('orderCodeText')">
+                    <i class="bi bi-copy me-1"></i>Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Sync Waiting Status Card -->
+            <div class="p-3 rounded-4 d-flex align-items-center gap-3 mb-3"
+                 style="background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%); border: 1px solid #BFDBFE;">
+              <div class="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status"></div>
+              <div class="small">
+                <div class="fw-bold text-primary">Đang lắng nghe xác nhận từ điện thoại của bạn...</div>
+                <div class="text-muted">Ngay khi bạn bấm <strong>Xác nhận đã chuyển khoản</strong> trên điện thoại, màn hình này tự động hoàn tất tức thì.</div>
+              </div>
+            </div>
+
+            <div class="rounded-3 p-2 px-3 bg-light border small d-flex align-items-center justify-content-between gap-2">
+              <span class="text-muted text-truncate">
+                <i class="bi bi-link-45deg text-primary me-1"></i>Link QR điện thoại:
+                <a id="qrPayUrlLink" th:href="${qrPayUrl}" target="_blank" class="text-decoration-none font-mono" th:text="${qrPayUrl}"></a>
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 text-nowrap" onclick="copyText('qrPayUrlLink')">Copy link</button>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap pt-3 mt-4 border-top">
+            <a th:href="@{/don-hang-cua-toi/{id}(id=${order.id})}" class="small fw-semibold text-decoration-none">
+              <i class="bi bi-receipt me-1"></i>Xem chi tiết đơn hàng
+            </a>
+            <a th:href="@{/}" class="small text-muted text-decoration-none">
+              <i class="bi bi-house me-1"></i>Về trang chủ
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
 
+<div id="copyToast" class="pro-copy-toast">
+  <i class="bi bi-check-circle-fill text-success"></i>
+  <span>Đã sao chép vào bộ nhớ tạm!</span>
+</div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+  function copyText(elId) {
+    var el = document.getElementById(elId);
+    if (!el || !navigator.clipboard) return;
+    navigator.clipboard.writeText(el.textContent.trim()).then(function () {
+      var toast = document.getElementById('copyToast');
+      if (!toast) return;
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 1800);
+    });
+  }
+
+  (function () {
+    var pill = document.getElementById('qrCountdownPill');
+    var txt = document.getElementById('qrCountdownText');
+    if (pill && txt) {
+      var expiresIso = pill.getAttribute('data-expires');
+      var target = expiresIso ? new Date(expiresIso).getTime() : 0;
+      function updateTimer() {
+        if (!target || isNaN(target)) return;
+        var diffSec = Math.max(0, Math.floor((target - Date.now()) / 1000));
+        var m = String(Math.floor(diffSec / 60)).padStart(2, '0');
+        var s = String(diffSec % 60).padStart(2, '0');
+        txt.textContent = m + ':' + s;
+        if (diffSec <= 0) {
+          pill.classList.remove('badge-soft-warning');
+          pill.classList.add('badge-soft-danger');
+        }
+      }
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    }
+
+    // Real-time polling: syncs QR tunnel upgrades & waits for phone confirmation
+    var orderId = /*[[${order.id}]]*/ 0;
+    var qrImgEl = document.getElementById('mobilePayQrImg');
+    var qrLinkEl = document.getElementById('qrPayUrlLink');
+    var scopeBadge = document.getElementById('qrScopeBadge');
+    var scopeIcon = document.getElementById('qrScopeIcon');
+    var scopeText = document.getElementById('qrScopeText');
+    var currentQrUrl = qrLinkEl ? qrLinkEl.textContent.trim() : '';
+    var qrBaseSrc = '/thanh-toan/' + orderId + '/qr.png';
+
+    function updateScopeUi(active) {
+      if (!scopeBadge || !scopeIcon || !scopeText) return;
+      if (active) {
+        scopeBadge.style.background = 'rgba(16,185,129,0.18)';
+        scopeBadge.style.border = '1px solid rgba(52,211,153,0.45)';
+        scopeBadge.style.color = '#6EE7B7';
+        scopeIcon.className = 'bi bi-globe2 me-1';
+        scopeText.textContent = 'Kết nối toàn cầu (4G / Mọi Wi-Fi)';
+      } else {
+        scopeBadge.style.background = 'rgba(245,158,11,0.18)';
+        scopeBadge.style.border = '1px solid rgba(251,191,36,0.45)';
+        scopeBadge.style.color = '#FDE68A';
+        scopeIcon.className = 'bi bi-wifi me-1';
+        scopeText.textContent = 'Mạng nội bộ (đang mở kết nối toàn cầu...)';
+      }
+    }
+
+    if (orderId) {
+      var pollTimer = setInterval(function () {
+        fetch('/thanh-toan/' + orderId + '/status', { cache: 'no-store' })
+          .then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (data) {
+            if (!data) return;
+            updateScopeUi(Boolean(data.tunnelActive));
+            if (data.qrPayUrl && data.qrPayUrl !== currentQrUrl) {
+              currentQrUrl = data.qrPayUrl;
+              if (qrLinkEl) {
+                qrLinkEl.href = data.qrPayUrl;
+                qrLinkEl.textContent = data.qrPayUrl;
+              }
+              if (qrImgEl) {
+                qrImgEl.src = qrBaseSrc + '?v=' + Date.now();
+              }
+            }
+            if (data.paid) {
+              clearInterval(pollTimer);
+              window.location.href = data.redirectUrl || ('/thanh-toan/' + orderId + '/thanh-cong');
+            }
+          })
+          .catch(function () {});
+      }, 1500);
+    }
+  })();
+</script>
 </body>
 </html>

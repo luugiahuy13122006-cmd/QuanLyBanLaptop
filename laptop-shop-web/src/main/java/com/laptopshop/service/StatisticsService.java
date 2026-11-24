@@ -1,5 +1,6 @@
 package com.laptopshop.service;
 
+import com.laptopshop.dto.MonthlyImportCostDTO;
 import com.laptopshop.dto.MonthlyRevenueDTO;
 import com.laptopshop.dto.OrderStatusCountDTO;
 import com.laptopshop.dto.TopSellingLaptopDTO;
@@ -14,4 +15,6 @@ public interface StatisticsService {
     List<TopSellingLaptopDTO> getTopSellingLaptops(int limit);
     List<OrderStatusCountDTO> getOrderStatusCounts();
     List<Laptop> getLowStockLaptops(int threshold);
+    BigDecimal getTotalImportCost();
+    List<MonthlyImportCostDTO> getMonthlyImportCost(int year);
 }

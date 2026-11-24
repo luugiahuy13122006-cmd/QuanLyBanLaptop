@@ -1,8 +1,5 @@
 package com.laptopshop.config;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
-// Cấu hình Spring Security 6: BCryptPasswordEncoder, đăng nhập/đăng xuất và phân quyền theo vai trò ADMIN, STAFF, CUSTOMER.
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,8 +7,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebSecurity
@@ -22,33 +26,87 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    static String safeRedirect(String target) {
+        if (target == null || target.isBlank()) return null;
+        String t = target.trim();
+        if (!t.startsWith("/") || t.startsWith("//") || t.contains("\\") || t.contains("://")) return null;
+        if (t.chars().anyMatch(c -> c < 32)) return null;
+        if (t.startsWith("/login") || t.startsWith("/logout") || t.startsWith("/register")) return null;
+        return t;
+    }
+
+    private static String refererPath(HttpServletRequest request) {
+        String ref = request.getHeader("Referer");
+        if (ref == null) return null;
+        try {
+            URI uri = URI.create(ref);
+            if (uri.getHost() == null || !uri.getHost().equalsIgnoreCase(request.getServerName())) return null;
+            String path = uri.getRawPath() == null || uri.getRawPath().isEmpty() ? "/" : uri.getRawPath();
+            return uri.getRawQuery() != null ? path + "?" + uri.getRawQuery() : path;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static String redirectQuery(String redirect) {
+        String safe = safeRedirect(redirect);
+        return safe != null ? "&redirect=" + URLEncoder.encode(safe, StandardCharsets.UTF_8) : "";
+    }
+
+    @Bean
+    public AuthenticationEntryPoint loginEntryPoint() {
+        return (request, response, ex) -> {
+            String ctx = request.getContextPath();
+            String back;
+            if ("GET".equalsIgnoreCase(request.getMethod())) {
+                String q = request.getQueryString();
+                back = request.getRequestURI().substring(ctx.length()) + (q != null ? "?" + q : "");
+            } else {
+                back = refererPath(request);
+            }
+            response.sendRedirect(ctx + "/login?required=true" + redirectQuery(back));
+        };
+    }
+
     @Bean
     public AuthenticationSuccessHandler roleBasedSuccessHandler() {
         return (request, response, authentication) -> {
             boolean isAdminOrStaff = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .anyMatch(a -> a.equals("ROLE_ADMIN") || a.equals("ROLE_STAFF"));
+            String ctx = request.getContextPath();
             if (isAdminOrStaff) {
-                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/");
+                response.sendRedirect(ctx + "/admin/dashboard");
+                return;
             }
+            String redirect = safeRedirect(request.getParameter("redirect"));
+            response.sendRedirect(ctx + (redirect != null ? redirect : "/"));
         };
+    }
+
+    @Bean
+    public AuthenticationFailureHandler loginFailureHandler() {
+        return (request, response, ex) ->
+                response.sendRedirect(request.getContextPath() + "/login?error=true"
+                        + redirectQuery(request.getParameter("redirect")));
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/orders/place"))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/", "/san-pham/**", "/tim-kiem",
-                    "/gio-hang/**", "/dat-hang/**",
-                    "/login", "/register", "/403", "/error/**",
-                    "/css/**", "/images/**", "/js/**",
-                    "/orders/place"
+                    "/qr-pay/**",
+                    "/login", "/register", "/403", "/error", "/error/**",
+                    "/css/**", "/images/**", "/js/**"
                 ).permitAll()
-                .requestMatchers("/admin/accounts/**", "/admin/stock/**").hasRole("ADMIN")
+                .requestMatchers(
+                    "/gio-hang/**", "/dat-hang/**", "/thanh-toan/**",
+                    "/don-hang-cua-toi/**", "/tai-khoan/**"
+                ).authenticated()
+                .requestMatchers("/admin/accounts/**").hasRole("ADMIN")
+                .requestMatchers("/admin/import-receipts/*/approve", "/admin/import-receipts/*/reject").hasRole("ADMIN")
                 .requestMatchers(
                     "/admin/laptops/add/**", "/admin/laptops/edit/**", "/admin/laptops/delete/**",
                     "/admin/categories/add/**", "/admin/categories/edit/**", "/admin/categories/delete/**",
@@ -56,14 +114,13 @@ public class SecurityConfig {
                     "/admin/customers/delete/**"
                 ).hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
-                .requestMatchers("/don-hang-cua-toi/**", "/tai-khoan/**").authenticated()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
                 .successHandler(roleBasedSuccessHandler())
-                .failureUrl("/login?error=true")
+                .failureHandler(loginFailureHandler())
                 .permitAll()
             )
             .logout(logout -> logout
@@ -74,6 +131,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(loginEntryPoint())
                 .accessDeniedPage("/403")
             );
 

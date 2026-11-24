@@ -14,110 +14,160 @@
 <div class="container-fluid">
   <div class="row">
     <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
-    <main class="col-lg-10 p-4">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 class="fw-bold mb-0">Đơn hàng <span class="text-primary" th:text="${order.orderCode}"></span></h2>
-        <a th:href="@{/admin/orders}" class="btn btn-outline-secondary">&larr; Quay lại danh sách</a>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0">Đơn hàng <code class="fs-5 text-primary ms-1" th:text="${order.orderCode}"></code></h4>
+          <div class="small text-muted">Chi tiết giao nhận, thanh toán &amp; nhật ký chuyển trạng thái</div>
+        </div>
+        <a th:href="@{/admin/orders}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
       </div>
-      <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-      <div class="row g-4 mb-4">
-        <div class="col-md-7">
-          <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-dark text-white fw-bold">Thông tin Khách hàng &amp; Giao nhận</div>
-            <div class="card-body">
-              <div class="row mb-2">
-                <div class="col-md-6"><strong>Khách hàng:</strong> <span th:text="${order.customer != null ? order.customer.customerName : '-'}"></span></div>
-                <div class="col-md-6"><strong>Ngày đặt:</strong> <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm:ss')}"></span></div>
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-lg-7">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6><i class="bi bi-person-vcard text-primary me-2"></i>Thông tin Khách hàng &amp; Giao nhận</h6>
               </div>
-              <div class="row mb-2">
-                <div class="col-md-6"><strong>Người nhận:</strong> <span th:text="${order.recipientName}"></span></div>
-                <div class="col-md-6"><strong>SĐT nhận:</strong> <span th:text="${order.recipientPhone}"></span></div>
+              <div class="p-4">
+                <div class="row g-2 small mb-2">
+                  <div class="col-md-6"><span class="text-muted">Khách hàng:</span> <strong th:text="${order.customer != null ? order.customer.customerName : '-'}"></strong></div>
+                  <div class="col-md-6"><span class="text-muted">Ngày đặt:</span> <span class="tabular-nums" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm:ss')}"></span></div>
+                  <div class="col-md-6"><span class="text-muted">Người nhận:</span> <strong th:text="${order.recipientName}"></strong></div>
+                  <div class="col-md-6"><span class="text-muted">SĐT nhận:</span> <strong class="tabular-nums" th:text="${order.recipientPhone}"></strong></div>
+                </div>
+                <div class="small mb-2"><span class="text-muted">Địa chỉ giao:</span> <span class="fw-medium" th:text="${order.deliveryAddress}"></span></div>
+                <div class="small mb-2"><span class="text-muted">Ghi chú:</span> <span th:text="${order.note != null ? order.note : 'Không có'}"></span></div>
+                <div class="small mb-2" th:if="${order.cancelReason != null}"><span class="text-muted">Lý do hủy:</span> <span class="text-danger fw-medium" th:text="${order.cancelReason}"></span></div>
+                <div class="small mb-2" th:if="${order.paymentExpiresAt != null and order.status.name() == 'PENDING'}">
+                  <span class="text-muted">Hạn chuyển khoản:</span>
+                  <span class="text-danger fw-semibold tabular-nums" th:text="${#temporals.format(order.paymentExpiresAt, 'dd/MM/yyyy HH:mm')}"></span>
+                </div>
+
+                <hr class="my-3"/>
+
+                <div th:if="${payment != null}">
+                  <h6 class="fw-bold small text-uppercase text-muted mb-2">Thông tin Thanh toán (Payments)</h6>
+                  <div class="d-flex flex-wrap align-items-center gap-2 small mb-2">
+                    <span class="badge-soft badge-soft-info" th:text="${payment.paymentMethod.displayName}"></span>
+                    <span class="badge-soft"
+                          th:classappend="${payment.paymentStatus.name() == 'PAID' ? 'badge-soft-success' : (payment.paymentStatus.name() == 'PENDING_CONFIRMATION' ? 'badge-soft-warning' : (payment.paymentStatus.name() == 'FAILED' or payment.paymentStatus.name() == 'REFUNDED' ? 'badge-soft-danger' : 'badge-soft-slate'))}"
+                          th:text="${payment.paymentStatus.displayName}"></span>
+                  </div>
+                  <div class="small mb-2">
+                    <span class="text-muted">Mã giao dịch:</span> <code th:text="${payment.transactionCode}"></code>
+                    <span th:if="${payment.paidAt != null}" class="ms-2 text-muted tabular-nums" th:text="'(' + ${#temporals.format(payment.paidAt, 'dd/MM/yyyy HH:mm')} + ')'"></span>
+                  </div>
+                  <div th:if="${payment.paymentMethod.name() == 'BANK_TRANSFER' and payment.paymentStatus.name() != 'PAID' and payment.paymentStatus.name() != 'REFUNDED' and !order.status.closed and order.status.name() != 'REFUND_REQUESTED'}"
+                       class="mt-3">
+                    <form th:action="@{/admin/orders/{id}/confirm-payment(id=${order.id})}" method="post"
+                          onsubmit="return confirm('Xác nhận đơn hàng đã nhận đủ tiền chuyển khoản?');">
+                      <button type="submit" class="btn btn-sm btn-success fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <div th:if="${order.status.name() == 'REFUND_REQUESTED' or order.status.name() == 'REFUNDED'}" class="mt-3 p-3 border rounded-3" style="background: #FFFBEB; border-color: #FDE68A !important;">
+                  <h6 class="fw-bold text-dark mb-2"><i class="bi bi-arrow-counterclockwise me-1"></i>Thông tin Hoàn tiền</h6>
+                  <div class="small mb-1"><strong>Lý do:</strong> <span th:text="${order.refundReason}"></span></div>
+                  <div class="small mb-1"><strong>Ngân hàng:</strong> <span th:text="${order.refundBankName}"></span></div>
+                  <div class="small mb-1"><strong>Số tài khoản:</strong> <code th:text="${order.refundAccountNumber}"></code></div>
+                  <div class="small mb-2"><strong>Chủ tài khoản:</strong> <span th:text="${order.refundAccountHolder}"></span></div>
+                  <form th:if="${order.status.name() == 'REFUND_REQUESTED'}"
+                        th:action="@{/admin/orders/{id}/confirm-refund(id=${order.id})}" method="post"
+                        onsubmit="return confirm('Xác nhận đã chuyển khoản hoàn tiền và hoàn lại tồn kho?');">
+                    <button type="submit" class="btn btn-sm btn-danger fw-semibold">
+                      <i class="bi bi-check-circle me-1"></i>Xác nhận đã hoàn tiền
+                    </button>
+                  </form>
+                  <div th:if="${order.refundedAt != null}" class="small text-success fw-semibold mt-1">
+                    Đã hoàn tiền lúc <span class="tabular-nums" th:text="${#temporals.format(order.refundedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                  </div>
+                </div>
               </div>
-              <p class="mb-2"><strong>Địa chỉ giao:</strong> <span th:text="${order.deliveryAddress}"></span></p>
-              <p class="mb-2"><strong>Ghi chú:</strong> <span th:text="${order.note != null ? order.note : 'Không có'}"></span></p>
-              <hr/>
-              <div th:if="${payment != null}">
-                <h6 class="fw-bold text-secondary">Thanh toán (Payments)</h6>
-                <p class="mb-1">
-                  <strong>Phương thức:</strong> <span class="badge bg-info text-dark" th:text="${payment.paymentMethod.displayName}"></span> |
-                  <strong>Trạng thái:</strong> <span class="badge bg-secondary" th:text="${payment.paymentStatus.displayName}"></span>
-                </p>
-                <p class="mb-0">
-                  <strong>Mã giao dịch:</strong> <code th:text="${payment.transactionCode}"></code>
-                  <span th:if="${payment.paidAt != null}" class="ms-2 text-muted small" th:text="'(' + ${#temporals.format(payment.paidAt, 'dd/MM/yyyy HH:mm')} + ')'"></span>
-                </p>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6><i class="bi bi-arrow-repeat text-primary me-2"></i>Cập nhật Trạng thái Đơn hàng</h6>
+              </div>
+              <div class="p-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <span class="small text-muted">Trạng thái hiện tại:</span>
+                  <span class="badge-soft"
+                        th:classappend="${order.orderStatus.name() == 'COMPLETED' ? 'badge-soft-success' : (order.orderStatus.name() == 'CANCELLED' or order.orderStatus.name() == 'RETURNED' or order.orderStatus.name() == 'REFUNDED' ? 'badge-soft-danger' : 'badge-soft-warning')}"
+                        th:text="${order.orderStatus.displayName}"></span>
+                </div>
+                <form th:action="@{/admin/orders/{id}/status(id=${order.orderId})}" method="post" class="d-flex gap-2 mb-3">
+                  <select name="status" class="form-select">
+                    <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.displayName}" th:selected="${s == order.orderStatus}"></option>
+                  </select>
+                  <button type="submit" class="btn btn-pv-primary text-nowrap px-3">Cập nhật</button>
+                </form>
+                <div class="p-3 rounded-3 bg-light border small text-muted">
+                  <i class="bi bi-info-circle text-primary me-1"></i>
+                  Khi chuyển sang <strong>Đã hủy</strong> hoặc <strong>Hoàn trả</strong>, hệ thống tự động hoàn lại tồn kho (<code>StockQuantity</code>) và ghi nhận lịch sử.
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="col-md-5">
-          <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-primary text-white fw-bold">Cập nhật Trạng thái Đơn hàng</div>
-            <div class="card-body">
-              <p>Trạng thái hiện tại:
-                <span class="badge fs-6"
-                      th:classappend="${order.orderStatus.name() == 'COMPLETED' ? 'bg-success' : (order.orderStatus.name() == 'CANCELLED' or order.orderStatus.name() == 'RETURNED' ? 'bg-danger' : 'bg-warning text-dark')}"
-                      th:text="${order.orderStatus.displayName}"></span>
-              </p>
-              <form th:action="@{/admin/orders/{id}/status(id=${order.orderId})}" method="post" class="d-flex gap-2">
-                <select name="status" class="form-select">
-                  <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.displayName}" th:selected="${s == order.orderStatus}"></option>
-                </select>
-                <button type="submit" class="btn btn-success text-nowrap">Cập nhật</button>
-              </form>
-              <small class="text-muted d-block mt-2">
-                * Khi chuyển sang <strong>Đã hủy</strong> hoặc <strong>Hoàn trả</strong>, hệ thống tự động hoàn lại tồn kho (<code>StockQuantity</code>) và ghi nhận lịch sử.
-              </small>
-            </div>
+        <div class="pro-card mb-4">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-laptop text-primary me-2"></i>Chi tiết Sản phẩm trong Đơn (OrderDetails)</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table pro-table mb-0 align-middle">
+              <thead>
+                <tr><th>LaptopID</th><th>SKU</th><th>Tên Laptop</th><th class="text-end">Đơn giá</th><th class="text-center">SL</th><th class="text-end">Thành tiền</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="d : ${order.orderDetails}">
+                  <td class="text-muted tabular-nums" th:text="${d.laptop != null ? d.laptop.id : '-'}"></td>
+                  <td><code th:text="${d.skuSnapshot}"></code></td>
+                  <td class="fw-semibold" th:text="${d.laptopNameSnapshot}"></td>
+                  <td class="text-end tabular-nums" th:text="${#numbers.formatDecimal(d.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                  <td class="text-center tabular-nums" th:text="${d.quantity}"></td>
+                  <td class="text-end fw-bold tabular-nums" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                </tr>
+              </tbody>
+              <tfoot style="background: #F8FAFC;">
+                <tr><th colspan="5" class="text-end py-2">Tạm tính:</th><th class="text-end tabular-nums py-2" th:text="${#numbers.formatDecimal(order.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></th></tr>
+                <tr><th colspan="5" class="text-end py-2">Giảm giá:</th><th class="text-end text-success tabular-nums py-2" th:text="'-' + ${#numbers.formatDecimal(order.discount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></th></tr>
+                <tr><th colspan="5" class="text-end py-2">Phí vận chuyển:</th><th class="text-end text-success py-2">Miễn phí (0 ₫)</th></tr>
+                <tr><th colspan="5" class="text-end fs-5 py-3">Tổng cộng:</th><th class="text-end pv-price fs-5 py-3" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></th></tr>
+              </tfoot>
+            </table>
           </div>
         </div>
-      </div>
 
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-dark text-white fw-bold">Chi tiết Sản phẩm trong Đơn (OrderDetails)</div>
-        <div class="table-responsive">
-          <table class="table table-bordered mb-0 align-middle">
-            <thead class="table-secondary">
-              <tr><th>LaptopID</th><th>SKU</th><th>Tên Laptop</th><th class="text-end">Đơn giá</th><th class="text-center">SL</th><th class="text-end">Thành tiền</th></tr>
-            </thead>
-            <tbody>
-              <tr th:each="d : ${order.orderDetails}">
-                <td th:text="${d.laptop != null ? d.laptop.id : '-'}"></td>
-                <td><code th:text="${d.skuSnapshot}"></code></td>
-                <td class="fw-semibold" th:text="${d.laptopNameSnapshot}"></td>
-                <td class="text-end" th:text="${#numbers.formatDecimal(d.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
-                <td class="text-center" th:text="${d.quantity}"></td>
-                <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr><th colspan="5" class="text-end">Tạm tính:</th><th class="text-end" th:text="${#numbers.formatDecimal(order.subtotal, 0, 'COMMA', 0, 'POINT')} + ' đ'"></th></tr>
-              <tr><th colspan="5" class="text-end">Giảm giá:</th><th class="text-end text-success" th:text="'-' + ${#numbers.formatDecimal(order.discount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></th></tr>
-              <tr><th colspan="5" class="text-end">Phí vận chuyển:</th><th class="text-end" th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' đ'"></th></tr>
-              <tr class="table-warning"><th colspan="5" class="text-end fs-5">Tổng cộng:</th><th class="text-end text-danger fs-5" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></th></tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-secondary text-white fw-bold">Lịch sử Trạng thái Đơn hàng (OrderStatusHistory)</div>
-        <div class="table-responsive">
-          <table class="table table-striped mb-0">
-            <thead><tr><th>HistoryID</th><th>Trạng thái cũ</th><th>Trạng thái mới</th><th>Thời gian</th><th>Ghi chú</th></tr></thead>
-            <tbody>
-              <tr th:each="h : ${histories}">
-                <td th:text="${h.historyId}"></td>
-                <td th:text="${h.oldStatus != null ? h.oldStatus.displayName : 'Khởi tạo'}"></td>
-                <td><span class="badge bg-primary" th:text="${h.newStatus.displayName}"></span></td>
-                <td th:text="${#temporals.format(h.changedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
-                <td th:text="${h.note}"></td>
-              </tr>
-              <tr th:if="${#lists.isEmpty(histories)}"><td colspan="5" class="text-center text-muted py-3">Chưa có lịch sử.</td></tr>
-            </tbody>
-          </table>
+        <div class="pro-card">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-clock-history text-primary me-2"></i>Lịch sử Trạng thái Đơn hàng</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table pro-table mb-0">
+              <thead><tr><th>HistoryID</th><th>Trạng thái cũ</th><th>Trạng thái mới</th><th>Thời gian</th><th>Ghi chú</th></tr></thead>
+              <tbody>
+                <tr th:each="h : ${histories}">
+                  <td class="text-muted tabular-nums" th:text="${h.historyId}"></td>
+                  <td class="text-muted" th:text="${h.oldStatus != null ? h.oldStatus.displayName : 'Khởi tạo'}"></td>
+                  <td><span class="badge-soft badge-soft-info" th:text="${h.newStatus.displayName}"></span></td>
+                  <td class="small text-muted tabular-nums" th:text="${#temporals.format(h.changedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                  <td th:text="${h.note}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(histories)}"><td colspan="5" class="text-center text-muted py-4">Chưa có lịch sử.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </main>

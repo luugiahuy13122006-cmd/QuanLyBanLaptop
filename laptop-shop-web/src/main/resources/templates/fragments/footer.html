@@ -2,34 +2,68 @@
 <!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <body>
-<footer th:fragment="footer" class="bg-white border-top mt-5 pt-4 pb-3">
+<footer th:fragment="footer" class="pro-footer pt-5 pb-4">
   <div class="container">
-    <div class="row g-4 pb-3 border-bottom">
-      <div class="col-md-4">
-        <div class="fw-bold fs-5 mb-2" style="color: var(--pv-blue);">LAPTOPSHOP - QL_LAPTOP</div>
-        <p class="text-muted small mb-1">Hệ thống bán lẻ Laptop chính hãng – Đồ án môn Công nghệ Java.</p>
-        <p class="text-muted small mb-0">Công nghệ: Spring Boot, Thymeleaf, Bootstrap 5, SQL Server, Socket &amp; Đa luồng.</p>
+    <div class="row g-4 pb-4" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+      <div class="col-lg-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="pro-brand-mark"><i class="bi bi-laptop"></i></span>
+          <div>
+            <div class="fw-bold text-white fs-5 lh-1">LAPTOPSHOP</div>
+            <small class="text-slate-400" style="color: #94A3B8; font-size: 0.72rem;">QL_LAPTOP • Enterprise Retail System</small>
+          </div>
+        </div>
+        <p class="small mb-3" style="color: #94A3B8; max-width: 340px;">
+          Hệ thống bán lẻ Laptop chính hãng tích hợp kiểm soát tồn kho thời gian thực, thanh toán chuyển khoản VietQR và TCP Socket đa luồng.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge rounded-pill" style="background: rgba(37,99,235,0.18); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3);">Spring Boot 3</span>
+          <span class="badge rounded-pill" style="background: rgba(16,185,129,0.15); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.3);">SQL Server</span>
+          <span class="badge rounded-pill" style="background: rgba(139,92,246,0.16); color: #C4B5FD; border: 1px solid rgba(139,92,246,0.3);">Socket TCP</span>
+        </div>
       </div>
-      <div class="col-6 col-md-4">
-        <div class="fw-bold mb-2 small text-uppercase">Chính sách hỗ trợ</div>
-        <ul class="list-unstyled small text-muted mb-0">
-          <li class="mb-1"><i class="bi bi-check2 text-primary me-1"></i>Cam kết hàng chính hãng 100%</li>
-          <li class="mb-1"><i class="bi bi-check2 text-primary me-1"></i>Đổi trả miễn phí trong 10 ngày</li>
-          <li class="mb-1"><i class="bi bi-check2 text-primary me-1"></i>Miễn phí giao hàng toàn quốc</li>
+
+      <div class="col-6 col-lg-2">
+        <h6 class="mb-3">Mua sắm</h6>
+        <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+          <li><a th:href="@{/}">Tất cả Laptop</a></li>
+          <li><a th:href="@{/(discountedOnly=true)}">Giảm giá sốc</a></li>
+          <li><a th:href="@{/gio-hang}">Giỏ hàng của bạn</a></li>
+          <li><a th:href="@{/don-hang-cua-toi}">Tra cứu đơn hàng</a></li>
         </ul>
       </div>
-      <div class="col-6 col-md-4">
-        <div class="fw-bold mb-2 small text-uppercase">Thành viên thực hiện</div>
-        <div class="small text-muted">
-          Huy (TV1) • Hiệu (TV2) • Đạt (TV3) • Khang (TV4) • Bảo (TV5)
-        </div>
-        <div class="small mt-2">
-          Hotline hỗ trợ: <strong style="color: var(--pv-blue);">1800 6867</strong>
+
+      <div class="col-6 col-lg-3">
+        <h6 class="mb-3">Cam kết dịch vụ</h6>
+        <ul class="list-unstyled small d-flex flex-column gap-2 mb-0" style="color: #94A3B8;">
+          <li><i class="bi bi-patch-check-fill text-primary me-2"></i>Hàng chính hãng 100%, nguyên seal</li>
+          <li><i class="bi bi-arrow-repeat text-primary me-2"></i>Đổi mới trong 10 ngày đầu</li>
+          <li><i class="bi bi-truck text-primary me-2"></i>Miễn phí giao hàng toàn quốc</li>
+          <li><i class="bi bi-shield-lock-fill text-primary me-2"></i>Giữ tồn kho an toàn đồng thời</li>
+        </ul>
+      </div>
+
+      <div class="col-lg-3">
+        <h6 class="mb-3">Thành viên thực hiện</h6>
+        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+          <div class="small mb-2" style="color: #CBD5E1;">
+            Huy (TV1) • Hiệu (TV2) • Đạt (TV3)<br/>
+            Khang (TV4) • Bảo (TV5)
+          </div>
+          <div class="d-flex align-items-center gap-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.08);">
+            <i class="bi bi-headset text-primary fs-5"></i>
+            <div>
+              <div style="font-size: 0.7rem; color: #94A3B8;">Hotline hỗ trợ</div>
+              <div class="fw-bold text-white tabular-nums">1800 6867</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="text-center text-muted small pt-3">
-      &copy; 2026 LaptopShop – Đồ án môn học Công nghệ Java
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 pt-3 small" style="color: #64748B;">
+      <span>&copy; 2026 LaptopShop – Đồ án môn Công nghệ Java.</span>
+      <span>Designed with Precision • Responsive UI</span>
     </div>
   </div>
 </footer>

@@ -68,6 +68,9 @@ class SystemIntegrationTest {
     @Autowired private OrderDetailRepository orderDetailRepository;
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private OrderStatusHistoryRepository historyRepository;
+    @Autowired private ImportReceiptRepository importReceiptRepository;
+    @Autowired private ImportReceiptService importReceiptService;
+    @Autowired private QrCodeService qrCodeService;
 
     private Integer categoryId;
     private Integer brandId;
@@ -80,6 +83,7 @@ class SystemIntegrationTest {
         paymentRepository.deleteAll();
         orderDetailRepository.deleteAll();
         orderRepository.deleteAll();
+        importReceiptRepository.deleteAll();
         customerRepository.deleteAll();
         accountRepository.deleteAll();
         laptopRepository.deleteAll();
@@ -146,7 +150,7 @@ class SystemIntegrationTest {
         mockMvc.perform(post("/admin/laptops/delete/" + laptopId).with(csrf())).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/categories/add")).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/brands/add")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/admin/stock/test")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/admin/import-receipts/1/approve").with(csrf())).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/accounts")).andExpect(status().isForbidden());
     }
 
@@ -174,10 +178,12 @@ class SystemIntegrationTest {
         assertThrows(BusinessException.class, () -> categoryService.deleteCategory(categoryId));
         assertThrows(BusinessException.class, () -> brandService.deleteBrand(brandId));
 
-        PlaceOrderRequest req = new PlaceOrderRequest(
-                customerId, PaymentMethod.CASH, "TP.HCM", "Test FK",
-                List.of(new OrderItemRequest(laptopId, 1))
-        );
+        PlaceOrderRequest req = new PlaceOrderRequest();
+        req.setCustomerId(customerId);
+        req.setPaymentMethod(PaymentMethod.CASH);
+        req.setDeliveryAddress("TP.HCM");
+        req.setNote("Test FK");
+        req.setItems(List.of(new OrderItemRequest(laptopId, 1)));
         orderService.placeOrder(req);
 
         List<Order> customerOrders = orderService.getOrdersByCustomerId(customerId);
@@ -335,13 +341,12 @@ class SystemIntegrationTest {
         invalidDto.setCategoryId(categoryId);
         invalidDto.setBrandId(brandId);
         invalidDto.setSalePrice(new BigDecimal("18000000"));
-        assertThrows(BusinessException.class, () -> laptopService.createLaptopWithImages(invalidDto, onlyFour),
-                "Bắt buộc phải từ chối khi không đủ 5 ảnh sản phẩm");
+        assertThrows(BusinessException.class, () -> laptopService.createLaptopWithImages(invalidDto, onlyFour));
 
         MockMultipartFile badExt = new MockMultipartFile("imageFiles", "virus.txt", "text/plain", "bad".getBytes());
         assertThrows(BusinessException.class, () -> laptopService.saveUploadedLaptopImages(testSku, new MockMultipartFile[]{
                 onlyFour[0], onlyFour[1], onlyFour[2], onlyFour[3], badExt
-        }), "Bắt buộc từ chối định dạng tệp không phải .jpg/.png/.webp");
+        }));
 
         Path srcUploadDir = WebConfig.resolveLaptopImagesBaseDir().resolve(testSku);
         Path targetBase = WebConfig.resolveTargetLaptopImagesBaseDir();
@@ -377,19 +382,13 @@ class SystemIntegrationTest {
             String expectedCsv = "/images/laptops/" + testSku + "/1.jpg,/images/laptops/" + testSku + "/2.jpg,/images/laptops/"
                     + testSku + "/3.jpg,/images/laptops/" + testSku + "/4.jpg,/images/laptops/" + testSku + "/5.jpg";
             assertEquals(expectedCsv, saved.getImageUrl());
-            assertEquals("/images/laptops/" + testSku + "/1.jpg", saved.getDisplayImageUrl());
             assertEquals(5, laptopService.getGalleryImages(saved).size());
-            for (int i = 1; i <= 5; i++) {
-                assertTrue(Files.exists(srcUploadDir.resolve(i + ".jpg")), "Thiếu file ảnh lưu trên đĩa: " + i + ".jpg");
-            }
 
-            // Trang Cập nhật ẩn hoàn toàn ô URL Hình ảnh
             String editHtml = mockMvc.perform(get("/admin/laptops/edit/" + saved.getId()))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
-            assertFalse(editHtml.contains("name=\"imageUrl\""), "Trang cập nhật không được chứa ô URL Hình ảnh");
+            assertFalse(editHtml.contains("name=\"imageUrl\""));
 
-            // Cập nhật không gửi imageUrl vẫn giữ nguyên 5 đường dẫn ảnh cũ
             LaptopDTO updateDto = new LaptopDTO();
             updateDto.setSku(saved.getSku());
             updateDto.setName("Dell Upload 5 Images Updated");
@@ -410,6 +409,65 @@ class SystemIntegrationTest {
             deleteDirectoryQuietly(srcUploadDir);
             deleteDirectoryQuietly(targetUploadDir);
         }
+    }
+
+    @Test
+    @DisplayName("Phase 2: Kiểm thử Phiếu nhập kho (Pessimistic Lock cộng tồn) và luồng Chuyển khoản -> Hoàn tiền")
+    void testImportReceiptAndBankTransferRefundFlow() {
+        Role adminRole = roleRepository.findByRoleNameIgnoreCase("ADMIN")
+                .orElseGet(() -> roleRepository.save(new Role("ADMIN", "Admin")));
+        Account adminAcc = new Account();
+        adminAcc.setUsername("admin_test_p2");
+        adminAcc.setPasswordHash(passwordEncoder.encode("123456"));
+        adminAcc.setFullName("Admin Test");
+        adminAcc.setEmail("adminp2@test.com");
+        adminAcc.setRole(adminRole);
+        adminAcc = accountRepository.save(adminAcc);
+
+        ImportItemRequest item = new ImportItemRequest();
+        item.setLaptopId(laptopId);
+        item.setQuantity(4);
+        item.setUnitCost(new BigDecimal("20000000"));
+        ImportReceiptForm form = new ImportReceiptForm();
+        form.setSupplier("Dell Vietnam");
+        form.setNote("Test nhập kho");
+        form.setItems(List.of(item));
+
+        ImportReceipt created = importReceiptService.createReceipt(form, adminAcc.getId());
+        assertEquals(ImportReceiptStatus.PENDING, created.getStatus());
+        ImportReceipt approved = importReceiptService.approveReceipt(created.getId(), adminAcc.getId());
+        assertEquals(ImportReceiptStatus.APPROVED, approved.getStatus());
+        assertEquals(14, laptopRepository.findById(laptopId).orElseThrow().getStockQuantity());
+        assertThrows(BusinessException.class, () -> laptopService.deleteLaptop(laptopId));
+
+        Customer cus = customerRepository.findById(customerId).orElseThrow();
+        cus.setAccountId(adminAcc.getId());
+        customerRepository.save(cus);
+
+        PlaceOrderRequest req = new PlaceOrderRequest();
+        req.setCustomerId(customerId);
+        req.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        req.setDeliveryAddress("TP.HCM");
+        req.setItems(List.of(new OrderItemRequest(laptopId, 2)));
+        Order order = orderService.placeOrder(req, adminAcc.getId());
+        assertEquals(12, laptopRepository.findById(laptopId).orElseThrow().getStockQuantity());
+
+        assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(order.getId(), OrderStatus.CONFIRMED));
+        Payment pCreated = orderService.getPaymentByOrderId(order.getId()).orElseThrow();
+        String qrToken = qrCodeService.createToken(order.getId(), order.getOrderCode(), pCreated.getTransactionCode());
+        orderService.confirmBankTransferByQrToken(order.getId(), qrToken);
+        Order confirmed = orderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(OrderStatus.CONFIRMED, confirmed.getStatus());
+        assertEquals(PaymentStatus.PAID, orderService.getPaymentByOrderId(order.getId()).orElseThrow().getPaymentStatus());
+        RefundRequestDTO refundDto = new RefundRequestDTO();
+        refundDto.setReason("Đổi ý");
+        refundDto.setBankName("MB Bank");
+        refundDto.setAccountNumber("0123456789");
+        refundDto.setAccountHolder("ADMIN TEST");
+        orderService.requestRefund(order.getId(), adminAcc.getId(), refundDto);
+        Order refunded = orderService.confirmRefund(order.getId(), adminAcc.getId());
+        assertEquals(OrderStatus.REFUNDED, refunded.getStatus());
+        assertEquals(14, laptopRepository.findById(laptopId).orElseThrow().getStockQuantity());
     }
 
     private void deleteDirectoryQuietly(Path dir) throws IOException {

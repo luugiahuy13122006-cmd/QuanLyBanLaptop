@@ -13,6 +13,9 @@ USE QL_Laptop;
 GO
 
 -- Xóa các bảng cũ theo thứ tự ngược khóa ngoại (giúp script chạy lại được trên mọi máy)
+DROP TABLE IF EXISTS ChiTietPhieuNhap;
+DROP TABLE IF EXISTS PhieuNhap;
+DROP TABLE IF EXISTS BoDemMa;
 DROP TABLE IF EXISTS LichSuTrangThaiDonHang;
 DROP TABLE IF EXISTS ThanhToan;
 DROP TABLE IF EXISTS ChiTietDonHang;
@@ -168,11 +171,19 @@ CREATE TABLE DonHang (
 
     TamTinh DECIMAL(18,2) NOT NULL DEFAULT 0,
     GiamGia DECIMAL(18,2) NOT NULL DEFAULT 0,
-    PhiVanChuyen DECIMAL(18,2) NOT NULL DEFAULT 0,
     TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
 
     GhiChu NVARCHAR(500),
     NgayCapNhat DATETIME2,
+
+    HanThanhToan DATETIME2,
+    LyDoHuy NVARCHAR(500),
+    LyDoHoanTien NVARCHAR(500),
+    NganHangHoan NVARCHAR(100),
+    SoTaiKhoanHoan VARCHAR(30),
+    TenChuTaiKhoanHoan NVARCHAR(100),
+    NgayYeuCauHoan DATETIME2,
+    NgayHoanTien DATETIME2,
 
     CONSTRAINT FK_DonHang_KhachHang
         FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang),
@@ -183,11 +194,12 @@ CREATE TABLE DonHang (
     CONSTRAINT CK_DonHang_TrangThai
         CHECK (TrangThaiDonHang IN (
             N'PENDING', N'CONFIRMED', N'SHIPPING',
-            N'COMPLETED', N'CANCELLED', N'RETURNED'
+            N'COMPLETED', N'CANCELLED', N'RETURNED',
+            N'REFUND_REQUESTED', N'REFUNDED'
         )),
 
     CONSTRAINT CK_DonHang_Tien
-        CHECK (TamTinh >= 0 AND GiamGia >= 0 AND PhiVanChuyen >= 0 AND TongTien >= 0)
+        CHECK (TamTinh >= 0 AND GiamGia >= 0 AND TongTien >= 0)
 );
 GO
 
@@ -233,6 +245,11 @@ CREATE TABLE ThanhToan (
     ThoiGianThanhToan DATETIME2,
     NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
+    AnhMinhChung VARCHAR(100),
+    NgayTaiMinhChung DATETIME2,
+    LyDoTuChoi NVARCHAR(500),
+    NguoiXacNhan INT,
+
     CONSTRAINT FK_ThanhToan_DonHang
         FOREIGN KEY (MaDonHang) REFERENCES DonHang(MaDonHang),
 
@@ -240,7 +257,7 @@ CREATE TABLE ThanhToan (
         CHECK (PhuongThucThanhToan IN (N'CASH', N'BANK_TRANSFER', N'CARD', N'E_WALLET')),
 
     CONSTRAINT CK_ThanhToan_TrangThai
-        CHECK (TrangThaiThanhToan IN (N'UNPAID', N'PENDING', N'PAID', N'FAILED', N'REFUNDED')),
+        CHECK (TrangThaiThanhToan IN (N'UNPAID', N'PENDING', N'PENDING_CONFIRMATION', N'PAID', N'FAILED', N'REFUNDED')),
 
     CONSTRAINT CK_ThanhToan_SoTien CHECK (SoTien >= 0)
 );
@@ -267,8 +284,65 @@ CREATE TABLE LichSuTrangThaiDonHang (
     CONSTRAINT CK_LichSu_TrangThaiMoi
         CHECK (TrangThaiMoi IN (
             N'PENDING', N'CONFIRMED', N'SHIPPING',
-            N'COMPLETED', N'CANCELLED', N'RETURNED'
+            N'COMPLETED', N'CANCELLED', N'RETURNED',
+            N'REFUND_REQUESTED', N'REFUNDED'
         ))
+);
+GO
+
+-- =========================================
+-- 11. BẢNG BỘ ĐẾM MÃ (BoDemMa)
+-- =========================================
+CREATE TABLE BoDemMa (
+    TenBoDem VARCHAR(30) PRIMARY KEY,
+    GiaTriHienTai INT NOT NULL DEFAULT 0
+);
+GO
+
+-- =========================================
+-- 12. BẢNG PHIẾU NHẬP KHO (PhieuNhap)
+-- =========================================
+CREATE TABLE PhieuNhap (
+    MaPhieuNhap INT IDENTITY(1,1) PRIMARY KEY,
+    MaCodePhieuNhap VARCHAR(30) NOT NULL UNIQUE,
+    NhaCungCap NVARCHAR(150) NOT NULL,
+    GhiChu NVARCHAR(500),
+    TrangThai NVARCHAR(20) NOT NULL DEFAULT N'PENDING',
+    TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
+    NguoiTao INT NOT NULL,
+    NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    NguoiDuyet INT,
+    NgayDuyet DATETIME2,
+    LyDoTuChoi NVARCHAR(500),
+
+    CONSTRAINT FK_PhieuNhap_NguoiTao
+        FOREIGN KEY (NguoiTao) REFERENCES TaiKhoan(MaTaiKhoan),
+    CONSTRAINT FK_PhieuNhap_NguoiDuyet
+        FOREIGN KEY (NguoiDuyet) REFERENCES TaiKhoan(MaTaiKhoan),
+    CONSTRAINT CK_PhieuNhap_TrangThai
+        CHECK (TrangThai IN (N'PENDING', N'APPROVED', N'REJECTED')),
+    CONSTRAINT CK_PhieuNhap_TongTien
+        CHECK (TongTien >= 0)
+);
+GO
+
+-- =========================================
+-- 13. BẢNG CHI TIẾT PHIẾU NHẬP (ChiTietPhieuNhap)
+-- =========================================
+CREATE TABLE ChiTietPhieuNhap (
+    MaChiTietPhieuNhap INT IDENTITY(1,1) PRIMARY KEY,
+    MaPhieuNhap INT NOT NULL,
+    MaLaptop INT NOT NULL,
+    SoLuong INT NOT NULL,
+    DonGiaNhap DECIMAL(18,2) NOT NULL,
+    ThanhTien DECIMAL(18,2) NOT NULL,
+
+    CONSTRAINT FK_ChiTietPhieuNhap_PhieuNhap
+        FOREIGN KEY (MaPhieuNhap) REFERENCES PhieuNhap(MaPhieuNhap),
+    CONSTRAINT FK_ChiTietPhieuNhap_Laptop
+        FOREIGN KEY (MaLaptop) REFERENCES Laptop(MaLaptop),
+    CONSTRAINT CK_ChiTietPhieuNhap_SoLuong CHECK (SoLuong > 0),
+    CONSTRAINT CK_ChiTietPhieuNhap_Tien CHECK (DonGiaNhap >= 0 AND ThanhTien >= 0)
 );
 GO
 
@@ -409,7 +483,7 @@ GO
 -- 7. ĐƠN HÀNG (20 ĐƠN HÀNG)
 INSERT INTO DonHang
 (MaCodeDonHang, MaKhachHang, NguoiTao, TenNguoiNhan, SoDienThoaiNhan, DiaChiGiaoHang,
- TrangThaiDonHang, TamTinh, GiamGia, PhiVanChuyen, TongTien, GhiChu)
+ TrangThaiDonHang, TamTinh, GiamGia, TongTien, GhiChu)
 SELECT
     'DH' + RIGHT('000' + CAST(l.MaLaptop AS VARCHAR(3)), 3),
     l.MaLaptop,
@@ -425,8 +499,7 @@ SELECT
     END,
     l.GiaBan,
     0,
-    30000,
-    l.GiaBan + 30000,
+    l.GiaBan,
     N'Đơn hàng dữ liệu mẫu'
 FROM Laptop l
 JOIN KhachHang c ON c.MaKhachHang = l.MaLaptop
@@ -450,16 +523,22 @@ JOIN Laptop l
 WHERE l.MaLaptop BETWEEN 1 AND 20;
 GO
 
--- 9. THANH TOÁN (20 BẢN GHI)
+-- 9. THANH TOÁN (20 BẢN GHI - HÀNG GIÁ TRỊ CAO CHỈ CHUYỂN KHOẢN NGÂN HÀNG)
 INSERT INTO ThanhToan
 (MaDonHang, PhuongThucThanhToan, TrangThaiThanhToan, SoTien, MaGiaoDich, ThoiGianThanhToan)
 SELECT
     MaDonHang,
-    CASE WHEN MaDonHang % 2 = 0 THEN N'BANK_TRANSFER' ELSE N'CASH' END,
-    CASE WHEN TrangThaiDonHang = N'COMPLETED' THEN N'PAID' ELSE N'UNPAID' END,
+    N'BANK_TRANSFER',
+    CASE
+        WHEN TrangThaiDonHang IN (N'COMPLETED', N'CONFIRMED', N'SHIPPING') THEN N'PAID'
+        ELSE N'UNPAID'
+    END,
     TongTien,
-    'GD' + RIGHT('000' + CAST(MaDonHang AS VARCHAR(3)), 3),
-    CASE WHEN TrangThaiDonHang = N'COMPLETED' THEN SYSDATETIME() ELSE NULL END
+    'TXN-' + MaCodeDonHang,
+    CASE
+        WHEN TrangThaiDonHang IN (N'COMPLETED', N'CONFIRMED', N'SHIPPING') THEN SYSDATETIME()
+        ELSE NULL
+    END
 FROM DonHang;
 GO
 
@@ -475,7 +554,46 @@ SELECT
 FROM DonHang;
 GO
 
--- KIỂM TRA SỐ DÒNG TOÀN BỘ 10 BẢNG
+-- 11. BỘ ĐẾM MÃ
+INSERT INTO BoDemMa (TenBoDem, GiaTriHienTai) VALUES
+('DON_HANG', 20),
+('PHIEU_NHAP', 20);
+GO
+
+-- 12. PHIẾU NHẬP KHO (20 BẢN GHI)
+INSERT INTO PhieuNhap
+(MaCodePhieuNhap, NhaCungCap, GhiChu, TrangThai, TongTien, NguoiTao, NgayTao, NguoiDuyet, NgayDuyet)
+SELECT
+    'PN' + RIGHT('000' + CAST(l.MaLaptop AS VARCHAR(3)), 3),
+    N'Nhà phân phối ' + t.TenThuongHieu,
+    N'Nhập kho dữ liệu mẫu',
+    CASE WHEN l.MaLaptop <= 18 THEN N'APPROVED' ELSE N'PENDING' END,
+    l.GiaNhap * 5,
+    2,
+    SYSDATETIME(),
+    CASE WHEN l.MaLaptop <= 18 THEN 1 ELSE NULL END,
+    CASE WHEN l.MaLaptop <= 18 THEN SYSDATETIME() ELSE NULL END
+FROM Laptop l
+JOIN ThuongHieu t ON t.MaThuongHieu = l.MaThuongHieu
+WHERE l.MaLaptop BETWEEN 1 AND 20;
+GO
+
+-- 13. CHI TIẾT PHIẾU NHẬP (20 BẢN GHI)
+INSERT INTO ChiTietPhieuNhap
+(MaPhieuNhap, MaLaptop, SoLuong, DonGiaNhap, ThanhTien)
+SELECT
+    p.MaPhieuNhap,
+    l.MaLaptop,
+    5,
+    l.GiaNhap,
+    l.GiaNhap * 5
+FROM PhieuNhap p
+JOIN Laptop l
+    ON p.MaCodePhieuNhap = 'PN' + RIGHT('000' + CAST(l.MaLaptop AS VARCHAR(3)), 3)
+WHERE l.MaLaptop BETWEEN 1 AND 20;
+GO
+
+-- KIỂM TRA SỐ DÒNG TOÀN BỘ 13 BẢNG
 SELECT 'VaiTro' AS TenBang, COUNT(*) AS SoDong FROM VaiTro
 UNION ALL SELECT 'TaiKhoan', COUNT(*) FROM TaiKhoan
 UNION ALL SELECT 'DanhMucLaptop', COUNT(*) FROM DanhMucLaptop
@@ -485,5 +603,8 @@ UNION ALL SELECT 'KhachHang', COUNT(*) FROM KhachHang
 UNION ALL SELECT 'DonHang', COUNT(*) FROM DonHang
 UNION ALL SELECT 'ChiTietDonHang', COUNT(*) FROM ChiTietDonHang
 UNION ALL SELECT 'ThanhToan', COUNT(*) FROM ThanhToan
-UNION ALL SELECT 'LichSuTrangThaiDonHang', COUNT(*) FROM LichSuTrangThaiDonHang;
+UNION ALL SELECT 'LichSuTrangThaiDonHang', COUNT(*) FROM LichSuTrangThaiDonHang
+UNION ALL SELECT 'BoDemMa', COUNT(*) FROM BoDemMa
+UNION ALL SELECT 'PhieuNhap', COUNT(*) FROM PhieuNhap
+UNION ALL SELECT 'ChiTietPhieuNhap', COUNT(*) FROM ChiTietPhieuNhap;
 GO

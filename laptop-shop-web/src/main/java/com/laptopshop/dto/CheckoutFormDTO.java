@@ -29,7 +29,7 @@ public class CheckoutFormDTO {
     private String deliveryAddress;
 
     @NotNull(message = "Vui lòng chọn phương thức thanh toán")
-    private PaymentMethod paymentMethod = PaymentMethod.CASH;
+    private PaymentMethod paymentMethod = PaymentMethod.BANK_TRANSFER;
 
     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
     private String note;

@@ -1,18 +1,16 @@
 package com.laptopshop.service.impl;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
 import com.laptopshop.dto.AccountDTO;
+import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.entity.Customer;
 import com.laptopshop.entity.Role;
 import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
-import com.laptopshop.repository.AccountRepository;
-import com.laptopshop.repository.CustomerRepository;
-import com.laptopshop.repository.OrderRepository;
-import com.laptopshop.repository.RoleRepository;
+import com.laptopshop.repository.*;
 import com.laptopshop.service.AccountService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,17 +26,20 @@ public class AccountServiceImpl implements AccountService {
     private final RoleRepository roleRepository;
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
+    private final ImportReceiptRepository importReceiptRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AccountServiceImpl(AccountRepository accountRepository,
                               RoleRepository roleRepository,
                               CustomerRepository customerRepository,
                               OrderRepository orderRepository,
+                              ImportReceiptRepository importReceiptRepository,
                               PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.roleRepository = roleRepository;
         this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
+        this.importReceiptRepository = importReceiptRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -50,14 +51,12 @@ public class AccountServiceImpl implements AccountService {
         }
         String username = dto.getUsername().trim();
         String email = dto.getEmail().trim();
-
         if (accountRepository.existsByUsernameIgnoreCase(username)) {
             throw new BusinessException("Tên đăng nhập '" + username + "' đã tồn tại!");
         }
         if (accountRepository.existsByEmailIgnoreCase(email)) {
             throw new BusinessException("Email '" + email + "' đã được sử dụng!");
         }
-
         Role customerRole = roleRepository.findByRoleNameIgnoreCase("CUSTOMER")
                 .orElseThrow(() -> new BusinessException("Chưa khởi tạo vai trò CUSTOMER trong CSDL."));
 
@@ -71,8 +70,7 @@ public class AccountServiceImpl implements AccountService {
         account.setIsActive(true);
         Account savedAccount = accountRepository.save(account);
 
-        // Tự động tạo hoặc gắn hồ sơ Customer cho tài khoản khách hàng mới
-        Customer customer = customerRepository.findByPhone(dto.getPhone().trim()).orElse(null);
+        Customer customer = customerRepository.findByAccountId(savedAccount.getId()).orElse(null);
         if (customer == null) {
             customer = new Customer();
             customer.setAccountId(savedAccount.getId());
@@ -81,11 +79,7 @@ public class AccountServiceImpl implements AccountService {
             customer.setPhone(savedAccount.getPhone());
             customer.setAddress(dto.getAddress() != null && !dto.getAddress().isBlank() ? dto.getAddress().trim() : "Chưa cập nhật");
             customerRepository.save(customer);
-        } else if (customer.getAccountId() == null) {
-            customer.setAccountId(savedAccount.getId());
-            customerRepository.save(customer);
         }
-
         return savedAccount;
     }
 
@@ -195,25 +189,45 @@ public class AccountServiceImpl implements AccountService {
         if (customerRepository.findByAccountId(id).isPresent() || orderRepository.countByCreatedBy(id) > 0) {
             throw new BusinessException("Không thể xóa tài khoản đang liên kết với khách hàng hoặc đơn hàng. Hãy khóa tài khoản thay thế.");
         }
-        accountRepository.delete(account);
+        if (importReceiptRepository.existsByCreatedById(id) || importReceiptRepository.existsByApprovedById(id)) {
+            throw new BusinessException("Không thể xóa tài khoản đã tạo hoặc duyệt phiếu nhập. Hãy khóa tài khoản thay thế.");
+        }
+        try {
+            accountRepository.delete(account);
+            accountRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessException("Không thể xóa tài khoản đang được tham chiếu bởi dữ liệu khác. Hãy khóa tài khoản thay thế.");
+        }
     }
 
     @Override
     @Transactional
-    public Account updateProfile(String username, String fullName, String email, String phone, String newPassword) {
+    public Account updateProfile(String username, ProfileUpdateDTO dto) {
         Account account = findByUsername(username);
-        String cleanEmail = (email != null && !email.isBlank()) ? email.trim() : null;
+        if (dto.getCurrentPassword() == null
+                || !passwordEncoder.matches(dto.getCurrentPassword(), account.getPasswordHash())) {
+            throw new BusinessException("Mật khẩu hiện tại không đúng. Không thể lưu thay đổi.");
+        }
+        String cleanEmail = (dto.getEmail() != null && !dto.getEmail().isBlank()) ? dto.getEmail().trim() : null;
         if (cleanEmail != null && accountRepository.existsByEmailIgnoreCaseAndIdNot(cleanEmail, account.getId())) {
             throw new BusinessException("Email '" + cleanEmail + "' đã được tài khoản khác sử dụng!");
         }
-        account.setFullName(fullName.trim());
+        account.setFullName(dto.getFullName().trim());
         account.setEmail(cleanEmail);
-        account.setPhone(phone != null ? phone.trim() : null);
+        account.setPhone(dto.getPhone() != null && !dto.getPhone().isBlank() ? dto.getPhone().trim() : null);
+
+        String newPassword = dto.getNewPassword();
         if (newPassword != null && !newPassword.isBlank()) {
-            if (newPassword.trim().length() < 6) {
+            if (newPassword.length() < 6) {
                 throw new BusinessException("Mật khẩu mới phải có ít nhất 6 ký tự.");
             }
-            account.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
+            if (!newPassword.equals(dto.getConfirmNewPassword())) {
+                throw new BusinessException("Xác nhận mật khẩu mới không khớp.");
+            }
+            if (passwordEncoder.matches(newPassword, account.getPasswordHash())) {
+                throw new BusinessException("Mật khẩu mới phải khác mật khẩu hiện tại.");
+            }
+            account.setPasswordHash(passwordEncoder.encode(newPassword));
         }
         return accountRepository.save(account);
     }

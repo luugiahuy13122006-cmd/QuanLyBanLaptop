@@ -1,9 +1,7 @@
 package com.laptopshop.controller;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
-// Điều khiển Đăng nhập, Đăng ký, Hồ sơ cá nhân và trang từ chối truy cập 403.
-
 import com.laptopshop.config.CustomUserDetails;
+import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.service.AccountService;
@@ -27,12 +25,16 @@ public class AuthController {
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String error,
                             @RequestParam(required = false) String logout,
+                            @RequestParam(required = false) String required,
                             Model model) {
         if (error != null) {
             model.addAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.");
         }
         if (logout != null) {
             model.addAttribute("successMessage", "Bạn đã đăng xuất thành công.");
+        }
+        if (required != null) {
+            model.addAttribute("infoMessage", "Vui lòng đăng nhập để tiếp tục.");
         }
         return "auth/login";
     }
@@ -66,19 +68,24 @@ public class AuthController {
         if (currentUser == null) return "redirect:/login";
         Account account = accountService.findByUsername(currentUser.getUsername());
         model.addAttribute("account", account);
+        model.addAttribute("profileDTO", new ProfileUpdateDTO());
         return "auth/profile";
     }
 
     @PostMapping("/tai-khoan")
     public String updateProfile(@AuthenticationPrincipal CustomUserDetails currentUser,
-                                @RequestParam String fullName,
-                                @RequestParam(required = false) String email,
-                                @RequestParam(required = false) String phone,
-                                @RequestParam(required = false) String newPassword,
+                                @Valid @ModelAttribute("profileDTO") ProfileUpdateDTO profileDTO,
+                                BindingResult bindingResult,
+                                Model model,
                                 RedirectAttributes ra) {
         if (currentUser == null) return "redirect:/login";
+        if (bindingResult.hasErrors()) {
+            Account account = accountService.findByUsername(currentUser.getUsername());
+            model.addAttribute("account", account);
+            return "auth/profile";
+        }
         try {
-            accountService.updateProfile(currentUser.getUsername(), fullName, email, phone, newPassword);
+            accountService.updateProfile(currentUser.getUsername(), profileDTO);
             ra.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
         } catch (RuntimeException ex) {
             ra.addFlashAttribute("errorMessage", ex.getMessage());

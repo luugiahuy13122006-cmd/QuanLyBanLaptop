@@ -1,6 +1,5 @@
 package com.laptopshop.config;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
 import com.laptopshop.entity.Account;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,6 +11,7 @@ import java.util.List;
 public class CustomUserDetails implements UserDetails {
 
     private final Integer accountId;
+    private final Integer customerId;
     private final String username;
     private final String password;
     private final String fullName;
@@ -22,6 +22,19 @@ public class CustomUserDetails implements UserDetails {
 
     public CustomUserDetails(Account account) {
         this.accountId = account.getId();
+        this.customerId = null; // sẽ được set sau nếu cần
+        this.username = account.getUsername();
+        this.password = account.getPasswordHash();
+        this.fullName = account.getFullName();
+        this.email = account.getEmail();
+        this.phone = account.getPhone();
+        this.roleName = account.getRole() != null ? account.getRole().getRoleName() : "CUSTOMER";
+        this.active = Boolean.TRUE.equals(account.getIsActive());
+    }
+
+    public CustomUserDetails(Account account, Integer customerId) {
+        this.accountId = account.getId();
+        this.customerId = customerId;
         this.username = account.getUsername();
         this.password = account.getPasswordHash();
         this.fullName = account.getFullName();
@@ -32,6 +45,7 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public Integer getAccountId() { return accountId; }
+    public Integer getCustomerId() { return customerId; }
     public String getFullName() { return fullName; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
@@ -42,21 +56,10 @@ public class CustomUserDetails implements UserDetails {
         return List.of(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase()));
     }
 
-    @Override
-    public String getPassword() { return password; }
-
-    @Override
-    public String getUsername() { return username; }
-
-    @Override
-    public boolean isAccountNonExpired() { return true; }
-
-    @Override
-    public boolean isAccountNonLocked() { return true; }
-
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() { return active; }
+    @Override public String getPassword() { return password; }
+    @Override public String getUsername() { return username; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return active; }
 }

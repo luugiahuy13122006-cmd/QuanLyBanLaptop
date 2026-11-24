@@ -1,14 +1,15 @@
 package com.laptopshop;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo (tích hợp khởi chạy Web Spring Boot + SocketServer TV2 + @Scheduled)
 import com.laptopshop.socket.SocketServer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
+@ConfigurationPropertiesScan
 public class LaptopShopApplication {
 
     public static void main(String[] args) {

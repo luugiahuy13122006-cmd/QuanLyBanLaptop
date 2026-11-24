@@ -1,98 +1,98 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt & TV5 - Vũ Gia Bảo (Giao diện theo Phong Vũ - phongvu.vn) -->
+<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt & TV5 - Vũ Gia Bảo -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 <div th:fragment="header">
-  <!-- Thanh tiện ích trên cùng (Royal Blue #1435C3) -->
-  <div class="pv-topbar py-1 d-none d-md-block">
+  <!-- Slim Announcement Bar -->
+  <div class="pv-top-bar d-none d-md-block">
     <div class="container d-flex justify-content-between align-items-center">
-      <div class="d-flex gap-3">
-        <span><i class="bi bi-geo-alt me-1"></i>Hệ thống Showroom toàn quốc</span>
-        <span><i class="bi bi-building me-1"></i>Dành cho Doanh nghiệp</span>
-        <span><i class="bi bi-shield-check me-1"></i>Hàng chính hãng 100%</span>
+      <div class="d-flex gap-3 align-items-center">
+        <span><i class="bi bi-geo-alt text-info me-1"></i>Showroom toàn quốc</span>
+        <span class="opacity-50">•</span>
+        <span><i class="bi bi-building text-info me-1"></i>Giải pháp Doanh nghiệp</span>
+        <span class="opacity-50">•</span>
+        <span><i class="bi bi-shield-check text-success me-1"></i>Chính hãng 100%</span>
       </div>
-      <div class="d-flex gap-3">
-        <span><i class="bi bi-headset me-1"></i>Hotline: <strong>1800 6867</strong></span>
-        <span><i class="bi bi-truck me-1"></i>Miễn phí giao hàng toàn quốc</span>
+      <div class="d-flex gap-3 align-items-center">
+        <span><i class="bi bi-headset text-warning me-1"></i>Hotline: <strong class="text-white tabular-nums">1800 6867</strong></span>
+        <span class="opacity-50">•</span>
+        <span><i class="bi bi-truck text-info me-1"></i>FreeShip toàn quốc</span>
       </div>
     </div>
   </div>
 
-  <!-- Thanh Header chính -->
-  <header class="pv-header py-2 shadow-sm">
+  <!-- Glassmorphism Sticky Navbar -->
+  <header class="pv-header py-2">
     <div class="container">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <!-- Logo -->
+        <!-- Brand Logo -->
         <a class="text-decoration-none d-flex align-items-center gap-2" th:href="@{/}">
-          <svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" rx="4" fill="#00ADEF"/>
-            <rect x="20" width="16" height="16" rx="4" fill="#1435C3"/>
-            <rect y="20" width="16" height="16" rx="4" fill="#1435C3"/>
-            <rect x="20" y="20" width="16" height="16" rx="4" fill="#00ADEF"/>
-          </svg>
+          <span class="pro-brand-mark"><i class="bi bi-laptop"></i></span>
           <div>
-            <div class="pv-logo-text lh-1">LAPTOPSHOP</div>
-            <small class="text-muted" style="font-size: 0.68rem;">Chuẩn công nghệ • Giá tốt</small>
+            <div class="fw-bold fs-5 lh-1 pro-heading" style="color: var(--brand-slate-900);">LAPTOPSHOP</div>
+            <small class="text-muted" style="font-size: 0.7rem;">Chuẩn công nghệ • Giá tốt</small>
           </div>
         </a>
 
-        <!-- Thanh tìm kiếm chính -->
+        <!-- Search Input Group -->
         <div class="flex-grow-1 mx-lg-3" style="max-width: 520px; min-width: 220px;">
-          <form class="d-flex pv-search-box" th:action="@{/tim-kiem}" method="get">
-            <input class="form-control px-3 py-2" type="search" name="keyword" th:value="${keyword}"
-                   placeholder="Bạn muốn mua laptop gì hôm nay..."/>
-            <button class="pv-search-btn" type="submit" aria-label="Tìm kiếm">
-              <i class="bi bi-search fs-5"></i>
+          <form class="pv-search-box" th:action="@{/tim-kiem}" method="get">
+            <input type="search" name="keyword" th:value="${keyword}"
+                   placeholder="Tìm Dell XPS, MacBook, Gaming, RTX..."/>
+            <button type="submit" aria-label="Tìm kiếm">
+              <i class="bi bi-search"></i>
             </button>
           </form>
-          <div class="pv-hot-tags d-none d-lg-block mt-1">
-            <a th:href="@{/(keyword='Dell')}">Dell XPS</a>
-            <a th:href="@{/(keyword='MacBook')}">MacBook Air</a>
-            <a th:href="@{/(keyword='ASUS')}">ASUS Vivobook</a>
-            <a th:href="@{/(keyword='Gaming')}">Laptop Gaming</a>
-            <a th:href="@{/(keyword='Lenovo')}">Lenovo LOQ</a>
+          <div class="d-none d-lg-flex gap-2 mt-1 flex-wrap" style="font-size: 0.72rem;">
+            <a th:href="@{/(keyword='Dell')}" class="text-muted text-decoration-none">Dell XPS</a>
+            <span class="text-muted opacity-50">•</span>
+            <a th:href="@{/(keyword='MacBook')}" class="text-muted text-decoration-none">MacBook Air</a>
+            <span class="text-muted opacity-50">•</span>
+            <a th:href="@{/(keyword='ASUS')}" class="text-muted text-decoration-none">ASUS Vivobook</a>
+            <span class="text-muted opacity-50">•</span>
+            <a th:href="@{/(keyword='Gaming')}" class="text-muted text-decoration-none">Laptop Gaming</a>
+            <span class="text-muted opacity-50">•</span>
+            <a th:href="@{/(keyword='Lenovo')}" class="text-muted text-decoration-none">Lenovo LOQ</a>
           </div>
         </div>
 
-        <!-- Khu vực Tài khoản & Giỏ hàng -->
-        <div class="d-flex align-items-center gap-3">
-          <!-- Khi chưa đăng nhập -->
+        <!-- Account & Cart Actions -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Anonymous -->
           <div sec:authorize="isAnonymous()" class="d-flex align-items-center gap-2">
-            <a th:href="@{/login}" class="text-decoration-none d-flex align-items-center gap-2 text-dark">
-              <span class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
-                <i class="bi bi-person fs-5 text-secondary"></i>
-              </span>
-              <div class="lh-sm small d-none d-sm-block">
-                <div class="fw-semibold">Đăng nhập</div>
-                <div class="text-muted" style="font-size:0.75rem;">Đăng ký</div>
-              </div>
+            <a th:href="@{/login}" class="pro-nav-pill">
+              <i class="bi bi-person-circle fs-6 text-primary"></i>
+              <span class="d-none d-sm-inline">Đăng nhập</span>
+            </a>
+            <a th:href="@{/register}" class="btn btn-pv-outline btn-sm d-none d-md-inline-flex align-items-center px-3 py-2">
+              Đăng ký
             </a>
           </div>
 
-          <!-- Khi đã đăng nhập -->
+          <!-- Authenticated -->
           <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">
             <a sec:authorize="hasAnyRole('ADMIN','STAFF')" th:href="@{/admin/dashboard}"
-               class="btn btn-pv-primary btn-sm">
-              <i class="bi bi-speedometer2 me-1"></i>Quản trị
+               class="btn btn-pv-primary btn-sm px-3 py-2">
+              <i class="bi bi-grid-1x2-fill me-1"></i><span class="d-none d-sm-inline">Quản trị</span>
             </a>
             <div class="dropdown">
-              <a class="text-decoration-none dropdown-toggle d-flex align-items-center gap-2 text-dark"
-                 href="#" role="button" data-bs-toggle="dropdown">
-                <span class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
-                  <i class="bi bi-person-check fs-5" style="color: var(--pv-blue);"></i>
+              <a class="pro-nav-pill dropdown-toggle"
+                 href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="pro-avatar-circle" style="width: 26px; height: 26px; font-size: 0.75rem; border-radius: 7px;">
+                  <i class="bi bi-person-fill"></i>
                 </span>
-                <div class="lh-sm small d-none d-sm-block text-start">
-                  <div class="fw-bold" th:text="${currentUserFullName}">Tài khoản</div>
-                  <div class="text-muted" style="font-size:0.72rem;" th:text="${currentUserRole}">CUSTOMER</div>
+                <div class="lh-1 d-none d-sm-block text-start">
+                  <div class="fw-bold" style="font-size: 0.8rem;" th:text="${currentUserFullName}">Tài khoản</div>
+                  <div class="text-muted" style="font-size: 0.65rem;" th:text="${currentUserRole}">CUSTOMER</div>
                 </div>
               </a>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                <li><a class="dropdown-item" th:href="@{/tai-khoan}"><i class="bi bi-person-gear me-2"></i>Hồ sơ cá nhân</a></li>
-                <li><a class="dropdown-item" th:href="@{/don-hang-cua-toi}"><i class="bi bi-bag-check me-2"></i>Đơn hàng của tôi</a></li>
-                <li><hr class="dropdown-divider"/></li>
+              <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2" style="min-width: 220px;">
+                <li><a class="dropdown-item rounded-3 py-2" th:href="@{/tai-khoan}"><i class="bi bi-person-gear me-2 text-primary"></i>Hồ sơ cá nhân</a></li>
+                <li><a class="dropdown-item rounded-3 py-2" th:href="@{/don-hang-cua-toi}"><i class="bi bi-bag-check me-2 text-primary"></i>Đơn hàng của tôi</a></li>
+                <li><hr class="dropdown-divider my-2"/></li>
                 <li>
-                  <form th:action="@{/logout}" method="post" class="px-3">
+                  <form th:action="@{/logout}" method="post" class="px-1">
                     <button type="submit" class="btn btn-sm btn-outline-danger w-100">
                       <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
                     </button>
@@ -102,17 +102,13 @@
             </div>
           </div>
 
-          <!-- Giỏ hàng -->
-          <a th:href="@{/gio-hang}" class="text-decoration-none d-flex align-items-center gap-2 text-dark">
-            <span class="position-relative rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width:38px;height:38px;">
-              <i class="bi bi-cart3 fs-5" style="color: var(--pv-blue);"></i>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                    th:text="${cartCount}">0</span>
+          <!-- Cart Pill -->
+          <a th:href="@{/gio-hang}" class="pro-nav-pill pro-cart-pill">
+            <span class="position-relative d-inline-flex align-items-center">
+              <i class="bi bi-cart3 fs-6"></i>
             </span>
-            <div class="lh-sm small d-none d-md-block">
-              <div class="fw-semibold">Giỏ hàng của bạn</div>
-              <div class="text-muted" style="font-size:0.75rem;">(<span th:text="${cartCount}">0</span>) sản phẩm</div>
-            </div>
+            <span class="d-none d-md-inline">Giỏ hàng</span>
+            <span class="badge rounded-pill bg-primary text-white tabular-nums" th:text="${cartCount}">0</span>
           </a>
         </div>
       </div>

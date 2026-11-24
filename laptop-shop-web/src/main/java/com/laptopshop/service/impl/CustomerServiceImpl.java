@@ -1,6 +1,5 @@
 package com.laptopshop.service.impl;
 
-// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import com.laptopshop.dto.CustomerDTO;
 import com.laptopshop.entity.Customer;
 import com.laptopshop.exception.BusinessException;
@@ -64,15 +63,14 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public Customer saveCustomer(CustomerDTO dto) {
+        String phone = dto.getPhone() != null ? dto.getPhone().trim() : "";
         String email = (dto.getEmail() != null && !dto.getEmail().isBlank()) ? dto.getEmail().trim() : null;
-        String phone = dto.getPhone().trim();
-
         if (dto.getId() == null) {
-            if (email != null && customerRepository.existsByEmailIgnoreCase(email)) {
-                throw new BusinessException("Email '" + email + "' đã được đăng ký");
-            }
             if (customerRepository.existsByPhone(phone)) {
-                throw new BusinessException("Số điện thoại '" + phone + "' đã được đăng ký");
+                throw new BusinessException("Số điện thoại '" + phone + "' đã được sử dụng");
+            }
+            if (email != null && customerRepository.existsByEmailIgnoreCase(email)) {
+                throw new BusinessException("Email '" + email + "' đã được sử dụng");
             }
         } else {
             if (email != null && customerRepository.existsByEmailIgnoreCaseAndIdNot(email, dto.getId())) {
@@ -82,14 +80,12 @@ public class CustomerServiceImpl implements CustomerService {
                 throw new BusinessException("Số điện thoại '" + phone + "' đã được sử dụng bởi khách hàng khác");
             }
         }
-
         Customer customer = (dto.getId() != null) ? getCustomerById(dto.getId()) : new Customer();
         customer.setCustomerName(dto.getCustomerName().trim());
         customer.setEmail(email);
         customer.setPhone(phone);
         customer.setAddress(dto.getAddress().trim());
         customer.setAccountId(dto.getAccountId());
-
         return customerRepository.save(customer);
     }
 
@@ -106,29 +102,19 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public Customer findOrCreateForCheckout(Integer accountId, String name, String email, String phone, String address) {
-        if (accountId != null) {
-            Optional<Customer> byAccount = customerRepository.findByAccountId(accountId);
-            if (byAccount.isPresent()) {
-                return byAccount.get();
-            }
+        if (accountId == null) {
+            throw new BusinessException("Bạn cần đăng nhập để đặt hàng.");
         }
-        String cleanPhone = phone != null ? phone.trim() : "";
-        if (!cleanPhone.isEmpty()) {
-            Optional<Customer> byPhone = customerRepository.findByPhone(cleanPhone);
-            if (byPhone.isPresent()) {
-                Customer existing = byPhone.get();
-                if (accountId != null && existing.getAccountId() == null) {
-                    existing.setAccountId(accountId);
-                    return customerRepository.save(existing);
-                }
-                return existing;
-            }
+        // Mỗi tài khoản chỉ dùng hồ sơ khách hàng của chính nó. KHÔNG gắn theo số điện thoại.
+        Optional<Customer> byAccount = customerRepository.findByAccountId(accountId);
+        if (byAccount.isPresent()) {
+            return byAccount.get();
         }
         Customer c = new Customer();
         c.setAccountId(accountId);
         c.setCustomerName(name.trim());
         c.setEmail((email != null && !email.isBlank()) ? email.trim() : null);
-        c.setPhone(cleanPhone);
+        c.setPhone(phone != null ? phone.trim() : "");
         c.setAddress(address != null ? address.trim() : "");
         return customerRepository.save(c);
     }

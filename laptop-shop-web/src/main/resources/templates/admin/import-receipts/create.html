@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lập phiếu nhập kho - QL Laptop</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-file-earmark-plus text-primary me-2"></i>Lập Phiếu Nhập Kho Mới</h4>
+          <div class="small text-muted">Chọn các mẫu laptop cần bổ sung tồn kho và gửi Admin phê duyệt</div>
+        </div>
+        <a th:href="@{/admin/import-receipts}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="pro-card">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-truck-flatbed text-primary me-2"></i>Chi tiết phiếu nhập kho</h6>
+          </div>
+          <div class="p-4">
+            <form th:action="@{/admin/import-receipts/create}" th:object="${importForm}" method="post" id="importFormEl">
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Nhà cung cấp <span class="text-danger">*</span></label>
+                  <input type="text" th:field="*{supplier}" class="form-control"
+                         th:classappend="${#fields.hasErrors('supplier')} ? 'is-invalid'" placeholder="VD: Nhà phân phối Dell Việt Nam" required/>
+                  <div class="invalid-feedback" th:errors="*{supplier}"></div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Ghi chú</label>
+                  <input type="text" th:field="*{note}" class="form-control" placeholder="Đợt nhập tháng..."/>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Danh sách Laptop nhập</h6>
+                <button type="button" class="btn btn-sm btn-pv-outline" onclick="addImportRow()">
+                  <i class="bi bi-plus-lg me-1"></i>Thêm dòng
+                </button>
+              </div>
+
+              <div class="table-responsive mb-3 border rounded-3 overflow-hidden">
+                <table class="table pro-table align-middle mb-0" id="importItemsTable">
+                  <thead>
+                    <tr>
+                      <th style="width:45%">Laptop</th>
+                      <th style="width:18%">Số lượng</th>
+                      <th style="width:27%">Đơn giá nhập (₫)</th>
+                      <th style="width:10%" class="text-center">Xóa</th>
+                    </tr>
+                  </thead>
+                  <tbody id="importRowsBody">
+                    <tr class="import-row">
+                      <td>
+                        <select name="items[0].laptopId" class="form-select form-select-sm laptop-select" required onchange="syncDefaultCost(this)">
+                          <option value="">-- Chọn laptop --</option>
+                          <option th:each="l : ${laptops}" th:value="${l.id}"
+                                  th:attr="data-cost=${l.purchasePrice}"
+                                  th:text="${l.sku + ' - ' + l.name + ' (Tồn: ' + l.stockQuantity + ')'}"></option>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" name="items[0].quantity" value="5" min="1" max="10000" class="form-control form-control-sm tabular-nums" required/>
+                      </td>
+                      <td>
+                        <input type="number" name="items[0].unitCost" value="10000000" min="0" step="10000" class="form-control form-control-sm cost-input tabular-nums" required/>
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger pro-btn-icon" onclick="removeImportRow(this)"><i class="bi bi-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="alert alert-danger small rounded-3" th:if="${#fields.hasErrors('items')}" th:errors="*{items}"></div>
+
+              <div class="d-flex justify-content-end gap-2 pt-2">
+                <a th:href="@{/admin/import-receipts}" class="btn btn-outline-secondary px-4">Hủy</a>
+                <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-save me-1"></i>Lưu phiếu (Chờ Admin duyệt)</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function syncDefaultCost(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const cost = opt ? opt.getAttribute('data-cost') : null;
+    if (cost) {
+      const row = sel.closest('tr');
+      const costInput = row.querySelector('.cost-input');
+      if (costInput) costInput.value = parseInt(cost, 10) || 0;
+    }
+  }
+  function reindexRows() {
+    document.querySelectorAll('#importRowsBody tr.import-row').forEach((tr, idx) => {
+      tr.querySelector('select').name = 'items[' + idx + '].laptopId';
+      tr.querySelector('input[name*="quantity"]').name = 'items[' + idx + '].quantity';
+      tr.querySelector('input[name*="unitCost"]').name = 'items[' + idx + '].unitCost';
+    });
+  }
+  function addImportRow() {
+    const tbody = document.getElementById('importRowsBody');
+    const first = tbody.querySelector('tr.import-row');
+    const clone = first.cloneNode(true);
+    clone.querySelector('select').selectedIndex = 0;
+    clone.querySelector('input[name*="quantity"]').value = 5;
+    tbody.appendChild(clone);
+    reindexRows();
+  }
+  function removeImportRow(btn) {
+    const tbody = document.getElementById('importRowsBody');
+    if (tbody.querySelectorAll('tr.import-row').length <= 1) return;
+    btn.closest('tr').remove();
+    reindexRows();
+  }
+</script>
+</body>
+</html>

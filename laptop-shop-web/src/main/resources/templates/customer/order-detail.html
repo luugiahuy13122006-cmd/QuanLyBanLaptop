@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="'Đơn hàng ' + ${order.orderCode} + ' - LaptopShop'">Chi tiết đơn hàng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="h4 fw-bold mb-0 d-flex align-items-center gap-2">
+      <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 36px; height: 36px; font-size: 1rem;">
+        <i class="bi bi-receipt"></i>
+      </span>
+      Chi tiết đơn hàng <code class="fs-5 text-primary ms-1" th:text="${order.orderCode}"></code>
+    </h2>
+    <a th:href="@{/don-hang-cua-toi}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Danh sách đơn hàng</a>
+  </div>
+  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="pro-card p-4 h-100">
+        <h5 class="fw-bold mb-3">Thông tin nhận hàng &amp; Trạng thái</h5>
+        <div class="d-flex flex-column gap-2 small">
+          <div><span class="text-muted">Người nhận:</span> <strong th:text="${order.recipientName}"></strong> — <span class="tabular-nums" th:text="${order.recipientPhone}"></span></div>
+          <div><span class="text-muted">Địa chỉ giao:</span> <span class="fw-medium" th:text="${order.deliveryAddress}"></span></div>
+          <div><span class="text-muted">Ngày đặt:</span> <span class="tabular-nums" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm:ss')}"></span></div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted">Trạng thái đơn:</span>
+            <span class="badge-soft"
+                  th:classappend="${order.status.name() == 'COMPLETED' ? 'badge-soft-success' : (order.status.name() == 'CANCELLED' or order.status.name() == 'RETURNED' or order.status.name() == 'REFUNDED' ? 'badge-soft-danger' : (order.status.name() == 'REFUND_REQUESTED' ? 'badge-soft-indigo' : 'badge-soft-warning'))}"
+                  th:text="${order.status.displayName}"></span>
+          </div>
+          <div th:if="${order.cancelReason != null}">
+            <span class="text-muted">Lý do hủy:</span> <span class="text-danger fw-medium" th:text="${order.cancelReason}"></span>
+          </div>
+          <div th:if="${order.note != null and !order.note.isBlank()}">
+            <span class="text-muted">Ghi chú:</span> <span th:text="${order.note}"></span>
+          </div>
+        </div>
+
+        <hr class="my-3"/>
+
+        <!-- Hủy đơn hàng khi chưa thanh toán & chưa giao -->
+        <div th:if="${(order.status.name() == 'PENDING' or order.status.name() == 'CONFIRMED') and (payment == null or (payment.paymentStatus.name() != 'PAID' and payment.paymentStatus.name() != 'PENDING_CONFIRMATION'))}">
+          <h6 class="fw-bold text-danger small text-uppercase mb-2">Hủy đơn hàng</h6>
+          <form th:action="@{/don-hang-cua-toi/{id}/huy(id=${order.id})}" method="post"
+                onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+            <div class="input-group input-group-sm">
+              <input type="text" name="reason" class="form-control" placeholder="Lý do hủy đơn (tùy chọn)..."/>
+              <button type="submit" class="btn btn-outline-danger">Hủy đơn hàng</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Yêu cầu hoàn tiền khi đã thanh toán chuyển khoản thành công và chưa giao -->
+        <div th:if="${(order.status.name() == 'PENDING' or order.status.name() == 'CONFIRMED') and payment != null and payment.paymentMethod.name() == 'BANK_TRANSFER' and payment.paymentStatus.name() == 'PAID'}">
+          <h6 class="fw-bold text-warning-emphasis small text-uppercase mb-2">Yêu cầu hủy &amp; hoàn tiền</h6>
+          <form th:action="@{/don-hang-cua-toi/{id}/yeu-cau-hoan-tien(id=${order.id})}" method="post" class="row g-2">
+            <div class="col-12">
+              <input type="text" name="reason" class="form-control form-control-sm" placeholder="Lý do yêu cầu hoàn tiền *" required/>
+            </div>
+            <div class="col-md-4">
+              <input type="text" name="bankName" class="form-control form-control-sm" placeholder="Ngân hàng *" required/>
+            </div>
+            <div class="col-md-4">
+              <input type="text" name="accountNumber" class="form-control form-control-sm" placeholder="Số TK (6-20 số) *" required/>
+            </div>
+            <div class="col-md-4">
+              <input type="text" name="accountHolder" class="form-control form-control-sm" placeholder="Tên chủ TK *" required/>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-sm btn-warning fw-semibold">Gửi yêu cầu hoàn tiền</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="pro-card p-4 h-100" th:if="${payment != null}">
+        <h5 class="fw-bold mb-3">Thanh toán (<span th:text="${payment.paymentMethod.displayName}"></span>)</h5>
+        <div class="d-flex flex-column gap-2 small mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted">Trạng thái thanh toán:</span>
+            <span class="badge-soft"
+                  th:classappend="${payment.paymentStatus.name() == 'PAID' ? 'badge-soft-success' : (payment.paymentStatus.name() == 'PENDING_CONFIRMATION' ? 'badge-soft-warning' : (payment.paymentStatus.name() == 'FAILED' or payment.paymentStatus.name() == 'REFUNDED' ? 'badge-soft-danger' : 'badge-soft-slate'))}"
+                  th:text="${payment.paymentStatus.displayName}"></span>
+          </div>
+          <div><span class="text-muted">Mã giao dịch:</span> <code class="px-2 py-1 rounded bg-light" th:text="${payment.transactionCode}"></code></div>
+          <div class="text-danger fw-semibold" th:if="${order.paymentExpiresAt != null and order.status.name() == 'PENDING' and payment.paymentStatus.name() == 'UNPAID'}">
+            <i class="bi bi-clock me-1"></i>Hạn chuyển khoản: <span class="tabular-nums" th:text="${#temporals.format(order.paymentExpiresAt, 'dd/MM/yyyy HH:mm')}"></span>
+          </div>
+        </div>
+
+        <div th:if="${payment.paymentMethod.name() == 'BANK_TRANSFER' and payment.paymentStatus.name() != 'PAID' and order.status.name() == 'PENDING'}"
+             class="p-3 rounded-4 mb-3" style="background: #F8FAFC; border: 1px solid #DBEAFE;">
+          <div class="row g-3 align-items-center">
+            <div class="col-sm-5 text-center">
+              <img th:src="@{https://img.vietqr.io/image/{bin}-{acc}-compact2.png(bin=${shopProperties.payment.bankBin},acc=${shopProperties.payment.accountNumber},amount=${order.totalAmount.intValue()},addInfo=${order.orderCode})}"
+                   alt="Mã QR chuyển khoản" style="max-width: 155px;" class="img-fluid rounded-3 border bg-white p-1 shadow-xs"/>
+            </div>
+            <div class="col-sm-7 small d-flex flex-column gap-1">
+              <div><span class="text-muted">Ngân hàng:</span> <strong th:text="${shopProperties.payment.bankName}"></strong></div>
+              <div><span class="text-muted">Số TK:</span> <code th:text="${shopProperties.payment.accountNumber}"></code></div>
+              <div><span class="text-muted">Chủ TK:</span> <strong th:text="${shopProperties.payment.accountName}"></strong></div>
+              <div><span class="text-muted">Số tiền:</span> <strong class="text-danger tabular-nums" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong></div>
+              <div><span class="text-muted">Nội dung CK:</span> <code class="fw-bold text-primary" th:text="${order.orderCode}"></code></div>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+            <a th:href="@{/thanh-toan/{id}(id=${order.id})}" class="btn btn-pv-primary btn-sm w-100 py-2">
+              <i class="bi bi-qr-code-scan me-1"></i>Mở trang quét QR trên điện thoại để thanh toán
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pro-card">
+    <div class="pro-card-header">
+      <h6 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary me-2"></i>Sản phẩm đã đặt</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table pro-table mb-0 align-middle">
+        <thead>
+          <tr><th>SKU</th><th>Tên Laptop</th><th class="text-end">Đơn giá</th><th class="text-center">SL</th><th class="text-end">Thành tiền</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="d : ${order.details}">
+            <td><code th:text="${d.skuSnapshot}"></code></td>
+            <td class="fw-semibold" th:text="${d.laptopNameSnapshot}"></td>
+            <td class="text-end tabular-nums" th:text="${#numbers.formatDecimal(d.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td class="text-center tabular-nums" th:text="${d.quantity}"></td>
+            <td class="text-end fw-bold tabular-nums" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+          </tr>
+        </tbody>
+        <tfoot style="background: #F8FAFC;">
+          <tr>
+            <th colspan="4" class="text-end py-3">Tổng thanh toán (Miễn phí giao hàng):</th>
+            <th class="text-end pv-price fs-5 py-3" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

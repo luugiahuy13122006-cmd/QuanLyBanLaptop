@@ -1,15 +1,14 @@
 package com.laptopshop.entity;
 
-// Thành viên phụ trách: TV4
-// Enum định nghĩa các trạng thái đơn hàng khớp 100% với ràng buộc CK_Orders_Status và CK_History_NewStatus trong QL_LAPTOP.sql.
-
 public enum OrderStatus {
     PENDING("Chờ xác nhận"),
     CONFIRMED("Đã xác nhận"),
     SHIPPING("Đang giao hàng"),
     COMPLETED("Hoàn thành"),
     CANCELLED("Đã hủy"),
-    RETURNED("Đã trả hàng");
+    RETURNED("Đã trả hàng"),
+    REFUND_REQUESTED("Yêu cầu hoàn tiền"),
+    REFUNDED("Đã hoàn tiền");
 
     private final String displayName;
 
@@ -19,5 +18,10 @@ public enum OrderStatus {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    /** Trạng thái kết thúc: không cho đổi tay nữa. */
+    public boolean isClosed() {
+        return this == COMPLETED || this == CANCELLED || this == RETURNED || this == REFUNDED;
     }
 }

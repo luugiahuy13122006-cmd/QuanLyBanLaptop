@@ -103,13 +103,12 @@ class ConcurrencyOrderTest {
                 readyLatch.countDown();
                 try {
                     startLatch.await();
-                    PlaceOrderRequest req = new PlaceOrderRequest(
-                            testCustomerId,
-                            PaymentMethod.BANK_TRANSFER,
-                            "140 Lê Trọng Tấn, Tân Phú, TP.HCM",
-                            "Đặt mua đồng thời",
-                            List.of(new OrderItemRequest(testLaptopId, 1))
-                    );
+                    PlaceOrderRequest req = new PlaceOrderRequest();
+                    req.setCustomerId(testCustomerId);
+                    req.setPaymentMethod(PaymentMethod.CASH);
+                    req.setDeliveryAddress("140 Lê Trọng Tấn, Tân Phú, TP.HCM");
+                    req.setNote("Đặt mua đồng thời");
+                    req.setItems(List.of(new OrderItemRequest(testLaptopId, 1)));
                     orderService.placeOrder(req);
                     successCount.incrementAndGet();
                 } catch (Exception e) {
@@ -139,37 +138,34 @@ class ConcurrencyOrderTest {
     @Test
     @DisplayName("Kiểm thử hủy đơn hàng hoàn kho, lịch sử trạng thái và báo cáo thống kê")
     void testOrderLifecycleAndStatistics() {
-        PlaceOrderRequest req = new PlaceOrderRequest(
-                testCustomerId,
-                PaymentMethod.E_WALLET,
-                "140 Lê Trọng Tấn, Tân Phú, TP.HCM",
-                "Đơn hàng test thống kê",
-                List.of(new OrderItemRequest(testLaptopId, 2))
-        );
+        PlaceOrderRequest req = new PlaceOrderRequest();
+        req.setCustomerId(testCustomerId);
+        req.setPaymentMethod(PaymentMethod.CASH);
+        req.setDeliveryAddress("140 Lê Trọng Tấn, Tân Phú, TP.HCM");
+        req.setNote("Đơn hàng test thống kê");
+        req.setItems(List.of(new OrderItemRequest(testLaptopId, 2)));
         req.setDiscount(new BigDecimal("1000000"));
-        req.setShippingFee(new BigDecimal("50000"));
 
         Order order = orderService.placeOrder(req);
         assertNotNull(order.getOrderCode());
         assertEquals(0, new BigDecimal("50000000").compareTo(order.getSubtotal()));
-        assertEquals(0, new BigDecimal("49050000").compareTo(order.getTotalAmount()));
+        assertEquals(0, new BigDecimal("49000000").compareTo(order.getTotalAmount()));
         assertEquals(3, laptopRepository.findById(testLaptopId).orElseThrow().getStockQuantity());
 
         orderService.updateOrderStatus(order.getId(), OrderStatus.COMPLETED);
         Payment payment = orderService.getPaymentByOrderId(order.getId()).orElseThrow();
         assertEquals(PaymentStatus.PAID, payment.getPaymentStatus());
         assertNotNull(payment.getPaidAt());
-        assertEquals(0, new BigDecimal("49050000").compareTo(statisticsService.getTotalRevenue()));
+        assertEquals(0, new BigDecimal("49000000").compareTo(statisticsService.getTotalRevenue()));
         assertFalse(statisticsService.getMonthlyRevenue(LocalDate.now().getYear()).isEmpty());
         assertFalse(statisticsService.getTopSellingLaptops(5).isEmpty());
 
-        PlaceOrderRequest req2 = new PlaceOrderRequest(
-                testCustomerId,
-                PaymentMethod.CASH,
-                "140 Lê Trọng Tấn, Tân Phú, TP.HCM",
-                "Đơn hàng test hủy hoàn kho",
-                List.of(new OrderItemRequest(testLaptopId, 2))
-        );
+        PlaceOrderRequest req2 = new PlaceOrderRequest();
+        req2.setCustomerId(testCustomerId);
+        req2.setPaymentMethod(PaymentMethod.CASH);
+        req2.setDeliveryAddress("140 Lê Trọng Tấn, Tân Phú, TP.HCM");
+        req2.setNote("Đơn hàng test hủy hoàn kho");
+        req2.setItems(List.of(new OrderItemRequest(testLaptopId, 2)));
         Order order2 = orderService.placeOrder(req2);
         assertEquals(1, laptopRepository.findById(testLaptopId).orElseThrow().getStockQuantity());
 

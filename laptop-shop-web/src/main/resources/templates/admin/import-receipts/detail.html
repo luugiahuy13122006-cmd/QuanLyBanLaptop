@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Chi tiết Phiếu nhập kho - QL Laptop</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0">Phiếu nhập <code class="fs-5 text-primary ms-1" th:text="${receipt.receiptCode}"></code></h4>
+          <div class="small text-muted">Thông tin nhà cung cấp, danh sách laptop nhập &amp; phê duyệt</div>
+        </div>
+        <a th:href="@{/admin/import-receipts}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-lg-7">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6><i class="bi bi-info-circle text-primary me-2"></i>Thông tin Phiếu nhập</h6>
+              </div>
+              <div class="p-4 small d-flex flex-column gap-2">
+                <div><span class="text-muted">Nhà cung cấp:</span> <strong th:text="${receipt.supplier}"></strong></div>
+                <div>
+                  <span class="text-muted">Người lập:</span>
+                  <strong th:text="${receipt.createdBy != null ? receipt.createdBy.fullName : '-'}"></strong>
+                  <span class="text-muted tabular-nums" th:text="'(' + ${#temporals.format(receipt.createdAt, 'dd/MM/yyyy HH:mm:ss')} + ')'"></span>
+                </div>
+                <div><span class="text-muted">Ghi chú:</span> <span th:text="${receipt.note != null ? receipt.note : 'Không có'}"></span></div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="text-muted">Trạng thái:</span>
+                  <span class="badge-soft"
+                        th:classappend="${receipt.status.name() == 'APPROVED' ? 'badge-soft-success' : (receipt.status.name() == 'REJECTED' ? 'badge-soft-danger' : 'badge-soft-warning')}"
+                        th:text="${receipt.status.displayName}"></span>
+                </div>
+                <div th:if="${receipt.approvedBy != null}">
+                  <span class="text-muted">Người duyệt/từ chối:</span> <strong th:text="${receipt.approvedBy.fullName}"></strong>
+                  <span th:if="${receipt.approvedAt != null}" class="text-muted tabular-nums" th:text="'(' + ${#temporals.format(receipt.approvedAt, 'dd/MM/yyyy HH:mm')} + ')'"></span>
+                </div>
+                <div class="text-danger" th:if="${receipt.rejectReason != null}">
+                  <strong>Lý do từ chối:</strong> <span th:text="${receipt.rejectReason}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5" sec:authorize="hasRole('ADMIN')" th:if="${receipt.status.name() == 'PENDING'}">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6><i class="bi bi-shield-check text-primary me-2"></i>Phê duyệt nhập kho (ADMIN)</h6>
+              </div>
+              <div class="p-4 d-flex flex-column gap-3">
+                <form th:action="@{/admin/import-receipts/{id}/approve(id=${receipt.id})}" method="post"
+                      onsubmit="return confirm('Duyệt phiếu nhập và cộng số lượng vào tồn kho?');">
+                  <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                    <i class="bi bi-check2-circle me-1"></i>Duyệt &amp; Nhập kho (Pessimistic Lock)
+                  </button>
+                </form>
+                <form th:action="@{/admin/import-receipts/{id}/reject(id=${receipt.id})}" method="post" class="d-flex flex-column gap-2 pt-2 border-top">
+                  <input type="text" name="reason" class="form-control form-control-sm" placeholder="Nhập lý do từ chối..." required/>
+                  <button type="submit" class="btn btn-outline-danger btn-sm w-100">Từ chối phiếu nhập</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pro-card">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-box-seam text-primary me-2"></i>Chi tiết Laptop trong Phiếu nhập</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table pro-table mb-0 align-middle">
+              <thead>
+                <tr><th>SKU</th><th>Tên Laptop</th><th class="text-center">Số lượng nhập</th><th class="text-end">Đơn giá nhập</th><th class="text-end">Thành tiền</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="d : ${receipt.details}">
+                  <td><code th:text="${d.laptop.sku}"></code></td>
+                  <td class="fw-semibold" th:text="${d.laptop.name}"></td>
+                  <td class="text-center fw-bold tabular-nums" th:text="${d.quantity}"></td>
+                  <td class="text-end tabular-nums" th:text="${#numbers.formatDecimal(d.unitCost, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                  <td class="text-end fw-bold tabular-nums" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                </tr>
+              </tbody>
+              <tfoot style="background: #F8FAFC;">
+                <tr>
+                  <th colspan="4" class="text-end fs-5 py-3">Tổng tiền phiếu nhập:</th>
+                  <th class="text-end pv-price fs-5 py-3" th:text="${#numbers.formatDecimal(receipt.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

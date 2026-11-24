@@ -1,8 +1,8 @@
 package com.laptopshop.config;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
 import com.laptopshop.entity.Account;
 import com.laptopshop.repository.AccountRepository;
+import com.laptopshop.repository.CustomerRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -13,9 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final AccountRepository accountRepository;
+    private final CustomerRepository customerRepository;
 
-    public CustomUserDetailsService(AccountRepository accountRepository) {
+    public CustomUserDetailsService(AccountRepository accountRepository,
+                                    CustomerRepository customerRepository) {
         this.accountRepository = accountRepository;
+        this.customerRepository = customerRepository;
     }
 
     @Override
@@ -23,6 +26,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Account account = accountRepository.findByUsernameIgnoreCase(username.trim())
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản: " + username));
-        return new CustomUserDetails(account);
+        Integer customerId = customerRepository.findByAccountId(account.getId())
+                .map(c -> c.getId())
+                .orElse(null);
+        return new CustomUserDetails(account, customerId);
     }
 }

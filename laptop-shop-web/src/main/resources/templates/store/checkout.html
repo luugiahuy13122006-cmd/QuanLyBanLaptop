@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt (Trang đặt hàng phong cách Phong Vũ) -->
+<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
@@ -13,20 +13,33 @@
 <div th:replace="~{fragments/header :: header}"></div>
 
 <main class="container py-4">
-  <h2 class="h4 fw-bold mb-4"><i class="bi bi-bag-check me-2" style="color: var(--pv-blue);"></i>Thông tin Nhận hàng &amp; Thanh toán</h2>
+  <h2 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+    <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 36px; height: 36px; font-size: 1rem;">
+      <i class="bi bi-bag-check"></i>
+    </span>
+    Thông tin Nhận hàng &amp; Thanh toán
+  </h2>
+
+  <div class="pro-stepper">
+    <div class="pro-step done"><span class="pro-step-num"><i class="bi bi-check-lg"></i></span>Giỏ hàng</div>
+    <div class="pro-step-line"></div>
+    <div class="pro-step active"><span class="pro-step-num">2</span>Đặt hàng &amp; Thanh toán</div>
+    <div class="pro-step-line"></div>
+    <div class="pro-step"><span class="pro-step-num">3</span>Quét QR &amp; Xác nhận CK</div>
+  </div>
 
   <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
   <div class="row g-4">
     <div class="col-lg-7">
-      <div class="bg-white rounded-3 border shadow-sm overflow-hidden">
-        <div class="px-4 py-3 text-white fw-semibold" style="background: var(--pv-blue);">
-          <i class="bi bi-geo-alt me-1"></i>Thông tin người nhận hàng
+      <div class="pro-card">
+        <div class="pro-card-header" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);">
+          <h6 class="text-white mb-0"><i class="bi bi-geo-alt-fill me-2 text-info"></i>Thông tin người nhận hàng</h6>
         </div>
         <div class="p-4">
           <form th:action="@{/dat-hang}" th:object="${checkoutForm}" method="post" novalidate>
             <div class="mb-3">
-              <label class="form-label fw-semibold">Họ và tên người nhận <span class="text-danger">*</span></label>
+              <label class="form-label fw-semibold small">Họ và tên người nhận <span class="text-danger">*</span></label>
               <input type="text" th:field="*{recipientName}" class="form-control"
                      th:classappend="${#fields.hasErrors('recipientName')} ? 'is-invalid'" placeholder="Nguyễn Văn An"/>
               <div class="invalid-feedback" th:errors="*{recipientName}"></div>
@@ -34,13 +47,13 @@
 
             <div class="row g-3">
               <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold small">Số điện thoại <span class="text-danger">*</span></label>
                 <input type="text" th:field="*{recipientPhone}" class="form-control"
                        th:classappend="${#fields.hasErrors('recipientPhone')} ? 'is-invalid'" placeholder="0912345678"/>
                 <div class="invalid-feedback" th:errors="*{recipientPhone}"></div>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">Email</label>
+                <label class="form-label fw-semibold small">Email</label>
                 <input type="email" th:field="*{email}" class="form-control"
                        th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" placeholder="email@example.com"/>
                 <div class="invalid-feedback" th:errors="*{email}"></div>
@@ -48,7 +61,7 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-semibold">Địa chỉ nhận hàng <span class="text-danger">*</span></label>
+              <label class="form-label fw-semibold small">Địa chỉ nhận hàng <span class="text-danger">*</span></label>
               <input type="text" th:field="*{deliveryAddress}" class="form-control"
                      th:classappend="${#fields.hasErrors('deliveryAddress')} ? 'is-invalid'"
                      placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"/>
@@ -56,21 +69,34 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-semibold">Phương thức thanh toán <span class="text-danger">*</span></label>
-              <select th:field="*{paymentMethod}" class="form-select">
-                <option th:each="pm : ${paymentMethods}" th:value="${pm}" th:text="${pm.displayName}"></option>
-              </select>
+              <label class="form-label fw-semibold small">Phương thức thanh toán <span class="text-danger">*</span></label>
+              <input type="hidden" name="paymentMethod" value="BANK_TRANSFER"/>
+              <div class="pro-pay-option selected">
+                <div class="mt-1">
+                  <i class="bi bi-check-circle-fill text-primary fs-5"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+                    <span class="fw-bold text-dark"><i class="bi bi-qr-code-scan text-primary me-1"></i>Chuyển khoản ngân hàng (VietQR)</span>
+                    <span class="badge-soft badge-soft-info">Áp dụng cho sản phẩm giá trị cao</span>
+                  </div>
+                  <div class="small text-muted">
+                    Đơn hàng Laptop giá trị cao chỉ áp dụng thanh toán chuyển khoản ngân hàng (không hỗ trợ thu tiền mặt khi nhận hàng).
+                    Mã <strong>VietQR</strong> và nút <strong>Xác nhận đã chuyển khoản</strong> sẽ hiển thị <strong>ngay ở bước tiếp theo</strong>.
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Ghi chú đơn hàng</label>
+            <div class="mb-4">
+              <label class="form-label fw-semibold small">Ghi chú đơn hàng</label>
               <textarea th:field="*{note}" rows="2" class="form-control" placeholder="Giao giờ hành chính..."></textarea>
             </div>
 
-            <div class="d-flex justify-content-between pt-2">
-              <a th:href="@{/gio-hang}" class="btn btn-outline-secondary">Quay lại giỏ hàng</a>
-              <button type="submit" class="btn btn-pv-primary px-4">
-                <i class="bi bi-check2-circle me-1"></i>XÁC NHẬN ĐẶT HÀNG
+            <div class="d-flex justify-content-between align-items-center pt-2 gap-2 flex-wrap">
+              <a th:href="@{/gio-hang}" class="btn btn-outline-secondary px-3"><i class="bi bi-arrow-left me-1"></i>Quay lại giỏ hàng</a>
+              <button type="submit" class="btn btn-pv-primary px-4 py-2">
+                <i class="bi bi-qr-code me-1"></i>ĐẶT HÀNG &amp; THANH TOÁN QR
               </button>
             </div>
           </form>
@@ -79,32 +105,32 @@
     </div>
 
     <div class="col-lg-5">
-      <div class="bg-white rounded-3 border shadow-sm p-4">
-        <h5 class="fw-bold mb-3">Thông tin đơn hàng</h5>
+      <div class="pro-card p-4 sticky-lg-top" style="top: 86px;">
+        <h5 class="fw-bold mb-3">Tóm tắt sản phẩm</h5>
         <ul class="list-group list-group-flush mb-3">
-          <li class="list-group-item d-flex justify-content-between align-items-center px-0 gap-2" th:each="item : ${items}">
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0 gap-2 py-2" th:each="item : ${items}">
             <div class="d-flex align-items-center gap-2">
-              <img th:src="${item.laptop.displayImageUrl}" style="width:44px;height:44px;object-fit:contain;" class="border rounded p-1"/>
+              <img th:src="${item.laptop.displayImageUrl}" style="width:46px;height:46px;object-fit:contain;" class="border rounded-3 p-1 bg-white"/>
               <div>
                 <div class="fw-semibold small" th:text="${item.laptop.name}"></div>
                 <small class="text-muted" th:text="'SL: ' + ${item.quantity}"></small>
               </div>
             </div>
-            <span class="fw-semibold small text-nowrap" th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+            <span class="fw-semibold small text-nowrap tabular-nums" th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
           </li>
         </ul>
         <div class="d-flex justify-content-between mb-2 small">
           <span class="text-muted">Tạm tính:</span>
-          <span th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+          <span class="tabular-nums" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
         </div>
         <div class="d-flex justify-content-between mb-2 small">
           <span class="text-muted">Phí vận chuyển:</span>
-          <span th:text="${#numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+          <span class="text-success fw-semibold">Miễn phí (0 ₫)</span>
         </div>
         <hr/>
-        <div class="d-flex justify-content-between fs-5 fw-bold">
-          <span>Thành tiền:</span>
-          <span class="pv-price" th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold fs-6">Thành tiền:</span>
+          <span class="pv-price fs-4" th:text="${#numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
         </div>
       </div>
     </div>

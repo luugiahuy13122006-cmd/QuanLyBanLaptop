@@ -5,8 +5,10 @@ package com.laptopshop.exception;
 
 import com.laptopshop.config.CustomUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -80,35 +82,40 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({ResourceNotFoundException.class, NoResourceFoundException.class})
-    public String handleNotFound(Exception ex, Model model) {
+    public String handleNotFound(Exception ex, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.NOT_FOUND.value());
         model.addAttribute("errorTitle", "Không tìm thấy trang hoặc dữ liệu");
         model.addAttribute("errorMessage", ex.getMessage());
         return "error/404";
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public String handleAccessDenied(AccessDeniedException ex, Model model) {
+    public String handleAccessDenied(AccessDeniedException ex, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.FORBIDDEN.value());
         model.addAttribute("errorTitle", "Không có quyền truy cập");
         model.addAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này.");
         return "error/403";
     }
 
     @ExceptionHandler(BusinessException.class)
-    public String handleBusiness(BusinessException ex, Model model) {
+    public String handleBusiness(BusinessException ex, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
         model.addAttribute("errorTitle", "Lỗi nghiệp vụ");
         model.addAttribute("errorMessage", ex.getMessage());
         return "error/error";
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public String handleDataIntegrity(DataIntegrityViolationException ex, Model model) {
+    public String handleDataIntegrity(DataIntegrityViolationException ex, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.CONFLICT.value());
         model.addAttribute("errorTitle", "Vi phạm ràng buộc dữ liệu");
         model.addAttribute("errorMessage", "Dữ liệu đang được tham chiếu hoặc bị trùng khóa duy nhất, không thể thực hiện thao tác.");
         return "error/error";
     }
 
     @ExceptionHandler(Exception.class)
-    public String handleGeneral(Exception ex, Model model) {
+    public String handleGeneral(Exception ex, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         model.addAttribute("errorTitle", "Lỗi hệ thống");
         model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Lỗi không xác định");
         return "error/error";

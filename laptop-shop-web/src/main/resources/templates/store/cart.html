@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt (Giỏ hàng phong cách Phong Vũ) -->
+<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
@@ -13,29 +13,45 @@
 <div th:replace="~{fragments/header :: header}"></div>
 
 <main class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="h4 fw-bold mb-0"><i class="bi bi-cart3 me-2" style="color: var(--pv-blue);"></i>Giỏ hàng của bạn</h2>
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="h4 fw-bold mb-0 d-flex align-items-center gap-2">
+      <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 36px; height: 36px; font-size: 1rem;">
+        <i class="bi bi-cart3"></i>
+      </span>
+      Giỏ hàng của bạn
+    </h2>
     <a th:href="@{/}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Tiếp tục mua sắm</a>
+  </div>
+
+  <div class="pro-stepper">
+    <div class="pro-step active"><span class="pro-step-num">1</span>Giỏ hàng</div>
+    <div class="pro-step-line"></div>
+    <div class="pro-step"><span class="pro-step-num">2</span>Đặt hàng &amp; Thanh toán</div>
+    <div class="pro-step-line"></div>
+    <div class="pro-step"><span class="pro-step-num">3</span>Hoàn tất</div>
   </div>
 
   <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-  <div th:if="${#lists.isEmpty(items)}" class="bg-white rounded-3 border shadow-sm p-5 text-center">
-    <i class="bi bi-cart-x display-3 text-muted mb-3 d-block"></i>
-    <p class="text-muted fs-5 mb-3">Giỏ hàng của bạn chưa có sản phẩm nào.</p>
-    <a th:href="@{/}" class="btn btn-pv-primary px-4">Khám phá Laptop ngay</a>
+  <div th:if="${#lists.isEmpty(items)}" class="pro-card p-5 text-center">
+    <div class="pro-kpi-icon pro-kpi-icon-blue mx-auto mb-3" style="width: 64px; height: 64px; font-size: 1.75rem;">
+      <i class="bi bi-cart-x"></i>
+    </div>
+    <h5 class="fw-bold mb-1">Giỏ hàng của bạn đang trống</h5>
+    <p class="text-muted mb-4">Hãy khám phá hàng loạt mẫu laptop chính hãng giá tốt ngay hôm nay.</p>
+    <a th:href="@{/}" class="btn btn-pv-primary px-4 py-2">Khám phá Laptop ngay</a>
   </div>
 
   <div th:if="${!#lists.isEmpty(items)}" class="row g-4">
     <div class="col-lg-8">
-      <div class="bg-white rounded-3 border shadow-sm overflow-hidden">
+      <div class="pro-card">
         <div class="table-responsive">
-          <table class="table align-middle mb-0">
-            <thead class="table-light">
+          <table class="table pro-table align-middle mb-0">
+            <thead>
               <tr>
                 <th>Sản phẩm</th>
                 <th class="text-end">Đơn giá</th>
-                <th class="text-center" style="width: 160px;">Số lượng</th>
+                <th class="text-center" style="width: 165px;">Số lượng</th>
                 <th class="text-end">Thành tiền</th>
                 <th class="text-center">Xóa</th>
               </tr>
@@ -45,27 +61,27 @@
                 <td>
                   <div class="d-flex align-items-center gap-3">
                     <img th:src="${item.laptop.displayImageUrl}" th:alt="${item.laptop.name}"
-                         style="width: 64px; height: 64px; object-fit: contain;" class="border rounded p-1 bg-white"/>
+                         style="width: 60px; height: 60px; object-fit: contain;" class="border rounded-3 p-1 bg-white flex-shrink-0"/>
                     <div>
-                      <a th:href="@{/san-pham/{id}(id=${item.laptop.id})}" class="fw-semibold text-decoration-none text-dark" th:text="${item.laptop.name}"></a>
+                      <a th:href="@{/san-pham/{id}(id=${item.laptop.id})}" class="fw-semibold text-decoration-none text-dark d-block" th:text="${item.laptop.name}"></a>
                       <div class="small text-muted" th:text="'SKU: ' + ${item.laptop.sku} + ' • Tồn: ' + ${item.laptop.stockQuantity}"></div>
                     </div>
                   </div>
                 </td>
-                <td class="text-end text-nowrap" th:text="${#numbers.formatDecimal(item.laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                <td class="text-end text-nowrap tabular-nums" th:text="${#numbers.formatDecimal(item.laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                 <td>
                   <form th:action="@{/gio-hang/cap-nhat/{id}(id=${item.laptop.id})}" method="post" class="d-flex gap-1 justify-content-center">
                     <input type="number" name="quantity" th:value="${item.quantity}" min="1" th:max="${item.laptop.stockQuantity}"
-                           class="form-control form-control-sm text-center" style="width: 65px;"/>
-                    <button type="submit" class="btn btn-sm btn-pv-outline" title="Cập nhật"><i class="bi bi-check-lg"></i></button>
+                           class="form-control form-control-sm text-center tabular-nums" style="width: 68px;"/>
+                    <button type="submit" class="btn btn-sm btn-pv-outline pro-btn-icon" title="Cập nhật"><i class="bi bi-check-lg"></i></button>
                   </form>
                 </td>
-                <td class="text-end pv-price text-nowrap"
+                <td class="text-end pv-price text-nowrap tabular-nums"
                     th:text="${#numbers.formatDecimal(item.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                 <td class="text-center">
                   <form th:action="@{/gio-hang/xoa/{id}(id=${item.laptop.id})}" method="post"
                         onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?');">
-                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger pro-btn-icon" title="Xóa khỏi giỏ"><i class="bi bi-trash"></i></button>
                   </form>
                 </td>
               </tr>
@@ -76,24 +92,27 @@
     </div>
 
     <div class="col-lg-4">
-      <div class="bg-white rounded-3 border shadow-sm p-3 p-md-4">
-        <h5 class="fw-bold mb-3">Thanh toán</h5>
-        <div class="d-flex justify-content-between mb-2">
+      <div class="pro-card p-4 sticky-lg-top" style="top: 86px;">
+        <h5 class="fw-bold mb-3">Tóm tắt đơn hàng</h5>
+        <div class="d-flex justify-content-between mb-2 small">
           <span class="text-muted">Tạm tính:</span>
-          <span class="fw-semibold" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+          <span class="fw-semibold tabular-nums" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
         </div>
-        <div class="d-flex justify-content-between mb-3">
-          <span class="text-muted">Phí vận chuyển dự kiến:</span>
-          <span class="fw-semibold">30,000 ₫</span>
+        <div class="d-flex justify-content-between mb-3 small">
+          <span class="text-muted">Phí vận chuyển:</span>
+          <span class="fw-semibold text-success">Miễn phí (0 ₫)</span>
         </div>
-        <hr/>
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <hr class="my-3"/>
+        <div class="d-flex justify-content-between align-items-center mb-4">
           <span class="fw-bold">Tổng tạm tính:</span>
           <span class="pv-price fs-4" th:text="${#numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
         </div>
-        <a th:href="@{/dat-hang}" class="btn btn-pv-primary btn-lg w-100">
-          TIẾP TỤC ĐẶT HÀNG
+        <a th:href="@{/dat-hang}" class="btn btn-pv-primary btn-lg w-100 py-3">
+          TIẾP TỤC ĐẶT HÀNG <i class="bi bi-arrow-right ms-1"></i>
         </a>
+        <div class="text-center small text-muted mt-3">
+          <i class="bi bi-lock-fill text-success me-1"></i>Giữ tồn kho an toàn • Không lo hết hàng
+        </div>
       </div>
     </div>
   </div>

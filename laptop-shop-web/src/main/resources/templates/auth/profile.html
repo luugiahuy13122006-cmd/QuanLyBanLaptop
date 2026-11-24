@@ -12,38 +12,83 @@
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white fw-bold">
-          <i class="bi bi-person-gear me-2 text-warning"></i>Thông tin tài khoản: <span th:text="${account.username}"></span>
-        </div>
-        <div class="card-body p-4">
-          <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
-          <form th:action="@{/tai-khoan}" method="post">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Vai trò hệ thống</label>
-              <input type="text" class="form-control" th:value="${account.role.roleName + ' - ' + account.role.description}" readonly disabled/>
+<main class="pro-auth-bg py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="pro-auth-card">
+          <div class="px-4 py-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);">
+            <div class="d-flex align-items-center gap-3">
+              <span class="pro-avatar-circle" style="width: 44px; height: 44px; font-size: 1.1rem;">
+                <i class="bi bi-person-gear"></i>
+              </span>
+              <div>
+                <h5 class="fw-bold text-white mb-0">Hồ sơ tài khoản</h5>
+                <small style="color: #CBD5E1;">Tên đăng nhập: <strong class="text-white" th:text="${account.username}"></strong></small>
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
-              <input type="text" name="fullName" class="form-control" th:value="${account.fullName}" required/>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Email</label>
-              <input type="email" name="email" class="form-control" th:value="${account.email}"/>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Số điện thoại</label>
-              <input type="text" name="phone" class="form-control" th:value="${account.phone}"/>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Mật khẩu mới (để trống nếu không đổi)</label>
-              <input type="password" name="newPassword" class="form-control" placeholder="Tối thiểu 6 ký tự"/>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Lưu thay đổi</button>
-          </form>
+            <span class="badge rounded-pill bg-primary bg-opacity-25 text-white border border-light border-opacity-25" th:text="${account.role.roleName}"></span>
+          </div>
+
+          <div class="p-4">
+            <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+            <form th:action="@{/tai-khoan}" th:object="${profileDTO}" method="post" novalidate>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Vai trò hệ thống</label>
+                <input type="text" class="form-control bg-light" th:value="${account.role.roleName + ' - ' + account.role.description}" readonly disabled/>
+              </div>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Họ và tên <span class="text-danger">*</span></label>
+                  <input type="text" name="fullName" class="form-control"
+                         th:value="*{fullName != null ? fullName : account.fullName}"
+                         th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'" required/>
+                  <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Email</label>
+                  <input type="email" name="email" class="form-control"
+                         th:value="*{email != null ? email : account.email}"
+                         th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"/>
+                  <div class="invalid-feedback" th:errors="*{email}"></div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Số điện thoại</label>
+                  <input type="text" name="phone" class="form-control"
+                         th:value="*{phone != null ? phone : account.phone}"
+                         th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'"/>
+                  <div class="invalid-feedback" th:errors="*{phone}"></div>
+                </div>
+              </div>
+
+              <hr class="my-4"/>
+              <h6 class="fw-bold mb-3 text-muted small text-uppercase">Bảo mật &amp; Đổi mật khẩu</h6>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Mật khẩu hiện tại <span class="text-danger">*</span></label>
+                <input type="password" th:field="*{currentPassword}" class="form-control"
+                       th:classappend="${#fields.hasErrors('currentPassword')} ? 'is-invalid'"
+                       placeholder="Nhập mật khẩu hiện tại để xác nhận" required/>
+                <div class="invalid-feedback" th:errors="*{currentPassword}"></div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Mật khẩu mới (nếu đổi)</label>
+                  <input type="password" th:field="*{newPassword}" class="form-control"
+                         th:classappend="${#fields.hasErrors('newPassword')} ? 'is-invalid'" placeholder="Tối thiểu 6 ký tự"/>
+                  <div class="invalid-feedback" th:errors="*{newPassword}"></div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Xác nhận mật khẩu mới</label>
+                  <input type="password" th:field="*{confirmNewPassword}" class="form-control" placeholder="Nhập lại mật khẩu mới"/>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-pv-primary w-100 py-2">
+                <i class="bi bi-check2-circle me-1"></i>Lưu thay đổi
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

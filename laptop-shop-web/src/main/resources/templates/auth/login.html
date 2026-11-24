@@ -12,33 +12,43 @@
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-md-5">
-      <div class="card shadow-sm border-0">
-        <div class="card-header text-white text-center py-3" style="background: var(--pv-blue);">
-          <h4 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Đăng nhập hệ thống</h4>
-        </div>
-        <div class="card-body p-4">
-          <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+<main class="pro-auth-bg py-5 d-flex align-items-center">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5 col-xl-4">
+        <div class="pro-auth-card">
+          <div class="px-4 pt-4 pb-3 text-center border-bottom" style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);">
+            <span class="pro-brand-mark mx-auto mb-2" style="width: 46px; height: 46px; font-size: 1.35rem;"><i class="bi bi-shield-lock"></i></span>
+            <h4 class="fw-bold text-white mb-1">Đăng nhập hệ thống</h4>
+            <p class="small mb-0" style="color: #CBD5E1;">Truy cập LaptopShop Store &amp; Trang Quản trị</p>
+          </div>
+          <div class="p-4">
+            <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-          <form th:action="@{/login}" method="post">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Tên đăng nhập</label>
-              <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập" required autofocus/>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Mật khẩu</label>
-              <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required/>
-            </div>
-            <button type="submit" class="btn btn-pv-primary w-100 fw-semibold py-2">
-              <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
-            </button>
-          </form>
+            <form th:action="@{/login}" method="post">
+              <input type="hidden" name="redirect" th:if="${param.redirect != null}" th:value="${param.redirect[0]}"/>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Tên đăng nhập</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                  <input type="text" name="username" class="form-control border-start-0" placeholder="Nhập tên đăng nhập" required autofocus/>
+                </div>
+              </div>
+              <div class="mb-4">
+                <label class="form-label fw-semibold small">Mật khẩu</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+                  <input type="password" name="password" class="form-control border-start-0" placeholder="Nhập mật khẩu" required/>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-pv-primary w-100 py-2">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+              </button>
+            </form>
 
-          <hr class="my-4"/>
-          <div class="text-center small">
-            Chưa có tài khoản? <a th:href="@{/register}" class="fw-semibold">Đăng ký ngay</a>
+            <div class="text-center small mt-4 pt-3 border-top text-muted">
+              Chưa có tài khoản? <a th:href="@{/register}" class="fw-semibold text-decoration-none">Đăng ký ngay</a>
+            </div>
           </div>
         </div>
       </div>

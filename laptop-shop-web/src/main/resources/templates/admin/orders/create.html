@@ -14,75 +14,82 @@
 <div class="container-fluid">
   <div class="row">
     <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
-    <main class="col-lg-10 p-4">
-      <div class="d-flex align-items-center mb-3">
-        <a th:href="@{/admin/orders}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-        <h2 class="fw-bold mb-0">Tạo Đơn Hàng Mới (Kiểm soát Pessimistic Lock)</h2>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-plus-circle text-primary me-2"></i>Tạo Đơn Hàng Mới</h4>
+          <div class="small text-muted">Đặt hàng trực tiếp tại quầy • Kiểm soát tồn kho bằng Pessimistic Lock</div>
+        </div>
+        <a th:href="@{/admin/orders}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
       </div>
-      <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-      <div class="card shadow-sm border-0" style="max-width: 780px;">
-        <div class="card-body p-4">
-          <form th:action="@{/admin/orders/create}" method="post">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Chọn Khách hàng *</label>
-              <select name="customerId" class="form-select" required>
-                <option th:each="c : ${customers}" th:value="${c.customerId}"
-                        th:text="${c.customerName + ' - ' + c.phone + ' (' + (c.address ?: '') + ')'}"></option>
-              </select>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-8 mb-3">
-                <label class="form-label fw-semibold">Chọn Laptop *</label>
-                <select name="laptopId" class="form-select" required>
-                  <option th:each="l : ${laptops}" th:value="${l.laptopId}"
-                          th:text="${l.sku + ' - ' + l.name + ' | Giá: ' + #numbers.formatDecimal(l.salePrice, 0, 'COMMA', 0, 'POINT') + ' đ (Tồn: ' + l.stockQuantity + ')'}"></option>
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="pro-card" style="max-width: 820px;">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-bag-plus text-primary me-2"></i>Thông tin đơn hàng &amp; Khách nhận</h6>
+          </div>
+          <div class="p-4">
+            <form th:action="@{/admin/orders/create}" method="post">
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Chọn Khách hàng <span class="text-danger">*</span></label>
+                <select name="customerId" class="form-select" required>
+                  <option th:each="c : ${customers}" th:value="${c.customerId}"
+                          th:text="${c.customerName + ' - ' + c.phone + ' (' + (c.address ?: '') + ')'}"></option>
                 </select>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-semibold">Số lượng *</label>
-                <input type="number" name="quantity" value="1" min="1" class="form-control" required/>
+              <div class="row g-3">
+                <div class="col-md-8 mb-3">
+                  <label class="form-label fw-semibold small">Chọn Laptop <span class="text-danger">*</span></label>
+                  <select name="laptopId" class="form-select" required>
+                    <option th:each="l : ${laptops}" th:value="${l.laptopId}"
+                            th:text="${l.sku + ' - ' + l.name + ' | Giá: ' + #numbers.formatDecimal(l.salePrice, 0, 'COMMA', 0, 'POINT') + ' ₫ (Tồn: ' + l.stockQuantity + ')'}"></option>
+                  </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label fw-semibold small">Số lượng <span class="text-danger">*</span></label>
+                  <input type="number" name="quantity" value="1" min="1" class="form-control tabular-nums" required/>
+                </div>
               </div>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">Người nhận (Bỏ trống lấy theo KH)</label>
-                <input type="text" name="recipientName" class="form-control"/>
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold small">Người nhận (Bỏ trống lấy theo KH)</label>
+                  <input type="text" name="recipientName" class="form-control"/>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold small">SĐT nhận (Bỏ trống lấy theo KH)</label>
+                  <input type="text" name="recipientPhone" class="form-control"/>
+                </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-semibold">SĐT nhận (Bỏ trống lấy theo KH)</label>
-                <input type="text" name="recipientPhone" class="form-control"/>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small">Địa chỉ giao hàng (Bỏ trống lấy theo KH)</label>
+                <input type="text" name="deliveryAddress" class="form-control"/>
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Địa chỉ giao hàng (Bỏ trống lấy theo KH)</label>
-              <input type="text" name="deliveryAddress" class="form-control"/>
-            </div>
-            <div class="row g-3">
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-semibold">Giảm giá</label>
-                <input type="number" name="discount" value="0" min="0" step="1000" class="form-control"/>
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold small">Giảm giá (₫)</label>
+                  <input type="number" name="discount" value="0" min="0" step="1000" class="form-control tabular-nums"/>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold small">Phương thức thanh toán</label>
+                  <input type="hidden" name="paymentMethod" value="BANK_TRANSFER"/>
+                  <div class="form-control bg-light d-flex align-items-center justify-content-between">
+                    <span class="fw-semibold text-primary"><i class="bi bi-qr-code-scan me-1"></i>Chuyển khoản ngân hàng</span>
+                    <span class="badge-soft badge-soft-info">Bắt buộc</span>
+                  </div>
+                </div>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-semibold">Phí giao hàng</label>
-                <input type="number" name="shippingFee" value="30000" min="0" step="1000" class="form-control"/>
+              <div class="mb-4">
+                <label class="form-label fw-semibold small">Ghi chú đơn hàng</label>
+                <textarea name="note" rows="2" class="form-control"></textarea>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-semibold">Phương thức thanh toán</label>
-                <select name="paymentMethod" class="form-select">
-                  <option th:each="pm : ${paymentMethods}" th:value="${pm}" th:text="${pm.displayName}"></option>
-                </select>
+              <div class="d-flex justify-content-end gap-2">
+                <a th:href="@{/admin/orders}" class="btn btn-outline-secondary px-4">Hủy</a>
+                <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-check2-circle me-1"></i>Xác nhận đặt hàng</button>
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Ghi chú đơn hàng</label>
-              <textarea name="note" rows="2" class="form-control"></textarea>
-            </div>
-            <div class="d-flex justify-content-end gap-2">
-              <a th:href="@{/admin/orders}" class="btn btn-outline-secondary">Hủy</a>
-              <button type="submit" class="btn btn-primary px-4">Xác nhận đặt hàng</button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
     </main>

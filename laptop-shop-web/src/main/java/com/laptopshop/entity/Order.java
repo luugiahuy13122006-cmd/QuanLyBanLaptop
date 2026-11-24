@@ -1,6 +1,5 @@
 package com.laptopshop.entity;
 
-// Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,9 +47,6 @@ public class Order {
     @Column(name = "GiamGia", nullable = false, precision = 18, scale = 2)
     private BigDecimal discount = BigDecimal.ZERO;
 
-    @Column(name = "PhiVanChuyen", nullable = false, precision = 18, scale = 2)
-    private BigDecimal shippingFee = BigDecimal.ZERO;
-
     @Column(name = "TongTien", nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -59,6 +55,30 @@ public class Order {
 
     @Column(name = "NgayCapNhat")
     private LocalDateTime updatedAt;
+
+    @Column(name = "HanThanhToan")
+    private LocalDateTime paymentExpiresAt;
+
+    @Column(name = "LyDoHuy", length = 500)
+    private String cancelReason;
+
+    @Column(name = "LyDoHoanTien", length = 500)
+    private String refundReason;
+
+    @Column(name = "NganHangHoan", length = 100)
+    private String refundBankName;
+
+    @Column(name = "SoTaiKhoanHoan", length = 30)
+    private String refundAccountNumber;
+
+    @Column(name = "TenChuTaiKhoanHoan", length = 100)
+    private String refundAccountHolder;
+
+    @Column(name = "NgayYeuCauHoan")
+    private LocalDateTime refundRequestedAt;
+
+    @Column(name = "NgayHoanTien")
+    private LocalDateTime refundedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> details = new ArrayList<>();
@@ -70,8 +90,7 @@ public class Order {
     @OrderBy("changedAt DESC")
     private List<OrderStatusHistory> statusHistories = new ArrayList<>();
 
-    public Order() {
-    }
+    public Order() {}
 
     @PrePersist
     protected void onCreate() {
@@ -79,7 +98,6 @@ public class Order {
         if (this.status == null) this.status = OrderStatus.PENDING;
         if (this.subtotal == null) this.subtotal = BigDecimal.ZERO;
         if (this.discount == null) this.discount = BigDecimal.ZERO;
-        if (this.shippingFee == null) this.shippingFee = BigDecimal.ZERO;
         if (this.totalAmount == null) this.totalAmount = BigDecimal.ZERO;
     }
 
@@ -110,7 +128,7 @@ public class Order {
 
     public PaymentMethod getPaymentMethod() {
         Payment latest = getLatestPayment();
-        return latest != null ? latest.getPaymentMethod() : PaymentMethod.CASH;
+        return latest != null ? latest.getPaymentMethod() : PaymentMethod.BANK_TRANSFER;
     }
 
     public PaymentStatus getPaymentStatus() {
@@ -162,9 +180,6 @@ public class Order {
     public BigDecimal getDiscount() { return discount; }
     public void setDiscount(BigDecimal discount) { this.discount = discount; }
 
-    public BigDecimal getShippingFee() { return shippingFee; }
-    public void setShippingFee(BigDecimal shippingFee) { this.shippingFee = shippingFee; }
-
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
 
@@ -173,6 +188,30 @@ public class Order {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public LocalDateTime getPaymentExpiresAt() { return paymentExpiresAt; }
+    public void setPaymentExpiresAt(LocalDateTime paymentExpiresAt) { this.paymentExpiresAt = paymentExpiresAt; }
+
+    public String getCancelReason() { return cancelReason; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
+
+    public String getRefundReason() { return refundReason; }
+    public void setRefundReason(String refundReason) { this.refundReason = refundReason; }
+
+    public String getRefundBankName() { return refundBankName; }
+    public void setRefundBankName(String refundBankName) { this.refundBankName = refundBankName; }
+
+    public String getRefundAccountNumber() { return refundAccountNumber; }
+    public void setRefundAccountNumber(String refundAccountNumber) { this.refundAccountNumber = refundAccountNumber; }
+
+    public String getRefundAccountHolder() { return refundAccountHolder; }
+    public void setRefundAccountHolder(String refundAccountHolder) { this.refundAccountHolder = refundAccountHolder; }
+
+    public LocalDateTime getRefundRequestedAt() { return refundRequestedAt; }
+    public void setRefundRequestedAt(LocalDateTime refundRequestedAt) { this.refundRequestedAt = refundRequestedAt; }
+
+    public LocalDateTime getRefundedAt() { return refundedAt; }
+    public void setRefundedAt(LocalDateTime refundedAt) { this.refundedAt = refundedAt; }
 
     public List<OrderDetail> getDetails() { return details; }
     public List<OrderDetail> getOrderDetails() { return details; }

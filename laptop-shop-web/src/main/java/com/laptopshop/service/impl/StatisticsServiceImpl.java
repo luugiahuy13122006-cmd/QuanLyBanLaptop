@@ -1,9 +1,11 @@
 package com.laptopshop.service.impl;
 
+import com.laptopshop.dto.MonthlyImportCostDTO;
 import com.laptopshop.dto.MonthlyRevenueDTO;
 import com.laptopshop.dto.OrderStatusCountDTO;
 import com.laptopshop.dto.TopSellingLaptopDTO;
 import com.laptopshop.entity.Laptop;
+import com.laptopshop.repository.ImportReceiptRepository;
 import com.laptopshop.repository.LaptopRepository;
 import com.laptopshop.repository.OrderDetailRepository;
 import com.laptopshop.repository.OrderRepository;
@@ -21,13 +23,16 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final OrderRepository orderRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final LaptopRepository laptopRepository;
+    private final ImportReceiptRepository importReceiptRepository;
 
     public StatisticsServiceImpl(OrderRepository orderRepository,
                                  OrderDetailRepository orderDetailRepository,
-                                 LaptopRepository laptopRepository) {
+                                 LaptopRepository laptopRepository,
+                                 ImportReceiptRepository importReceiptRepository) {
         this.orderRepository = orderRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.laptopRepository = laptopRepository;
+        this.importReceiptRepository = importReceiptRepository;
     }
 
     @Override
@@ -59,5 +64,18 @@ public class StatisticsServiceImpl implements StatisticsService {
     @Transactional(readOnly = true)
     public List<Laptop> getLowStockLaptops(int threshold) {
         return laptopRepository.findLowStockLaptops(threshold);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalImportCost() {
+        BigDecimal total = importReceiptRepository.calculateTotalImportCost();
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonthlyImportCostDTO> getMonthlyImportCost(int year) {
+        return importReceiptRepository.getMonthlyImportCost(year);
     }
 }
