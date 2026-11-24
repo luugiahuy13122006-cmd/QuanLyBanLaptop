@@ -205,6 +205,7 @@ public class StoreController {
         model.addAttribute("reviews", reviewService.getApprovedReviews(id));
         model.addAttribute("avgRating", reviewService.getAverageRating(id));
         model.addAttribute("reviewCount", reviewService.getReviewCount(id));
+        model.addAttribute("canReview", currentUser != null && reviewService.canCustomerReview(id, currentUser.getAccountId()));
         model.addAttribute("inWishlist", currentUser != null
                 && wishlistAndCompareService.isInWishlist(currentUser.getAccountId(), id));
         return "store/detail";
@@ -213,13 +214,13 @@ public class StoreController {
     @PostMapping("/san-pham/{id}/danh-gia")
     public String submitReview(@PathVariable Integer id,
                                @RequestParam int rating,
-                               @RequestParam(required = false) String title,
                                @RequestParam String content,
+                               @RequestParam(defaultValue = "false") boolean anonymous,
                                @AuthenticationPrincipal CustomUserDetails currentUser,
                                RedirectAttributes ra) {
         if (currentUser == null) return "redirect:/login";
         try {
-            reviewService.submitReview(id, currentUser.getAccountId(), rating, title, content);
+            reviewService.submitReview(id, currentUser.getAccountId(), rating, content, anonymous);
             ra.addFlashAttribute("successMessage",
                     "Cảm ơn bạn! Đánh giá đã được ghi nhận và sẽ hiển thị sau khi quản trị viên kiểm duyệt.");
         } catch (Exception ex) {

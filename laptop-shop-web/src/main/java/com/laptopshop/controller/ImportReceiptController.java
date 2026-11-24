@@ -6,6 +6,7 @@ import com.laptopshop.entity.ImportReceipt;
 import com.laptopshop.entity.ImportReceiptStatus;
 import com.laptopshop.service.ImportReceiptService;
 import com.laptopshop.service.LaptopService;
+import com.laptopshop.service.SupplierService;
 import com.laptopshop.util.PaginationUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -24,11 +25,14 @@ public class ImportReceiptController {
 
     private final ImportReceiptService importReceiptService;
     private final LaptopService laptopService;
+    private final SupplierService supplierService;
 
     public ImportReceiptController(ImportReceiptService importReceiptService,
-                                   LaptopService laptopService) {
+                                   LaptopService laptopService,
+                                   SupplierService supplierService) {
         this.importReceiptService = importReceiptService;
         this.laptopService = laptopService;
+        this.supplierService = supplierService;
     }
 
     @GetMapping
@@ -53,6 +57,7 @@ public class ImportReceiptController {
     public String showCreateForm(Model model) {
         model.addAttribute("importForm", new ImportReceiptForm());
         model.addAttribute("laptops", laptopService.getAllLaptops());
+        model.addAttribute("suppliers", supplierService.findAllActive());
         return "admin/import-receipts/create";
     }
 
@@ -65,6 +70,7 @@ public class ImportReceiptController {
             RedirectAttributes ra) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("laptops", laptopService.getAllLaptops());
+            model.addAttribute("suppliers", supplierService.findAllActive());
             return "admin/import-receipts/create";
         }
         try {
@@ -76,6 +82,7 @@ public class ImportReceiptController {
         } catch (Exception ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("laptops", laptopService.getAllLaptops());
+            model.addAttribute("suppliers", supplierService.findAllActive());
             return "admin/import-receipts/create";
         }
     }

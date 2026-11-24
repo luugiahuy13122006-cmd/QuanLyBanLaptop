@@ -11,7 +11,7 @@
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
           <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock text-primary me-2"></i>Quản lý Tài khoản &amp; Phân quyền</h4>
-          <div class="small text-muted">Cấp tài khoản nhân viên (STAFF) / quản trị (ADMIN) và quản lý trạng thái khóa. Tài khoản khách hàng do khách tự đăng ký.</div>
+          <div class="small text-muted">Cấp tài khoản nhân viên (STAFF) / quản trị (ADMIN), cấu hình quyền từng chức năng và quản lý trạng thái khóa.</div>
         </div>
         <a th:href="@{/admin/accounts/add}" class="btn btn-pv-primary btn-sm px-3"><i class="bi bi-person-plus me-1"></i>Thêm tài khoản</a>
       </div>
@@ -73,12 +73,23 @@
                     <span class="badge-soft"
                           th:classappend="${a.role.roleName == 'ADMIN' ? 'badge-soft-danger' : (a.role.roleName == 'STAFF' ? 'badge-soft-info' : 'badge-soft-indigo')}"
                           th:text="${a.role.roleName}"></span>
+                    <div th:if="${a.role.roleName == 'STAFF' and staffPermMap != null and staffPermMap[a.id] != null}" class="d-flex flex-wrap gap-1 mt-1" style="max-width: 240px;">
+                      <span th:each="entry : ${staffPermMap[a.id]}" th:if="${entry.value.canView()}"
+                            class="badge bg-secondary bg-opacity-10 text-secondary border"
+                            style="font-size: 0.65rem;"
+                            th:text="${entry.key.displayName + ': ' + entry.value.name()}"></span>
+                    </div>
                   </td>
                   <td>
                     <span th:if="${a.isActive}" class="badge-soft badge-soft-success">Hoạt động</span>
                     <span th:unless="${a.isActive}" class="badge-soft badge-soft-slate">Đã khóa</span>
                   </td>
                   <td class="text-center text-nowrap">
+                    <a th:if="${a.role.roleName == 'STAFF'}"
+                       th:href="@{/admin/accounts/{id}/permissions(id=${a.id})}"
+                       class="btn btn-sm btn-outline-info pro-btn-icon me-1" title="Phân quyền chức năng">
+                      <i class="bi bi-sliders"></i>
+                    </a>
                     <a th:href="@{/admin/accounts/edit/{id}(id=${a.id})}" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Sửa">
                       <i class="bi bi-pencil"></i>
                     </a>

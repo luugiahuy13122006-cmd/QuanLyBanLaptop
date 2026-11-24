@@ -21,10 +21,11 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -45,9 +46,11 @@ class Phase2FeaturesTest {
     @Autowired private WishlistRepository wishlistRepo;
     @Autowired private CartItemRepository cartItemRepo;
     @Autowired private CustomerAddressRepository addressRepo;
-    @Autowired private StockMovementRepository stockMovementRepo;
     @Autowired private SupplierRepository supplierRepo;
-    @Autowired private PasswordResetTokenRepository tokenRepo;
+    @Autowired private ImportReceiptRepository importReceiptRepo;
+    @Autowired private StaffPermissionRepository staffPermRepo;
+    @Autowired private BannerRepository bannerRepo;
+    @Autowired private ChatMessageRepository chatRepo;
     @Autowired private AuditLogRepository auditLogRepo;
     @Autowired private PasswordEncoder passwordEncoder;
 
@@ -60,6 +63,8 @@ class Phase2FeaturesTest {
     @Autowired private CustomerAddressService addressService;
     @Autowired private StatisticsService statisticsService;
     @Autowired private SupplierService supplierService;
+    @Autowired private StaffPermissionService staffPermissionService;
+    @Autowired private ImportReceiptService importReceiptService;
 
     private Integer laptopId;
     private Integer customerId;
@@ -74,8 +79,10 @@ class Phase2FeaturesTest {
         wishlistRepo.deleteAll();
         cartItemRepo.deleteAll();
         addressRepo.deleteAll();
-        stockMovementRepo.deleteAll();
-        tokenRepo.deleteAll();
+        importReceiptRepo.deleteAll();
+        staffPermRepo.deleteAll();
+        bannerRepo.deleteAll();
+        chatRepo.deleteAll();
         orderRepo.deleteAll();
         couponRepo.deleteAll();
         supplierRepo.deleteAll();
@@ -149,7 +156,7 @@ class Phase2FeaturesTest {
 
         // Chưa mua không được đánh giá
         assertThrows(BusinessException.class,
-                () -> reviewService.submitReview(laptopId, customerAccount.getId(), 5, "Tốt", "Chưa mua thử gửi"));
+                () -> reviewService.submitReview(laptopId, customerAccount.getId(), 5, "Chưa mua thử gửi", false));
 
         PlaceOrderRequest req = new PlaceOrderRequest();
         req.setCustomerId(customerId);
@@ -175,10 +182,17 @@ class Phase2FeaturesTest {
         WarrantyClaim claim = warrantyService.submitClaim(sn, "Khách P2", "0988111222", "Loa rè nhẹ");
         assertEquals(WarrantyStatus.RECEIVED, claim.getStatus());
 
-        // Đã hoàn thành đơn -> gửi đánh giá thành công -> duyệt -> hiển thị avg rating 5.0
-        ProductReview rev = reviewService.submitReview(laptopId, customerAccount.getId(), 5, "Xuất sắc", "Máy rất mượt");
+        // Đã hoàn thành đơn -> gửi đánh giá ẩn danh thành công -> duyệt -> kiểm tra ẩn tên K****** & chi tiết SP không lộ SKU/Tồn kho
+        ProductReview rev = reviewService.submitReview(laptopId, customerAccount.getId(), 5, "Máy rất mượt", true);
         reviewService.moderate(rev.getId(), true, "Cảm ơn bạn!");
         assertEquals(5.0, reviewService.getAverageRating(laptopId));
+        assertEquals("K******", rev.getReviewerDisplayName());
+
+        mockMvc.perform(get("/san-pham/" + laptopId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("SKU:"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Tồn kho:"))))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("K******")));
 
         // Doanh thu 20M, giá vốn 18M => lợi nhuận gộp = 2M
         assertEquals(0, new BigDecimal("2000000").compareTo(statisticsService.getTotalGrossProfit()));
@@ -223,10 +237,33 @@ class Phase2FeaturesTest {
         adminAcc = accountRepo.save(adminAcc);
         CustomUserDetails adminPrincipal = new CustomUserDetails(adminAcc, null);
 
+        // Kiểm tra banner trang chủ + chat chưa đọc tại /admin/content
+        Banner b1 = new Banner();
+        b1.setTitle("Laptop AI 2026 — Chuẩn Sức Mạnh Mới");
+        b1.setSubtitle("Giảm đến 20%");
+        b1.setTargetUrl("/?categoryId=10");
+        b1.setCtaLabel("Khám phá Laptop AI");
+        b1.setSortOrder(1);
+        bannerRepo.save(b1);
+        Banner b2 = new Banner();
+        b2.setTitle("Đấu Trường Gaming RTX 4060");
+        b2.setSubtitle("Freeship toàn quốc");
+        b2.setTargetUrl("/?categoryId=2");
+        b2.setCtaLabel("Xem Laptop Gaming");
+        b2.setSortOrder(2);
+        bannerRepo.save(b2);
+        chatRepo.save(new ChatMessage("ROOM-TEST", "Khách A", "CUSTOMER", "Xin tư vấn"));
+        chatRepo.save(new ChatMessage("ROOM-UNREAD", "Khách B", "CUSTOMER", "Còn hàng không shop?"));
+
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Laptop AI 2026")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đấu Trường Gaming RTX 4060")));
+
         // Public & SEO & Offline Vendor routes
         for (String publicUrl : List.of(
-                "/", "/san-pham/" + laptopId, "/bao-hanh", "/tin-tuc", "/ho-tro",
-                "/thong-tin/gioi-thieu", "/login", "/register", "/forgot-password",
+                "/", "/san-pham/" + laptopId, "/bao-hanh", "/ho-tro",
+                "/thong-tin/gioi-thieu", "/login", "/register",
                 "/robots.txt", "/sitemap.xml", "/manifest.json", "/sw.js",
                 "/vendor/bootstrap/bootstrap.min.css", "/vendor/bootstrap/bootstrap.bundle.min.js",
                 "/vendor/bootstrap-icons/bootstrap-icons.min.css", "/vendor/chartjs/chart.umd.min.js",
@@ -245,18 +282,69 @@ class Phase2FeaturesTest {
                     .andExpect(status().isOk());
         }
 
-        // Admin & Phase 2-3 routes
+        // Admin routes (removed pos, stock-movements, pending-proofs)
         for (String adminUrl : List.of(
-                "/admin/dashboard", "/admin/pos", "/admin/statistics", "/admin/statistics/report",
+                "/admin/dashboard", "/admin/statistics", "/admin/statistics/report",
                 "/admin/laptops", "/admin/laptops/add", "/admin/laptops/edit/" + laptopId,
                 "/admin/categories", "/admin/categories/add", "/admin/brands", "/admin/brands/add",
                 "/admin/import-receipts", "/admin/import-receipts/create",
-                "/admin/suppliers", "/admin/stock-movements", "/admin/orders", "/admin/orders/create",
-                "/admin/orders/pending-proofs", "/admin/customers", "/admin/coupons",
+                "/admin/suppliers", "/admin/orders", "/admin/orders/create",
+                "/admin/customers", "/admin/coupons",
                 "/admin/warranties", "/admin/reviews", "/admin/content", "/admin/accounts", "/admin/audit-logs"
         )) {
             mockMvc.perform(get(adminUrl).with(user(adminPrincipal)))
                     .andExpect(status().isOk());
         }
+
+        // Phân quyền STAFF: chặn coupons/suppliers & thực thi ma trận quyền động
+        Role staffRole = roleRepo.findByRoleNameIgnoreCase("STAFF").orElseThrow();
+        Account staffAcc = new Account();
+        staffAcc.setUsername("p3_staff");
+        staffAcc.setPasswordHash(passwordEncoder.encode("Staff1234"));
+        staffAcc.setFullName("Nhân viên P3");
+        staffAcc.setEmail("staffp3@nexora.vn");
+        staffAcc.setRole(staffRole);
+        staffAcc = accountRepo.save(staffAcc);
+        CustomUserDetails staffPrincipal = new CustomUserDetails(staffAcc, null);
+
+        java.util.Map<AdminModule, PermissionLevel> matrix = new java.util.EnumMap<>(AdminModule.class);
+        matrix.put(AdminModule.STATISTICS, PermissionLevel.NONE);
+        matrix.put(AdminModule.LAPTOPS, PermissionLevel.VIEW);
+        matrix.put(AdminModule.ORDERS, PermissionLevel.EDIT);
+        matrix.put(AdminModule.IMPORT_RECEIPTS, PermissionLevel.EDIT);
+        staffPermissionService.savePermissionsForStaff(staffAcc.getId(), matrix);
+
+        mockMvc.perform(get("/admin/accounts/" + staffAcc.getId() + "/permissions").with(user(adminPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("perm_STATISTICS")));
+
+        mockMvc.perform(get("/403")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/coupons").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/suppliers").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/statistics").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/laptops").with(user(staffPrincipal))).andExpect(status().isOk());
+        mockMvc.perform(get("/admin/laptops/add").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(post("/admin/laptops/delete/" + laptopId).with(user(staffPrincipal)).with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/orders/create").with(user(staffPrincipal))).andExpect(status().isOk());
+
+        // Nhà cung cấp liên kết Phiếu nhập kho + Toggle & Delete guard
+        Supplier sup = new Supplier();
+        sup.setName("FPT Synnex Partner");
+        sup = supplierService.save(sup);
+        com.laptopshop.dto.ImportReceiptForm importForm = new com.laptopshop.dto.ImportReceiptForm();
+        importForm.setSupplierId(sup.getId());
+        com.laptopshop.dto.ImportItemRequest itemReq = new com.laptopshop.dto.ImportItemRequest();
+        itemReq.setLaptopId(laptopId);
+        itemReq.setQuantity(3);
+        itemReq.setUnitCost(new BigDecimal("18000000"));
+        importForm.setItems(List.of(itemReq));
+        ImportReceipt createdRcpt = importReceiptService.createReceipt(importForm, staffAcc.getId());
+        assertEquals(sup.getName(), createdRcpt.getSupplier());
+
+        Integer supIdToDelete = sup.getId();
+        assertThrows(BusinessException.class, () -> supplierService.delete(supIdToDelete));
+        Supplier toggled = supplierService.toggleActive(supIdToDelete);
+        assertFalse(toggled.getIsActive());
     }
 }

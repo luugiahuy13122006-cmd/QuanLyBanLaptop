@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: commonHead('Nội dung, Banner & Chat CSKH')}"></head>
+<head th:replace="~{fragments/head :: commonHead('Hỗ trợ trực tuyến - CSKH')}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -9,118 +9,74 @@
     <main class="col-lg-10 p-0">
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-          <h4 class="fw-bold mb-0"><i class="bi bi-chat-square-text text-primary me-2"></i>Quản lý Nội dung, Banner &amp; Chat hỗ trợ</h4>
-          <div class="small text-muted">Cập nhật tin công nghệ, câu hỏi FAQ, banner trang chủ và trả lời khách hàng trực tiếp</div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-chat-dots text-primary me-2"></i>Hỗ trợ trực tuyến Khách hàng</h4>
+          <div class="small text-muted">Tiếp nhận tin nhắn tư vấn thời gian thực và phản hồi khách hàng ngay lập tức</div>
         </div>
+        <span class="badge-soft badge-soft-success" th:if="${unreadChatCount == 0}">
+          <i class="bi bi-check2-all me-1"></i>Đã đọc tất cả
+        </span>
+        <span class="badge bg-danger rounded-pill px-3 py-2" th:if="${unreadChatCount != null and unreadChatCount > 0}">
+          <i class="bi bi-bell-fill me-1"></i><span th:text="${unreadChatCount}"></span> tin nhắn chưa đọc
+        </span>
       </div>
 
       <div class="p-3 p-md-4">
         <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-        <div class="row g-4 mb-4">
-          <!-- Staff Support Chat -->
-          <div class="col-lg-6">
-            <div class="pro-card h-100">
-              <div class="pro-card-header">
-                <h6><i class="bi bi-chat-dots text-primary me-2"></i>Hộp thoại Hỗ trợ Khách hàng</h6>
-              </div>
-              <div class="p-3">
-                <div class="d-flex flex-wrap gap-1 mb-3">
-                  <a th:each="r : ${chatRooms}" th:href="@{/admin/content(room=${r})}"
-                     class="btn btn-sm"
-                     th:classappend="${r == activeRoom ? 'btn-pv-primary' : 'btn-outline-secondary'}"
-                     th:text="${r}"></a>
-                  <span th:if="${#lists.isEmpty(chatRooms)}" class="small text-muted">Chưa có phiên chat nào.</span>
-                </div>
-                <div class="border rounded-3 p-3 mb-3" style="height: 220px; overflow-y: auto; background: var(--surface-2);" id="adminChatBox">
-                  <div th:each="m : ${roomMessages}" class="mb-2 small">
-                    <span class="badge-soft" th:classappend="${m.senderRole == 'CUSTOMER' ? 'badge-soft-slate' : 'badge-soft-info'}"
-                          th:text="${m.senderName + ' (' + m.senderRole + ')'}"></span>
-                    <div class="mt-1" th:text="${m.content}"></div>
-                  </div>
-                </div>
-                <form th:if="${activeRoom != null}" id="adminChatReplyForm" class="d-flex gap-2">
-                  <input type="hidden" name="roomKey" th:value="${activeRoom}"/>
-                  <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <input type="text" name="content" class="form-control form-control-sm" placeholder="Nhập câu trả lời tới khách hàng..." required/>
-                  <button type="submit" class="btn btn-pv-primary btn-sm text-nowrap">Gửi trả lời</button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <!-- New Tech Article -->
-          <div class="col-lg-6">
-            <div class="pro-card h-100">
-              <div class="pro-card-header">
-                <h6><i class="bi bi-newspaper text-primary me-2"></i>Đăng Bài viết Công nghệ mới</h6>
-              </div>
-              <div class="p-3">
-                <form th:action="@{/admin/content/articles/save}" method="post" class="d-grid gap-2">
-                  <div class="row g-2">
-                    <div class="col-7">
-                      <input type="text" name="title" class="form-control form-control-sm" placeholder="Tiêu đề bài viết *" required/>
-                    </div>
-                    <div class="col-5">
-                      <input type="text" name="slug" class="form-control form-control-sm font-mono-code" placeholder="duong-dan-url *" required/>
-                    </div>
-                  </div>
-                  <input type="text" name="summary" class="form-control form-control-sm" placeholder="Tóm tắt ngắn..."/>
-                  <textarea name="content" rows="4" class="form-control form-control-sm" placeholder="Nội dung chi tiết bài viết *" required></textarea>
-                  <button type="submit" class="btn btn-pv-primary btn-sm"><i class="bi bi-save me-1"></i>Đăng bài viết</button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="row g-4">
-          <!-- FAQ Form & List -->
-          <div class="col-lg-6">
-            <div class="pro-card">
-              <div class="pro-card-header">
-                <h6><i class="bi bi-question-circle text-primary me-2"></i>Câu hỏi thường gặp (FAQ)</h6>
-              </div>
-              <div class="p-3 border-bottom">
-                <form th:action="@{/admin/content/faqs/save}" method="post" class="row g-2">
-                  <div class="col-4"><input type="text" name="topic" class="form-control form-control-sm" placeholder="Chủ đề" required/></div>
-                  <div class="col-8"><input type="text" name="question" class="form-control form-control-sm" placeholder="Câu hỏi *" required/></div>
-                  <div class="col-9"><input type="text" name="answer" class="form-control form-control-sm" placeholder="Câu trả lời *" required/></div>
-                  <div class="col-3"><button type="submit" class="btn btn-pv-primary btn-sm w-100">Thêm FAQ</button></div>
-                </form>
+          <div class="col-lg-4">
+            <div class="pro-card h-100">
+              <div class="pro-card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-people text-primary me-2"></i>Phòng chat khách hàng</h6>
+                <span class="badge-soft badge-soft-info" th:text="${#lists.size(chatRooms)} + ' phòng'">0 phòng</span>
               </div>
               <div class="list-group list-group-flush">
-                <div class="list-group-item small" th:each="f : ${faqs}">
-                  <span class="badge-soft badge-soft-slate me-1" th:text="${f.topic}"></span>
-                  <strong th:text="${f.question}"></strong>
-                  <div class="text-muted mt-1" th:text="${f.answer}"></div>
+                <a th:each="r : ${chatRooms}" th:href="@{/admin/content(room=${r})}"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3"
+                   th:classappend="${r == activeRoom ? 'active fw-bold' : ''}">
+                  <span><i class="bi bi-chat-left-text me-2"></i><code th:classappend="${r == activeRoom ? 'text-white' : ''}" th:text="${r}"></code></span>
+                  <span th:if="${roomUnreadMap != null and roomUnreadMap.get(r) == true}" class="badge bg-danger rounded-pill">Mới</span>
+                </a>
+                <div th:if="${#lists.isEmpty(chatRooms)}" class="p-4 text-center text-muted small">
+                  Chưa có phiên hỗ trợ khách hàng nào.
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Banner Form & List -->
-          <div class="col-lg-6">
-            <div class="pro-card">
-              <div class="pro-card-header">
-                <h6><i class="bi bi-images text-primary me-2"></i>Banner Quảng cáo Trang chủ</h6>
+          <div class="col-lg-8">
+            <div class="pro-card h-100">
+              <div class="pro-card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                  <i class="bi bi-chat-dots-fill text-primary me-2"></i>
+                  <span th:if="${activeRoom != null}">Cuộc hội thoại: <code th:text="${activeRoom}"></code></span>
+                  <span th:if="${activeRoom == null}">Chọn một phòng chat để xem nội dung</span>
+                </h6>
               </div>
-              <div class="p-3 border-bottom">
-                <form th:action="@{/admin/content/banners/save}" method="post" class="row g-2">
-                  <div class="col-6"><input type="text" name="title" class="form-control form-control-sm" placeholder="Tiêu đề banner *" required/></div>
-                  <div class="col-6"><input type="text" name="targetUrl" value="/" class="form-control form-control-sm" placeholder="Liên kết (/...)"/></div>
-                  <div class="col-9"><input type="text" name="subtitle" class="form-control form-control-sm" placeholder="Mô tả ngắn..."/></div>
-                  <div class="col-3"><button type="submit" class="btn btn-pv-primary btn-sm w-100">Lưu</button></div>
-                </form>
-              </div>
-              <div class="list-group list-group-flush">
-                <div class="list-group-item small d-flex justify-content-between align-items-center" th:each="b : ${banners}">
-                  <div>
-                    <strong th:text="${b.title}"></strong>
-                    <div class="text-muted" th:text="${b.subtitle}"></div>
+              <div class="p-3">
+                <div class="border rounded-3 p-3 mb-3" style="height: 360px; overflow-y: auto; background: var(--surface-2);" id="adminChatBox">
+                  <div th:if="${#lists.isEmpty(roomMessages)}" class="text-center text-muted small py-5">
+                    Chưa có tin nhắn nào trong phòng này.
                   </div>
-                  <span th:if="${b.active}" class="badge-soft badge-soft-success">Hiển thị</span>
+                  <div th:each="m : ${roomMessages}" class="mb-3 small"
+                       th:classappend="${m.senderRole == 'CUSTOMER' ? '' : 'text-end'}">
+                    <div class="mb-1">
+                      <span class="badge-soft" th:classappend="${m.senderRole == 'CUSTOMER' ? 'badge-soft-slate' : 'badge-soft-info'}"
+                            th:text="${m.senderName + ' (' + m.senderRole + ')'}"></span>
+                    </div>
+                    <div class="d-inline-block px-3 py-2 rounded-3 text-start"
+                         th:classappend="${m.senderRole == 'CUSTOMER' ? 'bg-body border' : 'bg-primary text-white'}"
+                         th:text="${m.content}"></div>
+                  </div>
                 </div>
+                <form th:if="${activeRoom != null and staffPerms['SUPPORT_CHAT']?.canEdit()}" id="adminChatReplyForm" class="d-flex gap-2">
+                  <input type="hidden" name="roomKey" id="activeRoomKey" th:value="${activeRoom}"/>
+                  <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <input type="text" name="content" id="adminChatInput" class="form-control" placeholder="Nhập câu trả lời tới khách hàng..." required autocomplete="off"/>
+                  <button type="submit" class="btn btn-pv-primary px-4 text-nowrap">
+                    <i class="bi bi-send-fill me-1"></i>Gửi trả lời
+                  </button>
+                </form>
               </div>
             </div>
           </div>
@@ -131,11 +87,44 @@
 </div>
 <div th:replace="~{fragments/scripts :: commonScripts}"></div>
 <script>
-  document.getElementById('adminChatReplyForm')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const res = await fetch('/api/chat/send', { method: 'POST', body: new URLSearchParams(new FormData(this)) });
-    if (res.ok) window.location.reload();
-  });
+  (function () {
+    const box = document.getElementById('adminChatBox');
+    const activeRoom = document.getElementById('activeRoomKey')?.value;
+    if (box) box.scrollTop = box.scrollHeight;
+
+    async function refreshRoom() {
+      if (!activeRoom || !box) return;
+      try {
+        const res = await fetch('/api/chat/messages?roomKey=' + encodeURIComponent(activeRoom));
+        if (!res.ok) return;
+        const list = await res.json();
+        box.innerHTML = list.map(m => {
+          const isCust = m.senderRole === 'CUSTOMER';
+          return '<div class="mb-3 small ' + (isCust ? '' : 'text-end') + '">' +
+            '<div class="mb-1"><span class="badge-soft ' + (isCust ? 'badge-soft-slate' : 'badge-soft-info') + '">' +
+            m.senderName + ' (' + m.senderRole + ')</span></div>' +
+            '<div class="d-inline-block px-3 py-2 rounded-3 text-start ' + (isCust ? 'bg-body border' : 'bg-primary text-white') + '">' +
+            m.content + '</div></div>';
+        }).join('');
+        box.scrollTop = box.scrollHeight;
+      } catch (e) {}
+    }
+
+    document.getElementById('adminChatReplyForm')?.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const input = document.getElementById('adminChatInput');
+      if (!input.value.trim()) return;
+      const res = await fetch('/api/chat/send', { method: 'POST', body: new URLSearchParams(new FormData(this)) });
+      if (res.ok) {
+        input.value = '';
+        await refreshRoom();
+      }
+    });
+
+    if (activeRoom) {
+      setInterval(refreshRoom, 3000);
+    }
+  })();
 </script>
 </body>
 </html>

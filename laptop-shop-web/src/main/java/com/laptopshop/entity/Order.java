@@ -59,12 +59,6 @@ public class Order {
     @Column(name = "TongTien", nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Column(name = "DonViVanChuyen", length = 100)
-    private String carrierName;
-
-    @Column(name = "MaVanDon", length = 60)
-    private String trackingCode;
-
     @Version
     @Column(name = "PhienBan", nullable = false)
     private Integer version = 0;
@@ -214,12 +208,6 @@ public class Order {
 
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
-
-    public String getCarrierName() { return carrierName; }
-    public void setCarrierName(String carrierName) { this.carrierName = carrierName; }
-
-    public String getTrackingCode() { return trackingCode; }
-    public void setTrackingCode(String trackingCode) { this.trackingCode = trackingCode; }
 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }

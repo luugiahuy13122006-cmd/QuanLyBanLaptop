@@ -23,6 +23,7 @@ public interface ImportReceiptRepository extends JpaRepository<ImportReceipt, In
     boolean existsByReceiptCodeIgnoreCase(String receiptCode);
     boolean existsByCreatedById(Integer accountId);
     boolean existsByApprovedById(Integer accountId);
+    boolean existsBySupplierEntity_Id(Integer supplierId);
     long countByStatus(ImportReceiptStatus status);
 
     @EntityGraph(attributePaths = {"createdBy", "approvedBy"})

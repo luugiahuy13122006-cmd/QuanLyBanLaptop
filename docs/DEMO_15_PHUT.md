@@ -14,11 +14,11 @@ Mục tiêu: Trình bày mạch lạc toàn bộ **kiến trúc, nghiệp vụ t
 3. **Thanh toán VietQR & COD:** Tạo 1 đơn `BANK_TRANSFER` (hiển thị QR có chữ ký HMAC) và 1 đơn `CASH` (COD).
 
 ## Phút 5–9: Phân hệ Quản trị & Vận hành cửa hàng (`admin / 123456`)
-1. **Phân quyền:** Thử đăng nhập `staff01` -> thấy bị ẩn menu Tài khoản & Audit Log (nếu truy cập `/admin/accounts` nhận `403`).
-2. **POS & Hóa đơn A4 (`/admin/pos`):** Quét/chọn nhanh SKU, xuất hóa đơn `/admin/orders/{id}/invoice` (in/tải PDF offline).
-3. **Nhập kho & Giá vốn bình quân (`/admin/import-receipts`):** Duyệt phiếu nhập `PENDING` -> tự cộng tồn kho, cập nhật `PurchasePrice` bình quân gia quyền, ghi `BienDongKho` & công nợ nhà cung cấp.
+1. **Phân quyền động cho nhân viên:** Vào `/admin/accounts/{id}/permissions` cấu hình từng module (`NONE` / `VIEW` / `EDIT` / `FULL`) cho `staff01`; nhân viên bị chặn `403` khỏi `/admin/coupons`, `/admin/suppliers`, `/admin/accounts`.
+2. **Đơn hàng & Hóa đơn A4 (`/admin/orders`):** Xử lý đơn hàng Online (COD/VietQR), xuất hóa đơn `/admin/orders/{id}/invoice` (in/tải PDF offline).
+3. **Nhập kho theo Nhà cung cấp & Giá vốn BQ (`/admin/import-receipts/create`):** Chọn nhà cung cấp đang hợp tác -> Admin duyệt -> cộng tồn kho & tính giá vốn bình quân gia quyền.
 4. **Serial & Bảo hành (`/admin/warranties` -> `/bao-hanh`):** Chuyển 1 đơn sang `COMPLETED` -> hệ thống tự cấp Serial kích hoạt hạn bảo hành; mở `/bao-hanh` tra cứu ngay theo mã đơn/Serial.
-5. **Thống kê & Xuất báo cáo (`/admin/statistics` -> `/admin/statistics/report`):** Trình bày Chart.js doanh thu vs nhập kho, lợi nhuận gộp COGS, hiệu suất nhân viên, xuất báo cáo A4 (PDF/CSV).
+5. **Thống kê & Hỗ trợ trực tuyến CSKH (`/admin/statistics` -> `/admin/content`):** Chart.js, báo cáo A4 (PDF/CSV) và hộp thoại Hỗ trợ trực tuyến có chuông/toast SSE khi khách nhắn từ `/ho-tro`.
 
 ## Phút 9–12: Xử lý đồng thời (`PESSIMISTIC_WRITE`) & Lập trình mạng TCP Socket
 1. Giải thích đoạn mã `OrderServiceImpl.placeOrder()`: gom các `laptopId` trùng, sắp xếp ID tăng dần tránh deadlock, dùng `findAllByIdInForUpdate` (`PESSIMISTIC_WRITE`), khóa `MaGiamGia`, cập nhật `BoDemMa`.

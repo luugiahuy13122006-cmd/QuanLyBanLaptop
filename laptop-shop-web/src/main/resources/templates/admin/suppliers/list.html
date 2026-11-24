@@ -21,38 +21,40 @@
         <div class="row g-4">
           <div class="col-lg-4">
             <div class="pro-card">
-              <div class="pro-card-header">
-                <h6><i class="bi bi-plus-circle text-primary me-2"></i>Thêm Nhà cung cấp mới</h6>
+              <div class="pro-card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0" id="supplierFormTitle"><i class="bi bi-plus-circle text-primary me-2"></i>Thêm Nhà cung cấp mới</h6>
+                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 d-none" id="supplierResetBtn" onclick="resetSupplierForm()">Tạo mới</button>
               </div>
               <div class="p-3">
-                <form th:action="@{/admin/suppliers/save}" method="post" class="d-grid gap-2">
+                <form th:action="@{/admin/suppliers/save}" method="post" class="d-grid gap-2" id="supplierFormEl">
+                  <input type="hidden" name="id" id="supId"/>
                   <div>
                     <label class="form-label small fw-semibold">Tên nhà cung cấp <span class="text-danger">*</span></label>
-                    <input type="text" name="name" class="form-control form-control-sm" required/>
+                    <input type="text" name="name" id="supName" class="form-control form-control-sm" required/>
                   </div>
                   <div class="row g-2">
                     <div class="col-6">
                       <label class="form-label small fw-semibold">Mã số thuế</label>
-                      <input type="text" name="taxCode" class="form-control form-control-sm font-mono-code"/>
+                      <input type="text" name="taxCode" id="supTaxCode" class="form-control form-control-sm font-mono-code"/>
                     </div>
                     <div class="col-6">
                       <label class="form-label small fw-semibold">Người liên hệ</label>
-                      <input type="text" name="contactName" class="form-control form-control-sm"/>
+                      <input type="text" name="contactName" id="supContactName" class="form-control form-control-sm"/>
                     </div>
                   </div>
                   <div class="row g-2">
                     <div class="col-6">
                       <label class="form-label small fw-semibold">Điện thoại</label>
-                      <input type="text" name="phone" class="form-control form-control-sm tabular-nums"/>
+                      <input type="text" name="phone" id="supPhone" class="form-control form-control-sm tabular-nums"/>
                     </div>
                     <div class="col-6">
                       <label class="form-label small fw-semibold">Email</label>
-                      <input type="email" name="email" class="form-control form-control-sm"/>
+                      <input type="email" name="email" id="supEmail" class="form-control form-control-sm"/>
                     </div>
                   </div>
                   <div>
                     <label class="form-label small fw-semibold">Địa chỉ</label>
-                    <input type="text" name="address" class="form-control form-control-sm"/>
+                    <input type="text" name="address" id="supAddress" class="form-control form-control-sm"/>
                   </div>
                   <button type="submit" class="btn btn-pv-primary btn-sm mt-2"><i class="bi bi-save me-1"></i>Lưu nhà cung cấp</button>
                 </form>
@@ -70,7 +72,7 @@
               <div class="table-responsive">
                 <table class="table pro-table align-middle mb-0">
                   <thead>
-                    <tr><th>#</th><th>Tên nhà cung cấp</th><th>Liên hệ</th><th>Địa chỉ</th><th>Trạng thái</th></tr>
+                    <tr><th>#</th><th>Tên nhà cung cấp</th><th>Liên hệ</th><th>Địa chỉ</th><th>Trạng thái</th><th class="text-center">Thao tác</th></tr>
                   </thead>
                   <tbody>
                     <tr th:each="s : ${supplierPage.content}">
@@ -86,11 +88,31 @@
                       <td class="small text-muted" th:text="${s.address ?: '-'}"></td>
                       <td>
                         <span th:if="${s.isActive}" class="badge-soft badge-soft-success">Hợp tác</span>
-                        <span th:unless="${s.isActive}" class="badge-soft badge-soft-slate">Ngừng</span>
+                        <span th:unless="${s.isActive}" class="badge-soft badge-soft-slate">Ngừng hợp tác</span>
+                      </td>
+                      <td class="text-center text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Sửa"
+                                th:attr="data-id=${s.id},data-name=${s.name},data-tax=${s.taxCode},data-contact=${s.contactName},data-phone=${s.phone},data-email=${s.email},data-address=${s.address}"
+                                onclick="editSupplier(this)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <form th:action="@{/admin/suppliers/{id}/toggle(id=${s.id})}" method="post" class="d-inline">
+                          <button type="submit" class="btn btn-sm pro-btn-icon me-1"
+                                  th:classappend="${s.isActive ? 'btn-outline-warning' : 'btn-outline-success'}"
+                                  th:title="${s.isActive ? 'Hủy hợp tác' : 'Khôi phục hợp tác'}">
+                            <i class="bi" th:classappend="${s.isActive ? 'bi-pause-circle' : 'bi-play-circle'}"></i>
+                          </button>
+                        </form>
+                        <form th:action="@{/admin/suppliers/{id}/delete(id=${s.id})}" method="post" class="d-inline"
+                              th:attr="data-confirm='Bạn có chắc muốn xóa nhà cung cấp ' + ${s.name} + '?'">
+                          <button type="submit" class="btn btn-sm btn-outline-danger pro-btn-icon" title="Xóa">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
                       </td>
                     </tr>
                     <tr th:if="${supplierPage.empty}">
-                      <td colspan="5" class="text-center text-muted py-4">Chưa có nhà cung cấp nào.</td>
+                      <td colspan="6" class="text-center text-muted py-4">Chưa có nhà cung cấp nào.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -104,5 +126,25 @@
   </div>
 </div>
 <div th:replace="~{fragments/scripts :: commonScripts}"></div>
+<script>
+  function editSupplier(btn) {
+    document.getElementById('supId').value = btn.getAttribute('data-id') || '';
+    document.getElementById('supName').value = btn.getAttribute('data-name') || '';
+    document.getElementById('supTaxCode').value = btn.getAttribute('data-tax') || '';
+    document.getElementById('supContactName').value = btn.getAttribute('data-contact') || '';
+    document.getElementById('supPhone').value = btn.getAttribute('data-phone') || '';
+    document.getElementById('supEmail').value = btn.getAttribute('data-email') || '';
+    document.getElementById('supAddress').value = btn.getAttribute('data-address') || '';
+    document.getElementById('supplierFormTitle').innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật Nhà cung cấp';
+    document.getElementById('supplierResetBtn').classList.remove('d-none');
+    document.getElementById('supName').focus();
+  }
+  function resetSupplierForm() {
+    document.getElementById('supplierFormEl').reset();
+    document.getElementById('supId').value = '';
+    document.getElementById('supplierFormTitle').innerHTML = '<i class="bi bi-plus-circle text-primary me-2"></i>Thêm Nhà cung cấp mới';
+    document.getElementById('supplierResetBtn').classList.add('d-none');
+  }
+</script>
 </body>
 </html>

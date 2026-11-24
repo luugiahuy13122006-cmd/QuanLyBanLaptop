@@ -9,7 +9,6 @@ import com.laptopshop.repository.*;
 import com.laptopshop.service.AuditLogService;
 import com.laptopshop.service.CodeGeneratorService;
 import com.laptopshop.service.ImportReceiptService;
-import com.laptopshop.service.StockMovementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -30,21 +29,21 @@ public class ImportReceiptServiceImpl implements ImportReceiptService {
     private final ImportReceiptRepository receiptRepository;
     private final LaptopRepository laptopRepository;
     private final AccountRepository accountRepository;
+    private final SupplierRepository supplierRepository;
     private final CodeGeneratorService codeGenerator;
-    private final StockMovementService stockMovementService;
     private final AuditLogService auditLogService;
 
     public ImportReceiptServiceImpl(ImportReceiptRepository receiptRepository,
                                     LaptopRepository laptopRepository,
                                     AccountRepository accountRepository,
+                                    SupplierRepository supplierRepository,
                                     CodeGeneratorService codeGenerator,
-                                    StockMovementService stockMovementService,
                                     AuditLogService auditLogService) {
         this.receiptRepository = receiptRepository;
         this.laptopRepository = laptopRepository;
         this.accountRepository = accountRepository;
+        this.supplierRepository = supplierRepository;
         this.codeGenerator = codeGenerator;
-        this.stockMovementService = stockMovementService;
         this.auditLogService = auditLogService;
     }
 
@@ -59,7 +58,19 @@ public class ImportReceiptServiceImpl implements ImportReceiptService {
         }
 
         ImportReceipt receipt = new ImportReceipt();
-        receipt.setSupplier(form.getSupplier().trim());
+        if (form.getSupplierId() != null) {
+            Supplier sup = supplierRepository.findById(form.getSupplierId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhà cung cấp ID: " + form.getSupplierId()));
+            if (!Boolean.TRUE.equals(sup.getIsActive())) {
+                throw new BusinessException("Nhà cung cấp '" + sup.getName() + "' đã ngừng hợp tác, không thể lập phiếu nhập mới.");
+            }
+            receipt.setSupplierEntity(sup);
+            receipt.setSupplier(sup.getName());
+        } else if (form.getSupplier() != null && !form.getSupplier().isBlank()) {
+            receipt.setSupplier(form.getSupplier().trim());
+        } else {
+            throw new BusinessException("Vui lòng chọn nhà cung cấp.");
+        }
         receipt.setNote(form.getNote() != null && !form.getNote().isBlank() ? form.getNote().trim() : null);
         receipt.setStatus(ImportReceiptStatus.PENDING);
         receipt.setCreatedBy(creator);
@@ -137,8 +148,6 @@ public class ImportReceiptServiceImpl implements ImportReceiptService {
             laptop.setUpdatedAt(LocalDateTime.now());
             laptopRepository.save(laptop);
 
-            stockMovementService.record(laptop, StockMovementType.IMPORT, qty, oldStock, newStock,
-                    receipt.getReceiptCode(), "Duyệt phiếu nhập từ " + receipt.getSupplier(), admin.getId());
             log.info("[IMPORT | THREAD: {}] Cộng kho laptop ID={} +{} => {} (giá vốn BQ={})",
                     threadName, laptop.getId(), qty, newStock, laptop.getPurchasePrice());
         }

@@ -365,8 +365,7 @@ public class SocketServer implements Runnable {
                         out.println("END");
                         return;
                     }
-                    laptopService.updateStockSafe(laptop.getId(), delta, StockMovementType.SOCKET_ADJUST,
-                            "SOCKET-" + clientId, reason.isEmpty() ? "Điều chỉnh qua Socket" : reason, null);
+                    laptopService.updateStockSafe(laptop.getId(), delta);
                     Laptop refreshed = laptopRepo.findById(laptop.getId()).orElse(laptop);
                     if (auditLogService != null) {
                         auditLogService.logSecurityEvent(null, "SOCKET_CLIENT_" + clientId,

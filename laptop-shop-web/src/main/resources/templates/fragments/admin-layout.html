@@ -21,12 +21,18 @@
   <div class="collapse navbar-collapse mt-2 pb-2" id="adminMobileMenu">
     <ul class="navbar-nav gap-1">
       <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/pos}"><i class="bi bi-upc-scan me-2"></i>Bán hàng POS</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/orders}"><i class="bi bi-box-seam me-2"></i>Đơn hàng</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/laptops}"><i class="bi bi-pc-display me-2"></i>Laptop</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed me-2"></i>Phiếu nhập kho</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/warranties}"><i class="bi bi-shield-check me-2"></i>Bảo hành &amp; Serial</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line me-2"></i>Thống kê &amp; Báo cáo</a></li>
+      <li class="nav-item" th:if="${staffPerms['ORDERS']?.canView()}"><a class="nav-link" th:href="@{/admin/orders}"><i class="bi bi-box-seam me-2"></i>Đơn hàng</a></li>
+      <li class="nav-item" th:if="${staffPerms['LAPTOPS']?.canView()}"><a class="nav-link" th:href="@{/admin/laptops}"><i class="bi bi-pc-display me-2"></i>Laptop</a></li>
+      <li class="nav-item" th:if="${staffPerms['IMPORT_RECEIPTS']?.canView()}"><a class="nav-link" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed me-2"></i>Phiếu nhập kho</a></li>
+      <li class="nav-item" th:if="${staffPerms['WARRANTIES']?.canView()}"><a class="nav-link" th:href="@{/admin/warranties}"><i class="bi bi-shield-check me-2"></i>Bảo hành &amp; Serial</a></li>
+      <li class="nav-item" th:if="${staffPerms['STATISTICS']?.canView()}"><a class="nav-link" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line me-2"></i>Thống kê &amp; Báo cáo</a></li>
+      <li class="nav-item" th:if="${staffPerms['SUPPORT_CHAT']?.canView()}">
+        <a class="nav-link d-flex align-items-center" th:href="@{/admin/content}">
+          <span><i class="bi bi-chat-dots me-2"></i>Hỗ trợ trực tuyến</span>
+          <span class="badge rounded-pill bg-danger ms-auto nx-unread-chat-badge" th:text="${unreadChatCount ?: 0}"
+                th:style="${(unreadChatCount ?: 0) > 0} ? '' : 'display:none;'"></span>
+        </a>
+      </li>
       <li class="nav-item" sec:authorize="hasRole('ADMIN')"><a class="nav-link" th:href="@{/admin/accounts}"><i class="bi bi-shield-lock me-2"></i>Tài khoản</a></li>
       <li class="nav-item" sec:authorize="hasRole('ADMIN')"><a class="nav-link" th:href="@{/admin/audit-logs}"><i class="bi bi-journal-text me-2"></i>Nhật ký hệ thống</a></li>
       <li class="nav-item mt-2"><a class="nav-link text-info fw-semibold" th:href="@{/}"><i class="bi bi-shop me-2"></i>Website bán hàng</a></li>
@@ -47,28 +53,33 @@
     <div class="pro-nav-label">Tổng quan</div>
     <ul class="nav flex-column">
       <li class="nav-item"><a class="nav-link" th:classappend="${currentUri == '/admin' || currentUri == '/admin/dashboard'} ? 'active'" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/pos')} ? 'active'" th:href="@{/admin/pos}"><i class="bi bi-upc-scan"></i><span>Bán tại quầy (POS)</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/statistics')} ? 'active'" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line"></i><span>Thống kê &amp; Báo cáo</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['STATISTICS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/statistics')} ? 'active'" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line"></i><span>Thống kê &amp; Báo cáo</span></a></li>
     </ul>
 
     <div class="pro-nav-label">Sản phẩm &amp; Kho</div>
     <ul class="nav flex-column">
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/laptops')} ? 'active'" th:href="@{/admin/laptops}"><i class="bi bi-pc-display"></i><span>Laptop</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/categories')} ? 'active'" th:href="@{/admin/categories}"><i class="bi bi-tags"></i><span>Danh mục</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/brands')} ? 'active'" th:href="@{/admin/brands}"><i class="bi bi-award"></i><span>Thương hiệu</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/import-receipts')} ? 'active'" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed"></i><span>Phiếu nhập kho</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/suppliers')} ? 'active'" th:href="@{/admin/suppliers}"><i class="bi bi-building"></i><span>Nhà cung cấp</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/stock-movements')} ? 'active'" th:href="@{/admin/stock-movements}"><i class="bi bi-arrow-left-right"></i><span>Biến động kho</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['LAPTOPS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/laptops')} ? 'active'" th:href="@{/admin/laptops}"><i class="bi bi-pc-display"></i><span>Laptop</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['CATEGORIES']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/categories')} ? 'active'" th:href="@{/admin/categories}"><i class="bi bi-tags"></i><span>Danh mục</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['BRANDS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/brands')} ? 'active'" th:href="@{/admin/brands}"><i class="bi bi-award"></i><span>Thương hiệu</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['IMPORT_RECEIPTS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/import-receipts')} ? 'active'" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed"></i><span>Phiếu nhập kho</span></a></li>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/suppliers')} ? 'active'" th:href="@{/admin/suppliers}"><i class="bi bi-building"></i><span>Nhà cung cấp</span></a></li>
     </ul>
 
     <div class="pro-nav-label">Bán hàng &amp; CSKH</div>
     <ul class="nav flex-column">
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/orders')} ? 'active'" th:href="@{/admin/orders}"><i class="bi bi-box-seam"></i><span>Đơn hàng</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/customers')} ? 'active'" th:href="@{/admin/customers}"><i class="bi bi-people"></i><span>Khách hàng</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/coupons')} ? 'active'" th:href="@{/admin/coupons}"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/warranties')} ? 'active'" th:href="@{/admin/warranties}"><i class="bi bi-shield-check"></i><span>Bảo hành &amp; Serial</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/reviews')} ? 'active'" th:href="@{/admin/reviews}"><i class="bi bi-star-half"></i><span>Duyệt đánh giá</span></a></li>
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/content')} ? 'active'" th:href="@{/admin/content}"><i class="bi bi-chat-square-text"></i><span>Nội dung &amp; Chat</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['ORDERS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/orders')} ? 'active'" th:href="@{/admin/orders}"><i class="bi bi-box-seam"></i><span>Đơn hàng</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['CUSTOMERS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/customers')} ? 'active'" th:href="@{/admin/customers}"><i class="bi bi-people"></i><span>Khách hàng</span></a></li>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/coupons')} ? 'active'" th:href="@{/admin/coupons}"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['WARRANTIES']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/warranties')} ? 'active'" th:href="@{/admin/warranties}"><i class="bi bi-shield-check"></i><span>Bảo hành &amp; Serial</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['REVIEWS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/reviews')} ? 'active'" th:href="@{/admin/reviews}"><i class="bi bi-star-half"></i><span>Duyệt đánh giá</span></a></li>
+      <li class="nav-item" th:if="${staffPerms['SUPPORT_CHAT']?.canView()}">
+        <a class="nav-link d-flex align-items-center" th:classappend="${currentUri.startsWith('/admin/content')} ? 'active'" th:href="@{/admin/content}">
+          <i class="bi bi-chat-dots"></i><span>Hỗ trợ trực tuyến</span>
+          <span id="nxUnreadChatBadge" class="badge rounded-pill bg-danger ms-auto nx-unread-chat-badge"
+                th:text="${unreadChatCount ?: 0}"
+                th:style="${(unreadChatCount ?: 0) > 0} ? '' : 'display:none;'"></span>
+        </a>
+      </li>
     </ul>
 
     <div class="pro-nav-label" sec:authorize="hasRole('ADMIN')">Hệ thống</div>

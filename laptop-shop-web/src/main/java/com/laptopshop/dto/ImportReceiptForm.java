@@ -1,7 +1,6 @@
 package com.laptopshop.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
@@ -9,7 +8,8 @@ import java.util.List;
 
 public class ImportReceiptForm {
 
-    @NotBlank(message = "Vui lòng nhập nhà cung cấp")
+    private Integer supplierId;
+
     @Size(max = 150, message = "Nhà cung cấp tối đa 150 ký tự")
     private String supplier;
 
@@ -20,6 +20,8 @@ public class ImportReceiptForm {
     @Valid
     private List<ImportItemRequest> items = new ArrayList<>();
 
+    public Integer getSupplierId() { return supplierId; }
+    public void setSupplierId(Integer supplierId) { this.supplierId = supplierId; }
     public String getSupplier() { return supplier; }
     public void setSupplier(String supplier) { this.supplier = supplier; }
     public String getNote() { return note; }

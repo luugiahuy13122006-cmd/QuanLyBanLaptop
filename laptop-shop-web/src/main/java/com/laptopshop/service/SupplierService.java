@@ -62,6 +62,22 @@ public class SupplierService {
         return supplierRepository.save(target);
     }
 
+    @Transactional
+    public Supplier toggleActive(Integer id) {
+        Supplier target = getById(id);
+        target.setIsActive(!Boolean.TRUE.equals(target.getIsActive()));
+        return supplierRepository.save(target);
+    }
+
+    @Transactional
+    public void delete(Integer id) {
+        Supplier target = getById(id);
+        if (receiptRepository.existsBySupplierEntity_Id(id)) {
+            throw new BusinessException("Không thể xóa! Nhà cung cấp đã có phiếu nhập kho liên kết. Hãy dùng nút Hủy hợp tác.");
+        }
+        supplierRepository.delete(target);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public ImportReceipt recordPayablePayment(Integer receiptId, BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {

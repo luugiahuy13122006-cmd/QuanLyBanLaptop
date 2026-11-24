@@ -25,9 +25,6 @@
           <div><span class="text-muted">Địa chỉ giao:</span> <span th:text="${order.deliveryAddress}"></span></div>
           <div><span class="text-muted">Ngày đặt:</span> <span class="tabular-nums" th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm:ss')}"></span></div>
           <div><span class="text-muted">Trạng thái:</span> <span class="badge bg-primary bg-opacity-10 text-primary" th:text="${order.status.displayName}"></span></div>
-          <div th:if="${order.trackingCode != null and !order.trackingCode.isBlank()}">
-            <span class="text-muted">Vận chuyển:</span> <strong th:text="${order.carrierName}"></strong> · Mã vận đơn: <code th:text="${order.trackingCode}"></code>
-          </div>
           <div th:if="${order.couponCode != null}">
             <span class="text-muted">Mã giảm giá:</span> <span class="badge bg-success" th:text="${order.couponCode}"></span>
           </div>
@@ -66,19 +63,9 @@
         </div>
 
         <div th:if="${payment.paymentMethod.name() == 'BANK_TRANSFER' and payment.paymentStatus.name() != 'PAID' and order.status.name() == 'PENDING'}">
-          <a th:href="@{/thanh-toan/{id}(id=${order.id})}" class="btn btn-pv-primary btn-sm w-100 mb-3">
+          <a th:href="@{/thanh-toan/{id}(id=${order.id})}" class="btn btn-pv-primary btn-sm w-100">
             <i class="bi bi-qr-code-scan me-1"></i>Mở mã QR chuyển khoản
           </a>
-          <form th:action="@{/don-hang-cua-toi/{id}/upload-minh-chung(id=${order.id})}" method="post" enctype="multipart/form-data" class="border-top pt-3">
-            <label class="form-label small fw-semibold">Hoặc tải ảnh minh chứng chuyển khoản (JPG/PNG/WEBP)</label>
-            <div class="input-group input-group-sm">
-              <input type="file" name="proofFile" accept="image/*" class="form-control" required/>
-              <button type="submit" class="btn btn-outline-primary">Tải lên</button>
-            </div>
-          </form>
-        </div>
-        <div th:if="${payment.proofImage != null}" class="mt-2 small">
-          <a th:href="@{/don-hang-cua-toi/proof/{f}(f=${payment.proofImage})}" target="_blank">Xem ảnh minh chứng đã tải lên</a>
         </div>
       </div>
     </div>

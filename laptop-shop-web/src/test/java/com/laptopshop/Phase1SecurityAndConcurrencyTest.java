@@ -46,9 +46,8 @@ class Phase1SecurityAndConcurrencyTest {
     @Autowired private AccountRepository accountRepo;
     @Autowired private RoleRepository roleRepo;
     @Autowired private OrderRepository orderRepo;
-    @Autowired private StockMovementRepository stockMovementRepo;
-    @Autowired private PasswordResetTokenRepository tokenRepo;
     @Autowired private AuditLogRepository auditLogRepo;
+    @Autowired private StaffPermissionRepository staffPermRepo;
     @Autowired private OrderService orderService;
     @Autowired private LaptopService laptopService;
     @Autowired private CodeGeneratorService codeGeneratorService;
@@ -65,8 +64,7 @@ class Phase1SecurityAndConcurrencyTest {
 
     @BeforeEach
     void setup() {
-        tokenRepo.deleteAll();
-        stockMovementRepo.deleteAll();
+        staffPermRepo.deleteAll();
         orderRepo.deleteAll();
         customerRepo.deleteAll();
         accountRepo.deleteAll();
@@ -168,7 +166,6 @@ class Phase1SecurityAndConcurrencyTest {
         assertEquals(10, success.get());
         assertEquals(10, fail.get());
         assertEquals(0, laptopRepo.findById(testLaptopId).orElseThrow().getStockQuantity());
-        assertEquals(10, stockMovementRepo.count());
     }
 
     @Test
@@ -279,8 +276,8 @@ class Phase1SecurityAndConcurrencyTest {
     }
 
     @Test
-    @DisplayName("P1-Auth: Khóa tài khoản sau 5 lần đăng nhập sai & quy trình đặt lại mật khẩu 1 lần")
-    void testBruteForceLockAndResetPassword() {
+    @DisplayName("P1-Auth: Khóa tài khoản sau 5 lần đăng nhập sai & mở khóa bởi Admin")
+    void testBruteForceLock() {
         for (int i = 0; i < 5; i++) {
             accountService.recordFailedLogin("khach_a");
         }
@@ -289,20 +286,11 @@ class Phase1SecurityAndConcurrencyTest {
         assertNotNull(locked.getLockedUntil());
         assertFalse(new CustomUserDetails(locked, customerAId).isAccountNonLocked());
 
-        String rawToken = accountService.createPasswordResetToken("a@nexora.vn");
-        assertNotNull(rawToken);
-        assertTrue(accountService.isResetTokenValid(rawToken));
-
-        ResetPasswordDTO dto = new ResetPasswordDTO();
-        dto.setToken(rawToken);
-        dto.setNewPassword("NewPass888");
-        dto.setConfirmPassword("NewPass888");
-        accountService.resetPassword(dto);
-
+        accountService.resetFailedLogin("a@nexora.vn");
         Account unlocked = accountRepo.findByUsernameIgnoreCase("khach_a").orElseThrow();
-        assertTrue(passwordEncoder.matches("NewPass888", unlocked.getPasswordHash()));
+        assertEquals(0, unlocked.getFailedLoginAttempts());
         assertNull(unlocked.getLockedUntil());
-        assertFalse(accountService.isResetTokenValid(rawToken));
+        assertTrue(new CustomUserDetails(unlocked, customerAId).isAccountNonLocked());
     }
 
     @Test

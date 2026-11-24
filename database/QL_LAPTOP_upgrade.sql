@@ -350,3 +350,23 @@ CREATE TABLE TinNhanHoTro (
     ThoiGian DATETIME2 NOT NULL DEFAULT SYSDATETIME()
 );
 GO
+
+-- Bổ sung quyền nhân viên & ẩn danh đánh giá & SĐT null cho đăng ký tối giản
+IF COL_LENGTH('KhachHang', 'SoDienThoai') IS NOT NULL
+    ALTER TABLE KhachHang ALTER COLUMN SoDienThoai VARCHAR(15) NULL;
+GO
+
+IF COL_LENGTH('DanhGiaSanPham', 'AnDanh') IS NULL
+    ALTER TABLE DanhGiaSanPham ADD AnDanh BIT NOT NULL CONSTRAINT DF_DanhGia_AnDanh DEFAULT 0;
+GO
+
+IF OBJECT_ID('PhanQuyenNhanVien', 'U') IS NULL
+CREATE TABLE PhanQuyenNhanVien (
+    MaPhanQuyen INT IDENTITY(1,1) PRIMARY KEY,
+    MaTaiKhoan INT NOT NULL,
+    MaChucNang NVARCHAR(40) NOT NULL,
+    QuyenHan NVARCHAR(20) NOT NULL DEFAULT N'NONE',
+    CONSTRAINT FK_PhanQuyen_TaiKhoan FOREIGN KEY (MaTaiKhoan) REFERENCES TaiKhoan(MaTaiKhoan),
+    CONSTRAINT UX_PhanQuyen_TK_CN UNIQUE (MaTaiKhoan, MaChucNang)
+);
+GO

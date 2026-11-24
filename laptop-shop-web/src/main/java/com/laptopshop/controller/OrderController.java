@@ -11,22 +11,18 @@ import com.laptopshop.entity.Payment;
 import com.laptopshop.entity.PaymentMethod;
 import com.laptopshop.repository.LaptopRepository;
 import com.laptopshop.service.CustomerService;
-import com.laptopshop.service.FileStorageService;
 import com.laptopshop.service.OrderService;
 import com.laptopshop.util.PaginationUtils;
 import jakarta.validation.Valid;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
@@ -39,18 +35,15 @@ public class OrderController {
     private final OrderService orderService;
     private final CustomerService customerService;
     private final LaptopRepository laptopRepository;
-    private final FileStorageService fileStorageService;
     private final ShopProperties shopProperties;
 
     public OrderController(OrderService orderService,
                            CustomerService customerService,
                            LaptopRepository laptopRepository,
-                           FileStorageService fileStorageService,
                            ShopProperties shopProperties) {
         this.orderService = orderService;
         this.customerService = customerService;
         this.laptopRepository = laptopRepository;
-        this.fileStorageService = fileStorageService;
         this.shopProperties = shopProperties;
     }
 
@@ -80,8 +73,6 @@ public class OrderController {
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("direction", direction);
         model.addAttribute("statuses", OrderStatus.values());
-        List<Payment> pendingProofs = orderService.getPaymentsAwaitingConfirmation();
-        model.addAttribute("pendingProofCount", pendingProofs.size());
         return "admin/orders/list";
     }
 
@@ -172,22 +163,6 @@ public class OrderController {
         return "redirect:/admin/orders/" + id;
     }
 
-    @PostMapping("/admin/orders/{id}/reject-proof")
-    public String rejectPaymentProof(
-            @PathVariable Integer id,
-            @RequestParam String reason,
-            @AuthenticationPrincipal CustomUserDetails currentUser,
-            RedirectAttributes ra) {
-        try {
-            Integer accountId = currentUser != null ? currentUser.getAccountId() : null;
-            orderService.rejectPaymentProof(id, accountId, reason);
-            ra.addFlashAttribute("successMessage", "Đã từ chối ảnh minh chứng và yêu cầu khách tải lại.");
-        } catch (Exception ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
-        }
-        return "redirect:/admin/orders/" + id;
-    }
-
     @PostMapping("/admin/orders/{id}/confirm-refund")
     public String confirmRefund(
             @PathVariable Integer id,
@@ -203,23 +178,6 @@ public class OrderController {
         return "redirect:/admin/orders/" + id;
     }
 
-    @PostMapping("/admin/orders/{id}/tracking")
-    public String updateTracking(
-            @PathVariable Integer id,
-            @RequestParam(required = false) String carrierName,
-            @RequestParam(required = false) String trackingCode,
-            @AuthenticationPrincipal CustomUserDetails currentUser,
-            RedirectAttributes ra) {
-        try {
-            Integer actorId = currentUser != null ? currentUser.getAccountId() : null;
-            orderService.updateShippingInfo(id, carrierName, trackingCode, actorId);
-            ra.addFlashAttribute("successMessage", "Cập nhật thông tin vận chuyển & mã vận đơn thành công.");
-        } catch (Exception ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
-        }
-        return "redirect:/admin/orders/" + id;
-    }
-
     @GetMapping("/admin/orders/{id}/invoice")
     public String printAdminInvoice(@PathVariable Integer id, Model model) {
         Order order = orderService.getOrderById(id);
@@ -227,22 +185,6 @@ public class OrderController {
         model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
         model.addAttribute("shopProperties", shopProperties);
         return "admin/orders/invoice";
-    }
-
-    @GetMapping("/admin/orders/pending-proofs")
-    public String listPendingProofs(Model model) {
-        model.addAttribute("pendingPayments", orderService.getPaymentsAwaitingConfirmation());
-        return "admin/orders/pending-proofs";
-    }
-
-    // Xem ảnh minh chứng (admin/staff, không cần kiểm tra chủ sở hữu)
-    @GetMapping("/admin/payment-proof/{filename:.+}")
-    public ResponseEntity<Resource> serveProofAdmin(@PathVariable String filename) {
-        Resource resource = fileStorageService.loadAsResource(filename);
-        return ResponseEntity.ok()
-                .contentType(fileStorageService.mediaTypeOf(filename))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                .body(resource);
     }
 
     // ==================== CUSTOMER ====================
@@ -341,40 +283,6 @@ public class OrderController {
             ra.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/don-hang-cua-toi/" + id;
-    }
-
-    @PostMapping("/don-hang-cua-toi/{id}/upload-minh-chung")
-    public String uploadPaymentProof(@PathVariable Integer id,
-                                     @RequestParam("proofFile") MultipartFile file,
-                                     @RequestParam(required = false) String redirectTo,
-                                     @AuthenticationPrincipal CustomUserDetails currentUser,
-                                     RedirectAttributes ra) {
-        if (currentUser == null) return "redirect:/login";
-        try {
-            orderService.uploadPaymentProof(id, currentUser.getAccountId(), file);
-            ra.addFlashAttribute("successMessage", "Tải ảnh minh chứng thành công! Cửa hàng sẽ xác nhận trong thời gian sớm nhất.");
-        } catch (Exception ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
-        }
-        if ("checkout".equalsIgnoreCase(redirectTo)) {
-            return "redirect:/thanh-toan/" + id;
-        }
-        return "redirect:/don-hang-cua-toi/" + id;
-    }
-
-    // Xem ảnh minh chứng (chỉ chủ đơn hàng)
-    @GetMapping("/don-hang-cua-toi/proof/{filename:.+}")
-    public ResponseEntity<Resource> serveProofCustomer(@PathVariable String filename,
-                                                        @AuthenticationPrincipal CustomUserDetails currentUser) {
-        if (currentUser == null) return ResponseEntity.status(401).build();
-        if (!orderService.isPaymentProofOwnedBy(filename, currentUser.getAccountId())) {
-            return ResponseEntity.status(403).build();
-        }
-        Resource resource = fileStorageService.loadAsResource(filename);
-        return ResponseEntity.ok()
-                .contentType(fileStorageService.mediaTypeOf(filename))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                .body(resource);
     }
 
     // ==================== API ====================

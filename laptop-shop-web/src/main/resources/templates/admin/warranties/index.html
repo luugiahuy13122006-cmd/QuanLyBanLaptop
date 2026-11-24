@@ -19,7 +19,7 @@
         <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
         <!-- Add Serial Card -->
-        <div class="pro-card mb-4">
+        <div class="pro-card mb-4" th:if="${staffPerms['WARRANTIES']?.canEdit()}">
           <div class="pro-card-header">
             <h6><i class="bi bi-upc text-primary me-2"></i>Nhập mã Serial / Service Tag vào kho</h6>
           </div>
@@ -66,7 +66,7 @@
                       <td class="small" style="max-width: 260px;" th:text="${c.issueDescription}"></td>
                       <td><span class="badge-soft badge-soft-info" th:text="${c.status.displayName}"></span></td>
                       <td>
-                        <form th:action="@{/admin/warranties/claims/{id}/status(id=${c.id})}" method="post" class="d-flex gap-1 align-items-center">
+                        <form th:if="${staffPerms['WARRANTIES']?.canEdit()}" th:action="@{/admin/warranties/claims/{id}/status(id=${c.id})}" method="post" class="d-flex gap-1 align-items-center">
                           <select name="status" class="form-select form-select-sm" style="max-width: 145px;">
                             <option th:each="st : ${statuses}" th:value="${st}" th:text="${st.displayName}" th:selected="${st == c.status}"></option>
                           </select>

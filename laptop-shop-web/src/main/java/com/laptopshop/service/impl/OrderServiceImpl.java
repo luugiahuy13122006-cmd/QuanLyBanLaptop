@@ -15,9 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,10 +36,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderStatusHistoryRepository historyRepository;
     private final AccountRepository accountRepository;
     private final CodeGeneratorService codeGenerator;
-    private final FileStorageService fileStorage;
     private final ShopProperties shopProperties;
     private final QrCodeService qrCodeService;
-    private final StockMovementService stockMovementService;
     private final PaymentGatewayService paymentGatewayService;
     private final AuditLogService auditLogService;
     private final CouponService couponService;
@@ -57,10 +52,8 @@ public class OrderServiceImpl implements OrderService {
                             OrderStatusHistoryRepository historyRepository,
                             AccountRepository accountRepository,
                             CodeGeneratorService codeGenerator,
-                            FileStorageService fileStorage,
                             ShopProperties shopProperties,
                             QrCodeService qrCodeService,
-                            StockMovementService stockMovementService,
                             PaymentGatewayService paymentGatewayService,
                             AuditLogService auditLogService,
                             CouponService couponService,
@@ -74,10 +67,8 @@ public class OrderServiceImpl implements OrderService {
         this.historyRepository = historyRepository;
         this.accountRepository = accountRepository;
         this.codeGenerator = codeGenerator;
-        this.fileStorage = fileStorage;
         this.shopProperties = shopProperties;
         this.qrCodeService = qrCodeService;
-        this.stockMovementService = stockMovementService;
         this.paymentGatewayService = paymentGatewayService;
         this.auditLogService = auditLogService;
         this.couponService = couponService;
@@ -133,7 +124,6 @@ public class OrderServiceImpl implements OrderService {
         order.setNote(request.getNote());
 
         BigDecimal subtotal = BigDecimal.ZERO;
-        List<StockMovement> pendingMovements = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : mergedQtyByLaptop.entrySet()) {
             Integer laptopId = entry.getKey();
             int qty = entry.getValue();
@@ -153,9 +143,6 @@ public class OrderServiceImpl implements OrderService {
             laptop.setStockQuantity(newStock);
             laptop.setUpdatedAt(LocalDateTime.now());
             laptopRepository.save(laptop);
-
-            pendingMovements.add(new StockMovement(laptop, StockMovementType.SALE, -qty,
-                    currentStock, newStock, null, null, createdByAccountId));
 
             BigDecimal unitPrice = laptop.getSalePrice().setScale(2, RoundingMode.HALF_UP);
             OrderDetail detail = new OrderDetail(order, laptop, qty, unitPrice);
@@ -220,9 +207,6 @@ public class OrderServiceImpl implements OrderService {
         order.addStatusHistory(history);
 
         Order saved = orderRepository.save(order);
-        pendingMovements.forEach(m -> stockMovementService.record(
-                m.getLaptop(), m.getMovementType(), m.getQuantityDelta(),
-                m.getStockBefore(), m.getStockAfter(), orderCode, "Xuất bán đơn hàng " + orderCode, m.getActorAccountId()));
 
         auditLogService.logAction(createdByAccountId, null, "PLACE_ORDER", "Order", saved.getOrderCode(),
                 "Đặt đơn " + saved.getOrderCode() + ", tổng " + totalAmount + " (" + method + ")");
@@ -286,9 +270,6 @@ public class OrderServiceImpl implements OrderService {
                 }
                 throw new BusinessException("Đơn đã thanh toán chuyển khoản. Hãy xử lý qua luồng hoàn tiền.");
             }
-            if (bank && payStatus == PaymentStatus.PENDING_CONFIRMATION) {
-                throw new BusinessException("Đơn đang chờ xác nhận thanh toán. Hãy xác nhận hoặc từ chối ảnh minh chứng trước.");
-            }
             String reason = newStatus == OrderStatus.RETURNED ? "Giao không thành công / Trả hàng" : "Hủy bởi nhân viên";
             return cancelOrReturn(order, newStatus, reason, changedByAccountId,
                     "Cập nhật trạng thái từ " + current.name() + " sang " + newStatus.name());
@@ -325,8 +306,7 @@ public class OrderServiceImpl implements OrderService {
         if (saved.getCustomer() != null && saved.getCustomer().getEmail() != null) {
             emailService.sendEmail(saved.getCustomer().getEmail(),
                     "Cập nhật đơn hàng " + saved.getOrderCode() + ": " + newStatus.getDisplayName(),
-                    "Đơn hàng " + saved.getOrderCode() + " đã chuyển sang trạng thái: " + newStatus.getDisplayName()
-                            + (saved.getTrackingCode() != null ? " (Mã vận đơn: " + saved.getTrackingCode() + ")" : ""));
+                    "Đơn hàng " + saved.getOrderCode() + " đã chuyển sang trạng thái: " + newStatus.getDisplayName());
         }
         return saved;
     }
@@ -412,7 +392,6 @@ public class OrderServiceImpl implements OrderService {
         payment.setPaymentStatus(PaymentStatus.PAID);
         payment.setPaidAt(LocalDateTime.now());
         payment.setConfirmedBy(accountId);
-        payment.setRejectReason(null);
         paymentRepository.save(payment);
 
         OrderStatus oldStatus = order.getStatus();
@@ -446,7 +425,7 @@ public class OrderServiceImpl implements OrderService {
     public Payment confirmBankTransferByQrToken(Integer orderId, String token) {
         if (!paymentGatewayService.isDemoMode()) {
             throw new BusinessException("Hệ thống đang chạy chế độ vận hành thật (PRODUCTION): "
-                    + "vui lòng chờ Webhook ngân hàng tự động hoặc nhân viên duyệt minh chứng.");
+                    + "vui lòng chờ Webhook ngân hàng tự động hoặc nhân viên xác nhận.");
         }
         Order order = lockOrder(orderId);
         Payment payment = latestPayment(orderId);
@@ -469,7 +448,6 @@ public class OrderServiceImpl implements OrderService {
         payment.setPaidAt(LocalDateTime.now());
         Integer customerAccountId = order.getCustomer() != null ? order.getCustomer().getAccountId() : null;
         payment.setConfirmedBy(customerAccountId);
-        payment.setRejectReason(null);
         paymentRepository.save(payment);
 
         OrderStatus oldStatus = order.getStatus();
@@ -481,68 +459,6 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
         log.info("[QR-PAY-MOBILE] Đã xác nhận thanh toán đơn {} từ trang quét QR", order.getOrderCode());
         return payment;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Payment uploadPaymentProof(Integer orderId, Integer accountId, MultipartFile file) {
-        Order order = lockOrder(orderId);
-        assertOwner(order, accountId);
-        Payment payment = latestPayment(orderId);
-        if (payment.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) {
-            throw new BusinessException("Đơn hàng này không thanh toán bằng chuyển khoản.");
-        }
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new BusinessException("Đơn hàng không còn ở trạng thái chờ thanh toán.");
-        }
-        if (payment.getPaymentStatus() == PaymentStatus.PAID) {
-            throw new BusinessException("Đơn hàng đã được xác nhận thanh toán.");
-        }
-        if (payment.getPaymentStatus() == PaymentStatus.UNPAID && order.getPaymentExpiresAt() != null
-                && LocalDateTime.now().isAfter(order.getPaymentExpiresAt())) {
-            throw new BusinessException("Đơn hàng đã quá hạn thanh toán và sắp bị hủy tự động.");
-        }
-        String stored = fileStorage.storePaymentProof(file);
-        String oldFile = payment.getProofImage();
-
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    if (oldFile != null && !oldFile.equals(stored)) {
-                        fileStorage.deleteQuietly(oldFile);
-                    }
-                }
-
-                @Override
-                public void afterCompletion(int status) {
-                    if (status != STATUS_COMMITTED) {
-                        fileStorage.deleteQuietly(stored);
-                    }
-                }
-            });
-        }
-
-        payment.setProofImage(stored);
-        payment.setProofUploadedAt(LocalDateTime.now());
-        payment.setRejectReason(null);
-        payment.setPaymentStatus(PaymentStatus.PENDING_CONFIRMATION);
-        paymentRepository.save(payment);
-        addHistory(order, order.getStatus(), order.getStatus(), "Khách tải ảnh minh chứng chuyển khoản", accountId);
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            fileStorage.deleteQuietly(oldFile);
-        }
-        return payment;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isPaymentProofOwnedBy(String filename, Integer accountId) {
-        return paymentRepository.findByProofImage(filename)
-                .map(p -> p.getOrder().getCustomer() != null
-                        && accountId != null
-                        && accountId.equals(p.getOrder().getCustomer().getAccountId()))
-                .orElse(false);
     }
 
     @Override
@@ -562,7 +478,6 @@ public class OrderServiceImpl implements OrderService {
         payment.setPaymentStatus(PaymentStatus.PAID);
         payment.setPaidAt(LocalDateTime.now());
         payment.setConfirmedBy(staffAccountId);
-        payment.setRejectReason(null);
         paymentRepository.save(payment);
         order.setPaymentExpiresAt(null);
         orderRepository.save(order);
@@ -574,39 +489,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Payment rejectPaymentProof(Integer orderId, Integer staffAccountId, String reason) {
-        if (reason == null || reason.isBlank()) {
-            throw new BusinessException("Vui lòng nhập lý do từ chối ảnh minh chứng.");
-        }
-        Order order = lockOrder(orderId);
-        Payment payment = latestPayment(orderId);
-        if (payment.getPaymentMethod() != PaymentMethod.BANK_TRANSFER
-                || payment.getPaymentStatus() != PaymentStatus.PENDING_CONFIRMATION) {
-            throw new BusinessException("Đơn hàng không có ảnh minh chứng nào đang chờ xác nhận.");
-        }
-        String cleanReason = abbreviate(reason.trim(), 500);
-        payment.setPaymentStatus(PaymentStatus.UNPAID);
-        payment.setRejectReason(cleanReason);
-        payment.setConfirmedBy(staffAccountId);
-        paymentRepository.save(payment);
-        order.setPaymentExpiresAt(LocalDateTime.now().plusMinutes(shopProperties.getPayment().getExpireMinutes()));
-        orderRepository.save(order);
-        addHistory(order, order.getStatus(), order.getStatus(),
-                "Từ chối ảnh minh chứng: " + abbreviate(cleanReason, 400), staffAccountId);
-        auditLogService.logAction(staffAccountId, null, "REJECT_PAYMENT_PROOF", "Order", order.getOrderCode(),
-                cleanReason);
-        return payment;
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public Order confirmRefund(Integer orderId, Integer staffAccountId) {
         Order order = lockOrder(orderId);
         if (order.getStatus() != OrderStatus.REFUND_REQUESTED) {
             throw new BusinessException("Đơn hàng không ở trạng thái 'Yêu cầu hoàn tiền'.");
         }
-        restoreStock(order, StockMovementType.RETURN_RESTORE, staffAccountId,
-                "Hoàn kho do hoàn tiền đơn " + order.getOrderCode());
+        restoreStock(order);
         if (order.getCouponCode() != null) {
             couponService.releaseCoupon(order.getCouponCode());
         }
@@ -624,20 +512,6 @@ public class OrderServiceImpl implements OrderService {
         auditLogService.logAction(staffAccountId, null, "CONFIRM_REFUND", "Order", order.getOrderCode(),
                 "Xác nhận hoàn tiền và hoàn kho");
         return orderRepository.save(order);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Payment> getPaymentsAwaitingConfirmation() {
-        List<Payment> list = paymentRepository.findByPaymentStatusOrderByCreatedAtAsc(PaymentStatus.PENDING_CONFIRMATION);
-        list.forEach(p -> p.getOrder().getOrderCode());
-        return list;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean paymentProofExists(String filename) {
-        return paymentRepository.findByProofImage(filename).isPresent();
     }
 
     @Override
@@ -741,9 +615,7 @@ public class OrderServiceImpl implements OrderService {
 
     private Order cancelOrReturn(Order order, OrderStatus newStatus, String reason, Integer by, String note) {
         OrderStatus old = order.getStatus();
-        StockMovementType movementType = newStatus == OrderStatus.RETURNED
-                ? StockMovementType.RETURN_RESTORE : StockMovementType.CANCEL_RESTORE;
-        restoreStock(order, movementType, by, reason);
+        restoreStock(order);
         if (order.getCouponCode() != null) {
             couponService.releaseCoupon(order.getCouponCode());
         }
@@ -763,7 +635,7 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(order);
     }
 
-    private void restoreStock(Order order, StockMovementType movementType, Integer actorId, String reason) {
+    private void restoreStock(Order order) {
         List<OrderDetail> sorted = order.getDetails().stream()
                 .filter(d -> d.getLaptop() != null)
                 .sorted(Comparator.comparing((OrderDetail d) -> d.getLaptop().getId()))
@@ -777,8 +649,6 @@ public class OrderServiceImpl implements OrderService {
             laptop.setStockQuantity(newStock);
             laptop.setUpdatedAt(LocalDateTime.now());
             laptopRepository.save(laptop);
-            stockMovementService.record(laptop, movementType, qty, oldStock, newStock,
-                    order.getOrderCode(), reason, actorId);
         }
     }
 
@@ -786,18 +656,6 @@ public class OrderServiceImpl implements OrderService {
         OrderStatusHistory h = new OrderStatusHistory(order, from, to, abbreviate(note, 500));
         h.setChangedBy(by);
         historyRepository.save(h);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Order updateShippingInfo(Integer orderId, String carrierName, String trackingCode, Integer actorId) {
-        Order order = lockOrder(orderId);
-        order.setCarrierName(carrierName != null ? carrierName.trim() : null);
-        order.setTrackingCode(trackingCode != null ? trackingCode.trim() : null);
-        order.setUpdatedAt(LocalDateTime.now());
-        addHistory(order, order.getStatus(), order.getStatus(),
-                "Cập nhật vận chuyển: " + abbreviate(carrierName, 50) + " / " + abbreviate(trackingCode, 50), actorId);
-        return orderRepository.save(order);
     }
 
     private static String abbreviate(String s, int max) {

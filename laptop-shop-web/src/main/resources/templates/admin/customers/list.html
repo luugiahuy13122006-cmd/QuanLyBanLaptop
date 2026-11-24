@@ -66,8 +66,8 @@
                     <span th:if="${c.accountId == null}" class="badge-soft badge-soft-slate">Khách lẻ</span>
                   </td>
                   <td class="text-center text-nowrap">
-                    <a th:href="@{/admin/customers/edit/{id}(id=${c.customerId})}" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Sửa"><i class="bi bi-pencil"></i></a>
-                    <form th:action="@{/admin/customers/delete/{id}(id=${c.customerId})}" method="post" class="d-inline"
+                    <a th:if="${staffPerms['CUSTOMERS']?.canEdit()}" th:href="@{/admin/customers/edit/{id}(id=${c.customerId})}" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Sửa"><i class="bi bi-pencil"></i></a>
+                    <form th:if="${staffPerms['CUSTOMERS']?.canDelete()}" th:action="@{/admin/customers/delete/{id}(id=${c.customerId})}" method="post" class="d-inline"
                           th:attr="data-confirm='Bạn có chắc muốn xóa khách hàng ' + ${c.customerName} + '?'">
                       <button type="submit" class="btn btn-sm btn-outline-danger pro-btn-icon" title="Xóa"><i class="bi bi-trash"></i></button>
                     </form>

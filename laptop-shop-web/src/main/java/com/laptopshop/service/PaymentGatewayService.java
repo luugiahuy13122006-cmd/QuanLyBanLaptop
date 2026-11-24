@@ -138,7 +138,6 @@ public class PaymentGatewayService {
         payment.setPaymentStatus(PaymentStatus.PAID);
         payment.setPaidAt(LocalDateTime.now());
         payment.setGatewayRef(gatewayRef.trim());
-        payment.setRejectReason(null);
         paymentRepository.save(payment);
 
         OrderStatus prev = lockedOrder.getStatus();

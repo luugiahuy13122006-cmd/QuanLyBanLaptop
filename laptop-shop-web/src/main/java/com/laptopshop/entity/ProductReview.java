@@ -38,6 +38,9 @@ public class ProductReview {
     @Column(name = "PhanHoiShop", length = 500)
     private String shopReply;
 
+    @Column(name = "AnDanh", nullable = false)
+    private Boolean anonymous = false;
+
     @Column(name = "NgayTao", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -49,6 +52,18 @@ public class ProductReview {
         if (this.rating == null) this.rating = 5;
         if (this.verifiedPurchase == null) this.verifiedPurchase = true;
         if (this.approved == null) this.approved = false;
+        if (this.anonymous == null) this.anonymous = false;
+    }
+
+    public String getReviewerDisplayName() {
+        String raw = customer != null && customer.getCustomerName() != null
+                ? customer.getCustomerName().trim()
+                : "Khách";
+        if (Boolean.TRUE.equals(anonymous)) {
+            if (raw.isEmpty()) return "K******";
+            return raw.substring(0, 1).toUpperCase() + "******";
+        }
+        return raw;
     }
 
     public Integer getId() { return id; }
@@ -69,6 +84,8 @@ public class ProductReview {
     public void setApproved(Boolean approved) { this.approved = approved; }
     public String getShopReply() { return shopReply; }
     public void setShopReply(String shopReply) { this.shopReply = shopReply; }
+    public Boolean getAnonymous() { return anonymous; }
+    public void setAnonymous(Boolean anonymous) { this.anonymous = anonymous; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

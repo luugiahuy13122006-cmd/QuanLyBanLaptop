@@ -97,9 +97,9 @@ java -cp target/classes com.laptopshop.client.MultiClientDemo
 ### Tài khoản mẫu (Mật khẩu mặc định: `123456`)
 | Vai trò | Tên đăng nhập | Quyền hạn chính |
 |---|---|---|
-| **ADMIN** | `admin` | Toàn quyền hệ thống, duyệt phiếu nhập kho, quản lý tài khoản, xem Audit Log |
-| **STAFF** | `staff01` | Bán POS, xử lý đơn hàng/minh chứng CK/vận đơn, bảo hành, đánh giá, hỗ trợ chat, lập phiếu nhập |
-| **CUSTOMER** | `khach01` | Mua sắm, giỏ hàng DB, sổ địa chỉ, đặt hàng COD/VietQR, hủy/hoàn tiền, tra cứu bảo hành |
+| **ADMIN** | `admin` | Toàn quyền hệ thống, duyệt phiếu nhập kho, cấu hình phân quyền nhân viên, quản lý NCC/coupon/tài khoản, xem Audit Log |
+| **STAFF** | `staff01` | Phân quyền động theo từng chức năng (`VIEW`/`EDIT`/`FULL`) do Admin cấu hình (đơn hàng, bảo hành, đánh giá, hỗ trợ trực tuyến, lập phiếu nhập) |
+| **CUSTOMER** | `khach01` | Mua sắm, đăng nhập Username/Email, giỏ hàng DB, sổ địa chỉ, đặt hàng COD/VietQR, đánh giá ẩn danh (`K******`), hủy/hoàn tiền, tra cứu bảo hành |
 
 ---
 

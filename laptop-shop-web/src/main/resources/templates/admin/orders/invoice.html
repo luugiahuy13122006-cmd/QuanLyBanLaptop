@@ -92,12 +92,9 @@
       <div>Địa chỉ: <span th:text="${order.deliveryAddress}"></span></div>
     </div>
     <div class="inv-box">
-      <div style="font-weight:700;margin-bottom:4px;text-transform:uppercase;font-size:11.5px;color:#2563eb;">Thanh toán &amp; Vận chuyển</div>
+      <div style="font-weight:700;margin-bottom:4px;text-transform:uppercase;font-size:11.5px;color:#2563eb;">Thông tin Thanh toán</div>
       <div>Hình thức: <strong th:text="${payment != null ? payment.paymentMethod.displayName : order.paymentMethod.displayName}"></strong></div>
       <div>Trạng thái TT: <strong th:text="${payment != null ? payment.paymentStatus.displayName : order.paymentStatus.displayName}"></strong></div>
-      <div th:if="${order.carrierName != null or order.trackingCode != null}">
-        Vận đơn: <strong th:text="${(order.carrierName ?: '') + ' ' + (order.trackingCode ?: '')}"></strong>
-      </div>
     </div>
   </div>
 

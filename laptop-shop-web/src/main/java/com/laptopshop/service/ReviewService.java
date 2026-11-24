@@ -48,8 +48,22 @@ public class ReviewService {
         return reviewRepository.countByLaptop_IdAndApprovedTrue(laptopId);
     }
 
+    @Transactional(readOnly = true)
+    public boolean canCustomerReview(Integer laptopId, Integer accountId) {
+        if (accountId == null) return false;
+        Customer customer = customerRepository.findByAccountId(accountId).orElse(null);
+        if (customer == null) return false;
+        if (reviewRepository.existsByLaptop_IdAndCustomer_Id(laptopId, customer.getId())) {
+            return false;
+        }
+        return orderRepository.findByCustomerIdOrderByOrderDateDesc(customer.getId()).stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
+                .anyMatch(o -> o.getDetails().stream()
+                        .anyMatch(d -> d.getLaptop() != null && d.getLaptop().getId().equals(laptopId)));
+    }
+
     @Transactional(rollbackFor = Exception.class)
-    public ProductReview submitReview(Integer laptopId, Integer accountId, int rating, String title, String content) {
+    public ProductReview submitReview(Integer laptopId, Integer accountId, int rating, String content, boolean anonymous) {
         if (rating < 1 || rating > 5) {
             throw new BusinessException("Số sao đánh giá phải từ 1 đến 5.");
         }
@@ -78,8 +92,9 @@ public class ReviewService {
         review.setLaptop(laptop);
         review.setCustomer(customer);
         review.setRating(rating);
-        review.setTitle(title != null ? title.trim() : null);
+        review.setTitle(null);
         review.setContent(content.trim());
+        review.setAnonymous(anonymous);
         review.setVerifiedPurchase(true);
         review.setApproved(false); // chờ kiểm duyệt hoặc admin bật duyệt
         return reviewRepository.save(review);

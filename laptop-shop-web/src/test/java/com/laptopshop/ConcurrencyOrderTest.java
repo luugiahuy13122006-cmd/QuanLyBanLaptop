@@ -40,8 +40,6 @@ class ConcurrencyOrderTest {
     @Autowired private OrderDetailRepository orderDetailRepository;
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private OrderStatusHistoryRepository historyRepository;
-    @Autowired private StockMovementRepository stockMovementRepository;
-    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired private AuditLogRepository auditLogRepository;
 
     private Integer testLaptopId;
@@ -49,8 +47,6 @@ class ConcurrencyOrderTest {
 
     @BeforeEach
     void setUp() {
-        stockMovementRepository.deleteAll();
-        passwordResetTokenRepository.deleteAll();
         auditLogRepository.deleteAll();
         historyRepository.deleteAll();
         paymentRepository.deleteAll();

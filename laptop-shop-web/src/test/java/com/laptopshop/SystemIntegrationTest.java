@@ -71,8 +71,7 @@ class SystemIntegrationTest {
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private OrderStatusHistoryRepository historyRepository;
     @Autowired private ImportReceiptRepository importReceiptRepository;
-    @Autowired private StockMovementRepository stockMovementRepository;
-    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private StaffPermissionRepository staffPermissionRepository;
     @Autowired private AuditLogRepository auditLogRepository;
     @Autowired private ProductSerialRepository productSerialRepository;
     @Autowired private WarrantyClaimRepository warrantyClaimRepository;
@@ -98,8 +97,7 @@ class SystemIntegrationTest {
         wishlistRepository.deleteAll();
         cartItemRepository.deleteAll();
         customerAddressRepository.deleteAll();
-        stockMovementRepository.deleteAll();
-        passwordResetTokenRepository.deleteAll();
+        staffPermissionRepository.deleteAll();
         auditLogRepository.deleteAll();
         historyRepository.deleteAll();
         paymentRepository.deleteAll();
@@ -142,16 +140,13 @@ class SystemIntegrationTest {
     }
 
     @Test
-    @DisplayName("TV5: Kiểm thử đăng ký khách hàng mới, mã hóa BCrypt và kiểm tra trùng username")
-    void testRegisterAndAccountSecurity() {
+    @DisplayName("TV5: Kiểm thử đăng ký khách hàng tối giản, đăng nhập bằng Email, mã hóa BCrypt và kiểm tra trùng username/email")
+    void testRegisterAndAccountSecurity() throws Exception {
         RegisterDTO reg = new RegisterDTO();
         reg.setUsername("khach_test");
         reg.setPassword("Pass1234");
         reg.setConfirmPassword("Pass1234");
-        reg.setFullName("Khách Hàng Test");
         reg.setEmail("khachtest@gmail.com");
-        reg.setPhone("0988777666");
-        reg.setAddress("Quận 1, TP.HCM");
 
         Account created = accountService.registerCustomer(reg);
         assertNotNull(created.getId());
@@ -159,23 +154,46 @@ class SystemIntegrationTest {
         assertTrue(passwordEncoder.matches("Pass1234", created.getPasswordHash()));
         assertTrue(customerRepository.findByAccountId(created.getId()).isPresent());
 
-        assertThrows(BusinessException.class, () -> accountService.registerCustomer(reg),
-                "Không được phép đăng ký trùng username");
+        // Đăng ký trùng username hoặc trùng email đều bị chặn & hiển thị lỗi đỏ trên form /register
+        assertThrows(BusinessException.class, () -> accountService.registerCustomer(reg));
+
+        mockMvc.perform(post("/register").with(csrf())
+                        .param("username", "khach_khac_99")
+                        .param("email", "khachtest@gmail.com")
+                        .param("password", "Pass1234")
+                        .param("confirmPassword", "Pass1234"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("registerDTO", "email"));
+
+        // Đăng nhập bằng Email hợp lệ
+        mockMvc.perform(post("/login").with(csrf())
+                        .param("username", "khachtest@gmail.com")
+                        .param("password", "Pass1234"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/"));
     }
 
     @Test
-    @DisplayName("TV5: Kiểm thử phân quyền URL theo vai trò (ADMIN, STAFF, CUSTOMER, Anonymous)")
-    @WithMockUser(username = "staff01", roles = {"STAFF"})
+    @DisplayName("TV5: Kiểm thử phân quyền URL mặc định của STAFF & ADMIN")
     void testStaffAccessControl() throws Exception {
-        mockMvc.perform(get("/admin/laptops")).andExpect(status().isOk());
-        mockMvc.perform(get("/admin/orders")).andExpect(status().isOk());
-        mockMvc.perform(get("/admin/laptops/add")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/admin/laptops/edit/" + laptopId)).andExpect(status().isForbidden());
-        mockMvc.perform(post("/admin/laptops/delete/" + laptopId).with(csrf())).andExpect(status().isForbidden());
-        mockMvc.perform(get("/admin/categories/add")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/admin/brands/add")).andExpect(status().isForbidden());
-        mockMvc.perform(post("/admin/import-receipts/1/approve").with(csrf())).andExpect(status().isForbidden());
-        mockMvc.perform(get("/admin/accounts")).andExpect(status().isForbidden());
+        Role staffRole = roleRepository.findByRoleNameIgnoreCase("STAFF").orElseThrow();
+        Account staffAcc = new Account();
+        staffAcc.setUsername("staff_rbac_test");
+        staffAcc.setPasswordHash(passwordEncoder.encode("123456"));
+        staffAcc.setFullName("Staff Test");
+        staffAcc.setEmail("staff_rbac@test.vn");
+        staffAcc.setRole(staffRole);
+        staffAcc = accountRepository.save(staffAcc);
+        CustomUserDetails staffPrincipal = new CustomUserDetails(staffAcc, null);
+
+        mockMvc.perform(get("/admin/laptops").with(user(staffPrincipal))).andExpect(status().isOk());
+        mockMvc.perform(get("/admin/orders").with(user(staffPrincipal))).andExpect(status().isOk());
+        mockMvc.perform(get("/admin/categories/add").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/brands/add").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/coupons").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/suppliers").with(user(staffPrincipal))).andExpect(status().isForbidden());
+        mockMvc.perform(post("/admin/import-receipts/1/approve").with(user(staffPrincipal)).with(csrf())).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/accounts").with(user(staffPrincipal))).andExpect(status().isForbidden());
     }
 
     @Test
@@ -508,18 +526,14 @@ class SystemIntegrationTest {
         reg.setUsername("khach_profile_test");
         reg.setPassword("Pass1234");
         reg.setConfirmPassword("Pass1234");
-        reg.setFullName("Nguyễn Minh Khôi");
         reg.setEmail("minhkhoi@test.com");
-        reg.setPhone("0977111222");
-        reg.setAddress("Quận 3, TP.HCM");
         Account acc = accountService.registerCustomer(reg);
         Customer cus = customerRepository.findByAccountId(acc.getId()).orElseThrow();
         CustomUserDetails principal = new CustomUserDetails(acc, cus.getId());
 
         mockMvc.perform(get("/tai-khoan").with(user(principal)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Nguyễn Minh Khôi")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Quận 3, TP.HCM")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("khach_profile_test")));
 
         // Sai mật khẩu hiện tại: giữ dữ liệu trên form + báo lỗi rõ ràng
         mockMvc.perform(post("/tai-khoan").with(user(principal)).with(csrf())
@@ -588,16 +602,13 @@ class SystemIntegrationTest {
     }
 
     @Test
-    @DisplayName("Thanh toán tiền mặt khi nhận hàng (COD): đặt hàng, vòng đời trạng thái và chặn thao tác sai nghiệp vụ")
+    @DisplayName("Thanh toán tiền mặt khi nhận hàng (COD): đặt hàng, không tự lưu địa chỉ vào sổ địa chỉ, vòng đời trạng thái và chặn thao tác sai nghiệp vụ")
     void testCashOnDeliveryBusinessFlowAndGuards() throws Exception {
         RegisterDTO reg = new RegisterDTO();
         reg.setUsername("khach_cod_test");
         reg.setPassword("Pass1234");
         reg.setConfirmPassword("Pass1234");
-        reg.setFullName("Lê Hoàng Nam");
         reg.setEmail("codtest@test.com");
-        reg.setPhone("0966554433");
-        reg.setAddress("Quận 5, TP.HCM");
         Account acc = accountService.registerCustomer(reg);
         Customer cus = customerRepository.findByAccountId(acc.getId()).orElseThrow();
         CustomUserDetails principal = new CustomUserDetails(acc, cus.getId());
@@ -620,6 +631,9 @@ class SystemIntegrationTest {
                         .param("paymentMethod", "CASH"))
                 .andExpect(status().is3xxRedirection())
                 .andReturn();
+
+        // Đảm bảo thông tin nhập tay khi đặt hàng KHÔNG tự lưu vào Sổ địa chỉ (/tai-khoan/dia-chi)
+        assertTrue(customerAddressRepository.findByCustomer_IdOrderByIsDefaultDescIdDesc(cus.getId()).isEmpty());
 
         String redirectUrl = res.getResponse().getRedirectedUrl();
         assertNotNull(redirectUrl);

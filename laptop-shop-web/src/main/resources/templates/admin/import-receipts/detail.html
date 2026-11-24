@@ -86,7 +86,7 @@
                   <span class="text-muted">Đã thanh toán:</span>
                   <strong class="text-success tabular-nums" th:text="${#numbers.formatDecimal(receipt.paidAmount ?: 0, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
                 </div>
-                <form th:if="${receipt.payableStatus != 'PAID'}"
+                <form sec:authorize="hasRole('ADMIN')" th:if="${receipt.payableStatus != 'PAID'}"
                       th:action="@{/admin/suppliers/payables/{id}(id=${receipt.id})}" method="post" class="mt-2 pt-2 border-top">
                   <label class="form-label fw-semibold small">Ghi nhận thanh toán (₫)</label>
                   <div class="input-group input-group-sm">

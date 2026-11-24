@@ -1,23 +1,17 @@
 package com.laptopshop.controller;
 
 import com.laptopshop.config.CustomUserDetails;
-import com.laptopshop.entity.Banner;
 import com.laptopshop.entity.ChatMessage;
-import com.laptopshop.entity.FaqItem;
-import com.laptopshop.entity.TechArticle;
 import com.laptopshop.service.ContentAndChatService;
 import com.laptopshop.service.LaptopService;
-import com.laptopshop.util.PaginationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
@@ -33,20 +27,6 @@ public class ContentAndSeoController {
         this.laptopService = laptopService;
     }
 
-    @GetMapping("/tin-tuc")
-    public String newsList(@RequestParam(defaultValue = "0") int page, Model model) {
-        model.addAttribute("articlePage", contentService.listPublishedArticles(
-                PageRequest.of(PaginationUtils.clampPage(page), 6)));
-        model.addAttribute("faqs", contentService.listPublishedFaqs());
-        return "store/news";
-    }
-
-    @GetMapping("/tin-tuc/{slug}")
-    public String newsDetail(@PathVariable String slug, Model model) {
-        model.addAttribute("article", contentService.getArticleBySlug(slug));
-        return "store/news-detail";
-    }
-
     @GetMapping("/ho-tro")
     public String supportChatPage(@AuthenticationPrincipal CustomUserDetails currentUser,
                                   HttpSession session,
@@ -54,7 +34,6 @@ public class ContentAndSeoController {
         String roomKey = resolveRoomKey(currentUser, session);
         model.addAttribute("roomKey", roomKey);
         model.addAttribute("messages", contentService.getRoomMessages(roomKey));
-        model.addAttribute("faqs", contentService.listPublishedFaqs());
         return "store/support-chat";
     }
 
@@ -98,40 +77,22 @@ public class ContentAndSeoController {
 
     @GetMapping("/admin/content")
     public String adminContent(@RequestParam(required = false) String room, Model model) {
-        model.addAttribute("articles", contentService.listAllArticles());
-        model.addAttribute("faqs", contentService.listAllFaqs());
-        model.addAttribute("banners", contentService.listAllBanners());
         List<String> rooms = contentService.getChatRooms();
         String activeRoom = (room != null && !room.isBlank()) ? room : (rooms.isEmpty() ? null : rooms.get(0));
+        if (activeRoom != null) {
+            contentService.markRoomAsRead(activeRoom);
+        }
         model.addAttribute("chatRooms", rooms);
+        model.addAttribute("roomUnreadMap", contentService.getRoomUnreadMap(rooms));
         model.addAttribute("activeRoom", activeRoom);
         model.addAttribute("roomMessages", activeRoom != null ? contentService.getRoomMessages(activeRoom) : List.of());
         return "admin/content/index";
     }
 
-    @PostMapping("/admin/content/articles/save")
-    public String saveArticle(@ModelAttribute TechArticle article, RedirectAttributes ra) {
-        try {
-            contentService.saveArticle(article);
-            ra.addFlashAttribute("successMessage", "Đã lưu bài viết công nghệ.");
-        } catch (Exception ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
-        }
-        return "redirect:/admin/content";
-    }
-
-    @PostMapping("/admin/content/faqs/save")
-    public String saveFaq(@ModelAttribute FaqItem faq, RedirectAttributes ra) {
-        contentService.saveFaq(faq);
-        ra.addFlashAttribute("successMessage", "Đã lưu câu hỏi FAQ.");
-        return "redirect:/admin/content";
-    }
-
-    @PostMapping("/admin/content/banners/save")
-    public String saveBanner(@ModelAttribute Banner banner, RedirectAttributes ra) {
-        contentService.saveBanner(banner);
-        ra.addFlashAttribute("successMessage", "Đã lưu banner trang chủ.");
-        return "redirect:/admin/content";
+    @GetMapping("/api/chat/unread-count")
+    @ResponseBody
+    public Map<String, Object> unreadChatCount() {
+        return Map.of("unreadCount", contentService.getUnreadCustomerMessageCount());
     }
 
     @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -147,7 +108,7 @@ public class ContentAndSeoController {
                 + ((req.getServerPort() == 80 || req.getServerPort() == 443) ? "" : ":" + req.getServerPort());
         StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
-        for (String p : List.of("/", "/bao-hanh", "/tin-tuc", "/ho-tro", "/thong-tin/gioi-thieu")) {
+        for (String p : List.of("/", "/bao-hanh", "/ho-tro", "/thong-tin/gioi-thieu")) {
             xml.append("  <url><loc>").append(base).append(p).append("</loc></url>\n");
         }
         laptopService.getAllLaptops().stream()

@@ -13,7 +13,7 @@
           <h4 class="fw-bold mb-0"><i class="bi bi-pc-display text-primary me-2"></i>Danh sách Laptop</h4>
           <div class="small text-muted">Quản lý cấu hình, giá bán, khuyến mãi và tồn kho sản phẩm</div>
         </div>
-        <a th:href="@{/admin/laptops/add}" class="btn btn-pv-primary btn-sm px-3">
+        <a th:if="${staffPerms['LAPTOPS']?.canEdit()}" th:href="@{/admin/laptops/add}" class="btn btn-pv-primary btn-sm px-3">
           <i class="bi bi-plus-lg me-1"></i>Thêm laptop
         </a>
       </div>
@@ -118,8 +118,8 @@
                     <span th:unless="${lp.isActive}" class="badge-soft badge-soft-slate">Ẩn</span>
                   </td>
                   <td class="text-center text-nowrap">
-                    <a th:href="@{/admin/laptops/edit/{id}(id=${lp.id})}" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
-                    <form th:action="@{/admin/laptops/delete/{id}(id=${lp.id})}" method="post" class="d-inline"
+                    <a th:if="${staffPerms['LAPTOPS']?.canEdit()}" th:href="@{/admin/laptops/edit/{id}(id=${lp.id})}" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
+                    <form th:if="${staffPerms['LAPTOPS']?.canDelete()}" th:action="@{/admin/laptops/delete/{id}(id=${lp.id})}" method="post" class="d-inline"
                           th:attr="data-confirm='Bạn có chắc muốn xóa laptop ' + ${lp.name} + '?'">
                       <button type="submit" class="btn btn-sm btn-outline-danger pro-btn-icon" title="Xóa">
                         <i class="bi bi-trash"></i>

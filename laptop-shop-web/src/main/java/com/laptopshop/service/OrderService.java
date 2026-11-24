@@ -8,7 +8,6 @@ import com.laptopshop.entity.OrderStatusHistory;
 import com.laptopshop.entity.Payment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,15 +32,10 @@ public interface OrderService {
     Payment confirmCustomerBankTransfer(Integer orderId, Integer accountId);
     Order getOrderForQrToken(Integer orderId, String token);
     Payment confirmBankTransferByQrToken(Integer orderId, String token);
-    Payment uploadPaymentProof(Integer orderId, Integer accountId, MultipartFile file);
-    boolean isPaymentProofOwnedBy(String filename, Integer accountId);
 
     // Admin / Staff
     Payment confirmPayment(Integer orderId, Integer staffAccountId);
-    Payment rejectPaymentProof(Integer orderId, Integer staffAccountId, String reason);
     Order confirmRefund(Integer orderId, Integer staffAccountId);
-    List<Payment> getPaymentsAwaitingConfirmation();
-    boolean paymentProofExists(String filename);
 
     // Scheduler
     List<Integer> findExpiredPendingPaymentOrderIds();
@@ -49,6 +43,4 @@ public interface OrderService {
 
     Optional<Payment> getPaymentByOrderId(Integer orderId);
     List<OrderStatusHistory> getOrderStatusHistory(Integer orderId);
-
-    Order updateShippingInfo(Integer orderId, String carrierName, String trackingCode, Integer actorId);
 }

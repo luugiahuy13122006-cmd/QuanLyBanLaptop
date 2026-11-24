@@ -37,15 +37,6 @@ public class Payment {
     @Column(name = "NgayTao", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "AnhMinhChung", length = 100)
-    private String proofImage;
-
-    @Column(name = "NgayTaiMinhChung")
-    private LocalDateTime proofUploadedAt;
-
-    @Column(name = "LyDoTuChoi", length = 500)
-    private String rejectReason;
-
     @Column(name = "NguoiXacNhan")
     private Integer confirmedBy;
 
@@ -103,15 +94,6 @@ public class Payment {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public String getProofImage() { return proofImage; }
-    public void setProofImage(String proofImage) { this.proofImage = proofImage; }
-
-    public LocalDateTime getProofUploadedAt() { return proofUploadedAt; }
-    public void setProofUploadedAt(LocalDateTime proofUploadedAt) { this.proofUploadedAt = proofUploadedAt; }
-
-    public String getRejectReason() { return rejectReason; }
-    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
 
     public Integer getConfirmedBy() { return confirmedBy; }
     public void setConfirmedBy(Integer confirmedBy) { this.confirmedBy = confirmedBy; }

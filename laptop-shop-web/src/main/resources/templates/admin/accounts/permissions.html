@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: commonHead('Phân quyền Nhân viên')}"></head>
+<body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-sliders text-primary me-2"></i>Cấu hình Phân quyền Nhân viên</h4>
+          <div class="small text-muted">
+            Tài khoản: <strong th:text="${staff.fullName}"></strong> (<code th:text="${staff.username}"></code>)
+          </div>
+        </div>
+        <a th:href="@{/admin/accounts}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="pro-card mb-3">
+          <div class="p-3 d-flex flex-wrap gap-2 align-items-center">
+            <span class="small fw-semibold text-muted me-2">Chọn nhanh mẫu quyền:</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset('DEFAULT')">Nhân viên chuẩn (Mặc định)</button>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="applyPreset('FULL_STAFF')">Toàn quyền nghiệp vụ (FULL)</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyPreset('VIEW_ONLY')">Chỉ xem (VIEW)</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="applyPreset('NONE_ALL')">Thu hồi toàn bộ (NONE)</button>
+          </div>
+        </div>
+
+        <form th:action="@{/admin/accounts/{id}/permissions(id=${staff.id})}" method="post" class="pro-card">
+          <div class="table-responsive">
+            <table class="table pro-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th style="width: 34%;">Chức năng Quản trị</th>
+                  <th style="width: 24%;">Đường dẫn</th>
+                  <th>Mức quyền</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="m : ${modules}">
+                  <td>
+                    <i class="bi me-2 text-primary" th:classappend="${m.iconClass}"></i>
+                    <strong th:text="${m.displayName}">Chức năng</strong>
+                  </td>
+                  <td><code class="small" th:text="${m.baseUrl}">/admin/...</code></td>
+                  <td>
+                    <div class="d-flex flex-wrap gap-3">
+                      <label class="form-check form-check-inline mb-0 small" th:each="lv : ${levels}">
+                        <input class="form-check-input perm-radio" type="radio"
+                               th:name="${'perm_' + m.name()}"
+                               th:value="${lv.name()}"
+                               th:attr="data-module=${m.name()}"
+                               th:checked="${currentPerms != null and currentPerms.get(m) == lv}"/>
+                        <span class="form-check-label" th:text="${lv.displayName}"></span>
+                      </label>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="p-3 border-top d-flex justify-content-end gap-2">
+            <a th:href="@{/admin/accounts}" class="btn btn-outline-secondary px-4">Hủy</a>
+            <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-save me-1"></i>Lưu phân quyền</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
+<script>
+  const defaultMap = {
+    STATISTICS: 'VIEW', CATEGORIES: 'VIEW', BRANDS: 'VIEW',
+    LAPTOPS: 'EDIT', IMPORT_RECEIPTS: 'EDIT', ORDERS: 'EDIT',
+    CUSTOMERS: 'EDIT', WARRANTIES: 'EDIT', REVIEWS: 'EDIT', SUPPORT_CHAT: 'FULL'
+  };
+  function applyPreset(preset) {
+    document.querySelectorAll('.perm-radio').forEach(r => {
+      const mod = r.getAttribute('data-module');
+      let target = 'NONE';
+      if (preset === 'FULL_STAFF') target = 'FULL';
+      else if (preset === 'VIEW_ONLY') target = 'VIEW';
+      else if (preset === 'DEFAULT') target = defaultMap[mod] || 'VIEW';
+      r.checked = (r.value === target);
+    });
+  }
+</script>
+</body>
+</html>

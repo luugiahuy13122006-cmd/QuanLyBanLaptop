@@ -16,8 +16,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Optional<Payment> findFirstByOrderIdOrderByIdDesc(Integer orderId);
 
-    Optional<Payment> findByProofImage(String proofImage);
-
     boolean existsByGatewayRef(String gatewayRef);
 
     Optional<Payment> findFirstByOrder_OrderCodeOrderByIdDesc(String orderCode);

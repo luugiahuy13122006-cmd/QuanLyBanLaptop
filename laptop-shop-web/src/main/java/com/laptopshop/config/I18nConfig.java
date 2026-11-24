@@ -13,6 +13,12 @@ import java.util.Locale;
 @Configuration
 public class I18nConfig implements WebMvcConfigurer {
 
+    private final StaffPermissionInterceptor staffPermissionInterceptor;
+
+    public I18nConfig(StaffPermissionInterceptor staffPermissionInterceptor) {
+        this.staffPermissionInterceptor = staffPermissionInterceptor;
+    }
+
     @Bean
     public LocaleResolver localeResolver() {
         SessionLocaleResolver resolver = new SessionLocaleResolver();
@@ -30,5 +36,6 @@ public class I18nConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
+        registry.addInterceptor(staffPermissionInterceptor).addPathPatterns("/admin/**");
     }
 }

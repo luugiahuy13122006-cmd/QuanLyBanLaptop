@@ -14,7 +14,8 @@ GO
 USE QL_Laptop;
 GO
 
--- Xóa bảng cũ theo thứ tự ngược khóa ngoại
+-- Xóa bảng cũ theo thứ tự ngược khóa ngoại (gồm các bảng cũ đã loại bỏ nếu tồn tại)
+DROP TABLE IF EXISTS PhanQuyenNhanVien;
 DROP TABLE IF EXISTS TinNhanHoTro;
 DROP TABLE IF EXISTS BannerQuangCao;
 DROP TABLE IF EXISTS CauHoiThuongGap;
@@ -144,7 +145,7 @@ CREATE TABLE KhachHang (
     TenKhachHang NVARCHAR(100) NOT NULL,
     TenKhongDau NVARCHAR(150),
     Email VARCHAR(100),
-    SoDienThoai VARCHAR(15) NOT NULL,
+    SoDienThoai VARCHAR(15) NULL,
     DiaChi NVARCHAR(300),
     NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
     PhienBan INT NOT NULL DEFAULT 0,
@@ -170,8 +171,6 @@ CREATE TABLE DonHang (
     ThueVAT DECIMAL(18,2) NOT NULL DEFAULT 0,
     MaGiamGia VARCHAR(30),
     TongTien DECIMAL(18,2) NOT NULL DEFAULT 0,
-    DonViVanChuyen NVARCHAR(100),
-    MaVanDon NVARCHAR(60),
     GhiChu NVARCHAR(500),
     NgayCapNhat DATETIME2,
     HanThanhToan DATETIME2,
@@ -224,9 +223,6 @@ CREATE TABLE ThanhToan (
     MaGiaoDich VARCHAR(100),
     ThoiGianThanhToan DATETIME2,
     NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    AnhMinhChung VARCHAR(100),
-    NgayTaiMinhChung DATETIME2,
-    LyDoTuChoi NVARCHAR(500),
     NguoiXacNhan INT,
     MaThamChieuCong VARCHAR(120),
     PhienBan INT NOT NULL DEFAULT 0,
@@ -326,24 +322,7 @@ CREATE TABLE ChiTietPhieuNhap (
 );
 GO
 
--- 15. BIẾN ĐỘNG KHO
-CREATE TABLE BienDongKho (
-    MaBienDong INT IDENTITY(1,1) PRIMARY KEY,
-    MaLaptop INT NOT NULL,
-    LoaiBienDong NVARCHAR(30) NOT NULL,
-    SoLuongThayDoi INT NOT NULL,
-    TonTruoc INT NOT NULL,
-    TonSau INT NOT NULL,
-    MaThamChieu NVARCHAR(60),
-    LyDo NVARCHAR(500),
-    NguoiThucHien INT,
-    NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-
-    CONSTRAINT FK_BienDongKho_Laptop FOREIGN KEY (MaLaptop) REFERENCES Laptop(MaLaptop)
-);
-GO
-
--- 16. NHẬT KÝ HỆ THỐNG
+-- 15. NHẬT KÝ HỆ THỐNG
 CREATE TABLE NhatKyHeThong (
     MaNhatKy BIGINT IDENTITY(1,1) PRIMARY KEY,
     MaTaiKhoan INT,
@@ -366,20 +345,7 @@ CREATE TABLE KhoaTacVu (
 );
 GO
 
--- 18. TOKEN ĐẶT LẠI MẬT KHẨU
-CREATE TABLE TokenDatLaiMatKhau (
-    MaToken BIGINT IDENTITY(1,1) PRIMARY KEY,
-    MaTaiKhoan INT NOT NULL,
-    MaBamToken NVARCHAR(128) NOT NULL UNIQUE,
-    HetHanLuc DATETIME2 NOT NULL,
-    DaSuDung BIT NOT NULL DEFAULT 0,
-    NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-
-    CONSTRAINT FK_TokenReset_TaiKhoan FOREIGN KEY (MaTaiKhoan) REFERENCES TaiKhoan(MaTaiKhoan)
-);
-GO
-
--- 19. GIỎ HÀNG CHI TIẾT
+-- 17. GIỎ HÀNG CHI TIẾT
 CREATE TABLE GioHangChiTiet (
     MaChiTietGio INT IDENTITY(1,1) PRIMARY KEY,
     MaTaiKhoan INT NOT NULL,
@@ -468,6 +434,7 @@ CREATE TABLE DanhGiaSanPham (
     DaMuaHang BIT NOT NULL DEFAULT 1,
     DaDuyet BIT NOT NULL DEFAULT 0,
     PhanHoiShop NVARCHAR(500),
+    AnDanh BIT NOT NULL DEFAULT 0,
     NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 
     CONSTRAINT FK_DanhGia_Laptop FOREIGN KEY (MaLaptop) REFERENCES Laptop(MaLaptop),
@@ -488,33 +455,7 @@ CREATE TABLE YeuThich (
 );
 GO
 
--- 26. BÀI VIẾT CÔNG NGHỆ
-CREATE TABLE BaiVietCongNghe (
-    MaBaiViet INT IDENTITY(1,1) PRIMARY KEY,
-    TieuDe NVARCHAR(200) NOT NULL,
-    DuongDan NVARCHAR(150) NOT NULL UNIQUE,
-    TomTat NVARCHAR(500),
-    NoiDung NVARCHAR(4000) NOT NULL,
-    AnhBia NVARCHAR(300),
-    TacGia NVARCHAR(100),
-    HienThi BIT NOT NULL DEFAULT 1,
-    NgayTao DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
-    NgayCapNhat DATETIME2
-);
-GO
-
--- 27. CÂU HỎI THƯỜNG GẶP (FAQ)
-CREATE TABLE CauHoiThuongGap (
-    MaCauHoi INT IDENTITY(1,1) PRIMARY KEY,
-    ChuDe NVARCHAR(80) NOT NULL,
-    CauHoi NVARCHAR(300) NOT NULL,
-    CauTraLoi NVARCHAR(2000) NOT NULL,
-    ThuTu INT NOT NULL DEFAULT 0,
-    HienThi BIT NOT NULL DEFAULT 1
-);
-GO
-
--- 28. BANNER QUẢNG CÁO
+-- 25. BANNER QUẢNG CÁO
 CREATE TABLE BannerQuangCao (
     MaBanner INT IDENTITY(1,1) PRIMARY KEY,
     TieuDe NVARCHAR(150) NOT NULL,
@@ -536,6 +477,18 @@ CREATE TABLE TinNhanHoTro (
     NoiDung NVARCHAR(1000) NOT NULL,
     DaDoc BIT NOT NULL DEFAULT 0,
     ThoiGian DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+);
+GO
+
+-- 30. PHÂN QUYỀN CHI TIẾT NHÂN VIÊN
+CREATE TABLE PhanQuyenNhanVien (
+    MaPhanQuyen INT IDENTITY(1,1) PRIMARY KEY,
+    MaTaiKhoan INT NOT NULL,
+    MaChucNang NVARCHAR(40) NOT NULL,
+    QuyenHan NVARCHAR(20) NOT NULL DEFAULT N'NONE',
+
+    CONSTRAINT FK_PhanQuyen_TaiKhoan FOREIGN KEY (MaTaiKhoan) REFERENCES TaiKhoan(MaTaiKhoan),
+    CONSTRAINT UX_PhanQuyen_TK_CN UNIQUE (MaTaiKhoan, MaChucNang)
 );
 GO
 
@@ -786,19 +739,15 @@ INSERT INTO BannerQuangCao (TieuDe, TieuDePhu, DuongDanAnh, LienKet, NhanNut, Th
 (N'Đấu Trường Gaming RTX 4060', N'Hiệu năng đồ họa bùng nổ — Trả góp 0% & Freeship toàn quốc', '/images/laptops/LT008/1.jpg', '/?categoryId=2', N'Xem Laptop Gaming', 2, 1);
 GO
 
-INSERT INTO BaiVietCongNghe (TieuDe, DuongDan, TomTat, NoiDung, AnhBia, TacGia, HienThi) VALUES
-(N'Cách chọn Laptop phù hợp ngành Công nghệ thông tin 2026', 'chon-laptop-it-2026',
- N'Hướng dẫn chọn CPU, RAM 16GB+, SSD NVMe và màn hình dịu mắt cho sinh viên IT và lập trình viên.',
- N'Khi học và làm việc trong ngành CNTT, việc sở hữu một chiếc laptop ổn định là yếu tố then chốt. Ưu tiên RAM từ 16GB trở lên để chạy Docker, IDE, máy ảo mượt mà. SSD tối thiểu 512GB chuẩn NVMe. Với sinh viên làm AI/Đồ họa, nên chọn GPU rời RTX 4050 trở lên.',
- '/images/laptops/LT018/1.jpg', N'NEXORA Tech Lab', 1),
-(N'So sánh Intel Core Ultra vs AMD Ryzen AI thế hệ mới', 'intel-ultra-vs-ryzen-ai',
- N'Phân tích chi tiết hiệu năng NPU, thời lượng pin và khả năng xử lý tác vụ AI cục bộ.',
- N'Cả Intel Core Ultra và AMD Ryzen 8000 đều tích hợp NPU riêng giúp tăng tốc tác vụ họp trực tuyến, lọc ồn và xử lý mô hình AI cục bộ với mức tiêu thụ điện cực thấp.',
- '/images/laptops/LT019/1.jpg', N'NEXORA Editorial', 1);
-GO
-
-INSERT INTO CauHoiThuongGap (ChuDe, CauHoi, CauTraLoi, ThuTu, HienThi) VALUES
-(N'Bảo hành', N'Thời gian bảo hành laptop tại NEXORA là bao lâu?', N'Mọi sản phẩm chính hãng tại NEXORA được bảo hành từ 12 đến 36 tháng theo tiêu chuẩn hãng, 1 đổi 1 trong 15 ngày đầu nếu có lỗi phần cứng từ nhà sản xuất.', 1, 1),
-(N'Thanh toán', N'Cửa hàng hỗ trợ những hình thức thanh toán nào?', N'Chúng tôi hỗ trợ Thanh toán tiền mặt khi nhận hàng (COD), Chuyển khoản nhanh qua mã VietQR, và thanh toán trực tiếp tại showroom.', 2, 1),
-(N'Vận chuyển', N'Đơn hàng bao nhiêu được miễn phí giao hàng?', N'Đơn hàng từ 15.000.000đ trở lên hoặc khách đến nhận tại showroom được miễn phí hoàn toàn phí vận chuyển.', 3, 1);
+INSERT INTO PhanQuyenNhanVien (MaTaiKhoan, MaChucNang, QuyenHan) VALUES
+(2, N'STATISTICS', N'VIEW'),
+(2, N'LAPTOPS', N'EDIT'),
+(2, N'CATEGORIES', N'VIEW'),
+(2, N'BRANDS', N'VIEW'),
+(2, N'IMPORT_RECEIPTS', N'EDIT'),
+(2, N'ORDERS', N'EDIT'),
+(2, N'CUSTOMERS', N'EDIT'),
+(2, N'WARRANTIES', N'EDIT'),
+(2, N'REVIEWS', N'EDIT'),
+(2, N'SUPPORT_CHAT', N'FULL');
 GO

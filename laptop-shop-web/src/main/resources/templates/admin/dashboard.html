@@ -14,10 +14,7 @@
           <div class="small text-muted">Theo dõi doanh thu thời gian thực, lợi nhuận gộp &amp; vận hành đa kênh</div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <a th:href="@{/admin/pos}" class="btn btn-success btn-sm px-3 fw-semibold">
-            <i class="bi bi-upc-scan me-1"></i>Bán tại quầy (POS)
-          </a>
-          <a th:href="@{/admin/orders/create}" class="btn btn-pv-primary btn-sm px-3">
+          <a th:if="${staffPerms['ORDERS']?.canEdit()}" th:href="@{/admin/orders/create}" class="btn btn-pv-primary btn-sm px-3">
             <i class="bi bi-plus-lg me-1"></i>Tạo đơn hàng
           </a>
           <span class="badge-soft badge-soft-info d-none d-sm-inline-flex">
@@ -135,7 +132,7 @@
                 <div class="fw-bold fs-5 tabular-nums mt-1"
                      th:text="${#numbers.formatDecimal(totalImportCost, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
               </div>
-              <a th:href="@{/admin/import-receipts}" class="btn btn-sm btn-outline-primary text-nowrap">Phiếu nhập</a>
+              <a th:if="${staffPerms['IMPORT_RECEIPTS']?.canView()}" th:href="@{/admin/import-receipts}" class="btn btn-sm btn-outline-primary text-nowrap">Phiếu nhập</a>
             </div>
           </div>
           <div class="col-md-4">
@@ -144,16 +141,16 @@
                 <div class="pro-kpi-label">Phiếu nhập chờ duyệt</div>
                 <div class="fw-bold fs-4 tabular-nums mt-1 text-warning" th:text="${pendingImportCount ?: 0}">0</div>
               </div>
-              <a th:href="@{/admin/import-receipts(status='PENDING')}" class="btn btn-sm btn-warning text-nowrap">Duyệt phiếu</a>
+              <a th:if="${staffPerms['IMPORT_RECEIPTS']?.canView()}" th:href="@{/admin/import-receipts(status='PENDING')}" class="btn btn-sm btn-warning text-nowrap">Duyệt phiếu</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="pro-kpi-card d-flex justify-content-between align-items-center gap-3">
               <div>
-                <div class="pro-kpi-label">Minh chứng CK chờ duyệt</div>
-                <div class="fw-bold fs-4 tabular-nums mt-1 text-danger" th:text="${pendingProofCount ?: 0}">0</div>
+                <div class="pro-kpi-label">Hỗ trợ trực tuyến chưa đọc</div>
+                <div class="fw-bold fs-4 tabular-nums mt-1 text-info" th:text="${unreadChatCount ?: 0}">0</div>
               </div>
-              <a th:href="@{/admin/orders/pending-proofs}" class="btn btn-sm btn-danger text-nowrap">Đối soát ngay</a>
+              <a th:if="${staffPerms['SUPPORT_CHAT']?.canView()}" th:href="@{/admin/content}" class="btn btn-sm btn-outline-info text-nowrap">Mở CSKH</a>
             </div>
           </div>
         </div>
@@ -167,7 +164,7 @@
                   <span class="pro-kpi-icon pro-kpi-icon-rose" style="width: 30px; height: 30px; font-size: 0.9rem;"><i class="bi bi-exclamation-triangle-fill"></i></span>
                   Cảnh báo tồn kho thấp (&le; 5)
                 </h6>
-                <a th:href="@{/admin/import-receipts/create}" class="btn btn-sm btn-outline-primary">Lập phiếu nhập</a>
+                <a th:if="${staffPerms['IMPORT_RECEIPTS']?.canEdit()}" th:href="@{/admin/import-receipts/create}" class="btn btn-sm btn-outline-primary">Lập phiếu nhập</a>
               </div>
               <div class="table-responsive">
                 <table class="table pro-table align-middle mb-0">
@@ -181,7 +178,7 @@
                       <td class="text-center"><span class="badge-soft badge-soft-danger tabular-nums" th:text="${l.stockQuantity}"></span></td>
                       <td class="text-end">
                         <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/laptops/edit/{id}(id=${l.id})}" class="btn btn-sm btn-outline-primary">Cập nhật</a>
-                        <a sec:authorize="!hasRole('ADMIN')" th:href="@{/admin/import-receipts/create}" class="btn btn-sm btn-outline-primary">Nhập thêm</a>
+                        <a th:if="${!#authorization.expression('hasRole(''ADMIN'')') and staffPerms['IMPORT_RECEIPTS']?.canEdit()}" th:href="@{/admin/import-receipts/create}" class="btn btn-sm btn-outline-primary">Nhập thêm</a>
                       </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(lowStockLaptops)}">
@@ -202,24 +199,28 @@
                 </h6>
               </div>
               <div class="p-3 d-grid gap-2">
-                <a th:href="@{/admin/pos}" class="pro-nav-pill justify-content-between py-2 px-3">
-                  <span><i class="bi bi-upc-scan text-success me-2"></i>Bán hàng tại quầy (POS) &amp; In hóa đơn</span>
+                <a th:if="${staffPerms['ORDERS']?.canView()}" th:href="@{/admin/orders}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-box-seam text-success me-2"></i>Quản lý Đơn hàng &amp; Hóa đơn</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
-                <a th:href="@{/admin/warranties}" class="pro-nav-pill justify-content-between py-2 px-3">
+                <a th:if="${staffPerms['WARRANTIES']?.canView()}" th:href="@{/admin/warranties}" class="pro-nav-pill justify-content-between py-2 px-3">
                   <span><i class="bi bi-shield-check text-primary me-2"></i>Quản lý Serial &amp; Tiếp nhận bảo hành</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
-                <a th:href="@{/admin/coupons}" class="pro-nav-pill justify-content-between py-2 px-3">
+                <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/coupons}" class="pro-nav-pill justify-content-between py-2 px-3">
                   <span><i class="bi bi-ticket-perforated text-warning me-2"></i>Mã giảm giá &amp; Khuyến mãi</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
-                <a th:href="@{/admin/statistics/report}" class="pro-nav-pill justify-content-between py-2 px-3">
+                <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/suppliers}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-building text-secondary me-2"></i>Quản lý Nhà cung cấp</span>
+                  <i class="bi bi-chevron-right small text-muted"></i>
+                </a>
+                <a th:if="${staffPerms['STATISTICS']?.canView()}" th:href="@{/admin/statistics/report}" class="pro-nav-pill justify-content-between py-2 px-3">
                   <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Xuất báo cáo doanh thu (In / PDF / Excel)</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
-                <a th:href="@{/admin/content}" class="pro-nav-pill justify-content-between py-2 px-3">
-                  <span><i class="bi bi-chat-square-text text-info me-2"></i>Tin công nghệ, Banner &amp; Chat hỗ trợ</span>
+                <a th:if="${staffPerms['SUPPORT_CHAT']?.canView()}" th:href="@{/admin/content}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-chat-dots text-info me-2"></i>Hỗ trợ trực tuyến Khách hàng</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
                 <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/accounts}" class="pro-nav-pill justify-content-between py-2 px-3">

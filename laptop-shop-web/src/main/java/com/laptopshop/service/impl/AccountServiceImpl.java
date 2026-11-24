@@ -3,17 +3,14 @@ package com.laptopshop.service.impl;
 import com.laptopshop.dto.AccountDTO;
 import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
-import com.laptopshop.dto.ResetPasswordDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.entity.Customer;
-import com.laptopshop.entity.PasswordResetToken;
 import com.laptopshop.entity.Role;
 import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
 import com.laptopshop.repository.*;
 import com.laptopshop.service.AccountService;
 import com.laptopshop.service.AuditLogService;
-import com.laptopshop.service.EmailService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,12 +18,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
@@ -41,9 +35,8 @@ public class AccountServiceImpl implements AccountService {
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
     private final ImportReceiptRepository importReceiptRepository;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final StaffPermissionRepository staffPermissionRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
     private final AuditLogService auditLogService;
 
     public AccountServiceImpl(AccountRepository accountRepository,
@@ -51,18 +44,16 @@ public class AccountServiceImpl implements AccountService {
                               CustomerRepository customerRepository,
                               OrderRepository orderRepository,
                               ImportReceiptRepository importReceiptRepository,
-                              PasswordResetTokenRepository passwordResetTokenRepository,
+                              StaffPermissionRepository staffPermissionRepository,
                               PasswordEncoder passwordEncoder,
-                              EmailService emailService,
                               AuditLogService auditLogService) {
         this.accountRepository = accountRepository;
         this.roleRepository = roleRepository;
         this.customerRepository = customerRepository;
         this.orderRepository = orderRepository;
         this.importReceiptRepository = importReceiptRepository;
-        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.staffPermissionRepository = staffPermissionRepository;
         this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
         this.auditLogService = auditLogService;
     }
 
@@ -70,6 +61,27 @@ public class AccountServiceImpl implements AccountService {
         if (rawPassword == null || !STRONG_PASSWORD.matcher(rawPassword).matches()) {
             throw new BusinessException("Mật khẩu phải từ 8 đến 100 ký tự và gồm cả chữ cái lẫn chữ số.");
         }
+    }
+
+    private Optional<Account> findByLoginInput(String loginInput) {
+        if (loginInput == null || loginInput.isBlank()) return Optional.empty();
+        String key = loginInput.trim();
+        return accountRepository.findByUsernameIgnoreCase(key)
+                .or(() -> accountRepository.findByEmailIgnoreCase(key));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByUsername(String username) {
+        return username != null && !username.isBlank()
+                && accountRepository.existsByUsernameIgnoreCase(username.trim());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return email != null && !email.isBlank()
+                && accountRepository.existsByEmailIgnoreCase(email.trim());
     }
 
     @Override
@@ -93,9 +105,9 @@ public class AccountServiceImpl implements AccountService {
         Account account = new Account();
         account.setUsername(username);
         account.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
-        account.setFullName(dto.getFullName().trim());
+        account.setFullName(username);
         account.setEmail(email);
-        account.setPhone(dto.getPhone().trim());
+        account.setPhone(null);
         account.setRole(customerRole);
         account.setIsActive(true);
         account.setMustChangePassword(false);
@@ -105,10 +117,10 @@ public class AccountServiceImpl implements AccountService {
         if (customer == null) {
             customer = new Customer();
             customer.setAccountId(savedAccount.getId());
-            customer.setCustomerName(savedAccount.getFullName());
-            customer.setEmail(savedAccount.getEmail());
-            customer.setPhone(savedAccount.getPhone());
-            customer.setAddress(dto.getAddress() != null && !dto.getAddress().isBlank() ? dto.getAddress().trim() : "Chưa cập nhật");
+            customer.setCustomerName(username);
+            customer.setEmail(email);
+            customer.setPhone(null);
+            customer.setAddress(null);
             customerRepository.save(customer);
         }
         auditLogService.logAction(savedAccount.getId(), savedAccount.getUsername(),
@@ -246,7 +258,7 @@ public class AccountServiceImpl implements AccountService {
             throw new BusinessException("Không thể xóa tài khoản đã tạo hoặc duyệt phiếu nhập. Hãy khóa tài khoản thay thế.");
         }
         try {
-            passwordResetTokenRepository.deleteByAccount_Id(id);
+            staffPermissionRepository.deleteByAccount_Id(id);
             accountRepository.delete(account);
             accountRepository.flush();
             auditLogService.logAction("DELETE_ACCOUNT", "Account", String.valueOf(id),
@@ -323,9 +335,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public void recordFailedLogin(String username) {
-        if (username == null || username.isBlank()) return;
-        accountRepository.findByUsernameIgnoreCase(username.trim()).ifPresent(account -> {
+    public void recordFailedLogin(String loginInput) {
+        findByLoginInput(loginInput).ifPresent(account -> {
             int attempts = (account.getFailedLoginAttempts() != null ? account.getFailedLoginAttempts() : 0) + 1;
             account.setFailedLoginAttempts(attempts);
             if (attempts >= MAX_FAILED_ATTEMPTS) {
@@ -344,9 +355,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public void resetFailedLogin(String username) {
-        if (username == null || username.isBlank()) return;
-        accountRepository.findByUsernameIgnoreCase(username.trim()).ifPresent(account -> {
+    public void resetFailedLogin(String loginInput) {
+        findByLoginInput(loginInput).ifPresent(account -> {
             if ((account.getFailedLoginAttempts() != null && account.getFailedLoginAttempts() > 0)
                     || account.getLockedUntil() != null) {
                 account.setFailedLoginAttempts(0);
@@ -354,65 +364,6 @@ public class AccountServiceImpl implements AccountService {
                 accountRepository.save(account);
             }
         });
-    }
-
-    @Override
-    @Transactional
-    public String createPasswordResetToken(String email) {
-        if (email == null || email.isBlank()) return null;
-        Account account = accountRepository.findByEmailIgnoreCase(email.trim()).orElse(null);
-        if (account == null || !Boolean.TRUE.equals(account.getIsActive())) {
-            return null;
-        }
-        passwordResetTokenRepository.deleteByAccount_Id(account.getId());
-        byte[] rnd = new byte[24];
-        new SecureRandom().nextBytes(rnd);
-        String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(rnd);
-        String tokenHash = sha256(rawToken);
-        PasswordResetToken entity = new PasswordResetToken(account, tokenHash, LocalDateTime.now().plusMinutes(30));
-        passwordResetTokenRepository.save(entity);
-
-        emailService.sendEmail(account.getEmail(),
-                "Đặt lại mật khẩu tài khoản " + account.getUsername(),
-                "Mã / liên kết đặt lại mật khẩu của bạn có hiệu lực trong 30 phút: /reset-password?token=" + rawToken);
-        auditLogService.logAction(account.getId(), account.getUsername(),
-                "FORGOT_PASSWORD", "Account", String.valueOf(account.getId()), "Yêu cầu token đặt lại mật khẩu");
-        return rawToken;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isResetTokenValid(String rawToken) {
-        if (rawToken == null || rawToken.isBlank()) return false;
-        return passwordResetTokenRepository.findByTokenHashAndUsedFalse(sha256(rawToken.trim()))
-                .filter(t -> t.getExpiresAt().isAfter(LocalDateTime.now()))
-                .isPresent();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void resetPassword(ResetPasswordDTO dto) {
-        validateStrongPassword(dto.getNewPassword());
-        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
-            throw new BusinessException("Xác nhận mật khẩu mới không khớp.");
-        }
-        PasswordResetToken token = passwordResetTokenRepository
-                .findByTokenHashAndUsedFalse(sha256(dto.getToken().trim()))
-                .orElseThrow(() -> new BusinessException("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã được sử dụng."));
-        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BusinessException("Liên kết đặt lại mật khẩu đã hết hạn (quá 30 phút).");
-        }
-        Account account = token.getAccount();
-        account.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
-        account.setFailedLoginAttempts(0);
-        account.setLockedUntil(null);
-        account.setMustChangePassword(false);
-        accountRepository.save(account);
-
-        token.setUsed(true);
-        passwordResetTokenRepository.save(token);
-        auditLogService.logAction(account.getId(), account.getUsername(),
-                "RESET_PASSWORD", "Account", String.valueOf(account.getId()), "Đặt lại mật khẩu thành công");
     }
 
     @Override
@@ -435,17 +386,5 @@ public class AccountServiceImpl implements AccountService {
         auditLogService.logAction(saved.getId(), saved.getUsername(),
                 "FORCE_CHANGE_PASSWORD", "Account", String.valueOf(saved.getId()), "Đổi mật khẩu bắt buộc thành công");
         return saved;
-    }
-
-    private static String sha256(String value) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(value.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(digest.length * 2);
-            for (byte b : digest) sb.append(String.format("%02x", b));
-            return sb.toString();
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

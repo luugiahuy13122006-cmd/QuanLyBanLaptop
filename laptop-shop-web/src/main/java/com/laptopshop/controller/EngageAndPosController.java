@@ -1,13 +1,7 @@
 package com.laptopshop.controller;
 
 import com.laptopshop.config.CustomUserDetails;
-import com.laptopshop.dto.OrderItemRequest;
-import com.laptopshop.dto.PlaceOrderRequest;
-import com.laptopshop.entity.Laptop;
-import com.laptopshop.entity.Order;
-import com.laptopshop.entity.PaymentMethod;
 import com.laptopshop.repository.CustomerRepository;
-import com.laptopshop.repository.LaptopRepository;
 import com.laptopshop.service.*;
 import com.laptopshop.util.PaginationUtils;
 import jakarta.servlet.http.HttpSession;
@@ -20,35 +14,23 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 @Controller
 public class EngageAndPosController {
 
     private final WishlistAndCompareService wishlistAndCompareService;
     private final CustomerAddressService addressService;
-    private final CustomerService customerService;
     private final CustomerRepository customerRepository;
-    private final LaptopRepository laptopRepository;
-    private final OrderService orderService;
     private final ReviewService reviewService;
     private final NotificationSseService sseService;
 
     public EngageAndPosController(WishlistAndCompareService wishlistAndCompareService,
                                   CustomerAddressService addressService,
-                                  CustomerService customerService,
                                   CustomerRepository customerRepository,
-                                  LaptopRepository laptopRepository,
-                                  OrderService orderService,
                                   ReviewService reviewService,
                                   NotificationSseService sseService) {
         this.wishlistAndCompareService = wishlistAndCompareService;
         this.addressService = addressService;
-        this.customerService = customerService;
         this.customerRepository = customerRepository;
-        this.laptopRepository = laptopRepository;
-        this.orderService = orderService;
         this.reviewService = reviewService;
         this.sseService = sseService;
     }
@@ -159,46 +141,6 @@ public class EngageAndPosController {
             ra.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/tai-khoan/dia-chi";
-    }
-
-    @GetMapping("/admin/pos")
-    public String posCounter(Model model) {
-        model.addAttribute("laptops", laptopRepository.findAllActiveWithDetails());
-        model.addAttribute("customers", customerService.getAllCustomers());
-        return "admin/pos/index";
-    }
-
-    @PostMapping("/admin/pos/checkout")
-    public String posCheckout(@RequestParam Integer customerId,
-                              @RequestParam(required = false) String skuLookup,
-                              @RequestParam(required = false) Integer laptopId,
-                              @RequestParam(defaultValue = "1") int quantity,
-                              @RequestParam(defaultValue = "CASH") PaymentMethod paymentMethod,
-                              @RequestParam(required = false) String couponCode,
-                              @RequestParam(defaultValue = "0") BigDecimal discount,
-                              @AuthenticationPrincipal CustomUserDetails currentUser,
-                              RedirectAttributes ra) {
-        try {
-            Integer targetId = laptopId;
-            if (targetId == null && skuLookup != null && !skuLookup.isBlank()) {
-                targetId = laptopRepository.findBySkuIgnoreCase(skuLookup.trim())
-                        .map(Laptop::getId)
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã SKU: " + skuLookup));
-            }
-            PlaceOrderRequest req = new PlaceOrderRequest();
-            req.setCustomerId(customerId);
-            req.setDeliveryAddress("Nhận trực tiếp tại cửa hàng NEXORA");
-            req.setPaymentMethod(paymentMethod);
-            req.setDiscount(discount);
-            req.setCouponCode(couponCode);
-            req.setItems(List.of(new OrderItemRequest(targetId, quantity)));
-            Order created = orderService.placeOrder(req, currentUser != null ? currentUser.getAccountId() : null);
-            ra.addFlashAttribute("successMessage", "Bán tại quầy thành công: " + created.getOrderCode());
-            return "redirect:/admin/orders/" + created.getId() + "/invoice";
-        } catch (Exception ex) {
-            ra.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/admin/pos";
-        }
     }
 
     @GetMapping("/admin/reviews")

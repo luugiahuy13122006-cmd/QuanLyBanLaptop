@@ -64,14 +64,45 @@
   color: var(--text);
 }
 
+/* Promotional Dual Banners */
+.nx-promo-banner {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
+}
+
+.nx-promo-banner:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.nx-promo-ai {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+}
+
+.nx-promo-gaming {
+  background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
+}
+
+.nx-promo-thumb img {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
 .nx-thumb-strip img {
-  width: 72px;
-  height: 54px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
   background: #fff;
   border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: 4px;
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
   cursor: pointer;
   transition: border-color 0.18s ease, transform 0.18s ease;
 }

@@ -11,13 +11,10 @@
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
           <h4 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary me-2"></i>Danh sách Đơn hàng</h4>
-          <div class="small text-muted">Quản lý tiến độ đơn hàng, vận đơn &amp; hoàn trả tồn kho</div>
+          <div class="small text-muted">Quản lý tiến độ đơn hàng, thanh toán &amp; hoàn trả tồn kho</div>
         </div>
         <div class="d-flex gap-2">
-          <a th:href="@{/admin/orders/pending-proofs}" class="btn btn-outline-warning btn-sm px-3">
-            <i class="bi bi-qr-code-scan me-1"></i>Duyệt minh chứng CK
-          </a>
-          <a th:href="@{/admin/orders/create}" class="btn btn-pv-primary btn-sm px-3">
+          <a th:if="${staffPerms['ORDERS']?.canEdit()}" th:href="@{/admin/orders/create}" class="btn btn-pv-primary btn-sm px-3">
             <i class="bi bi-plus-lg me-1"></i>Tạo Đơn hàng
           </a>
         </div>

@@ -5,7 +5,6 @@ import com.laptopshop.dto.LaptopDTO;
 import com.laptopshop.entity.Brand;
 import com.laptopshop.entity.Category;
 import com.laptopshop.entity.Laptop;
-import com.laptopshop.entity.StockMovementType;
 import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
 import com.laptopshop.repository.*;
@@ -63,8 +62,6 @@ public class LaptopService {
     private final BrandRepository brandRepo;
     private final OrderDetailRepository orderDetailRepo;
     private final ImportReceiptDetailRepository importReceiptDetailRepo;
-    private final StockMovementRepository stockMovementRepo;
-    private final StockMovementService stockMovementService;
     private final JobLockService jobLockService;
     private final AuditLogService auditLogService;
 
@@ -73,8 +70,6 @@ public class LaptopService {
                          BrandRepository brandRepo,
                          OrderDetailRepository orderDetailRepo,
                          ImportReceiptDetailRepository importReceiptDetailRepo,
-                         StockMovementRepository stockMovementRepo,
-                         StockMovementService stockMovementService,
                          JobLockService jobLockService,
                          AuditLogService auditLogService) {
         this.laptopRepo = laptopRepo;
@@ -82,8 +77,6 @@ public class LaptopService {
         this.brandRepo = brandRepo;
         this.orderDetailRepo = orderDetailRepo;
         this.importReceiptDetailRepo = importReceiptDetailRepo;
-        this.stockMovementRepo = stockMovementRepo;
-        this.stockMovementService = stockMovementService;
         this.jobLockService = jobLockService;
         this.auditLogService = auditLogService;
     }
@@ -384,9 +377,6 @@ public class LaptopService {
         if (importReceiptDetailRepo.existsByLaptopId(id)) {
             throw new BusinessException("Không thể xóa! Laptop đã được nhập kho qua phiếu nhập. Hãy ẩn sản phẩm thay vì xóa.");
         }
-        if (stockMovementRepo.existsByLaptop_Id(id)) {
-            throw new BusinessException("Không thể xóa! Laptop đã có lịch sử biến động tồn kho. Hãy ẩn sản phẩm thay vì xóa.");
-        }
         try {
             laptopRepo.delete(l);
             laptopRepo.flush();
@@ -398,12 +388,6 @@ public class LaptopService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateStockSafe(Integer laptopId, int delta) {
-        updateStockSafe(laptopId, delta, StockMovementType.MANUAL_ADJUST, null, "Cập nhật tồn kho", null);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void updateStockSafe(Integer laptopId, int delta, StockMovementType type,
-                                String referenceCode, String reason, Integer actorAccountId) {
         String threadName = Thread.currentThread().getName();
         log.info("[THREAD: {}] Bắt đầu cập nhật tồn kho laptop ID={}, delta={}", threadName, laptopId, delta);
         Laptop l = laptopRepo.findByIdWithLock(laptopId)
@@ -416,10 +400,6 @@ public class LaptopService {
         l.setStockQuantity(newStock);
         l.setUpdatedAt(LocalDateTime.now());
         laptopRepo.save(l);
-        if (delta != 0) {
-            stockMovementService.record(l, type != null ? type : StockMovementType.MANUAL_ADJUST,
-                    delta, oldStock, newStock, referenceCode, reason, actorAccountId);
-        }
         log.info("[THREAD: {}] Cập nhật thành công: laptop ID={}, tồn kho mới={}", threadName, laptopId, newStock);
     }
 

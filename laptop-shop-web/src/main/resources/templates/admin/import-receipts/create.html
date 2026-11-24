@@ -27,9 +27,16 @@
               <div class="row g-3 mb-4">
                 <div class="col-md-6">
                   <label class="form-label fw-semibold small">Nhà cung cấp <span class="text-danger">*</span></label>
-                  <input type="text" th:field="*{supplier}" class="form-control"
-                         th:classappend="${#fields.hasErrors('supplier')} ? 'is-invalid'" placeholder="VD: Nhà phân phối Dell Việt Nam" required/>
-                  <div class="invalid-feedback" th:errors="*{supplier}"></div>
+                  <select th:field="*{supplierId}" class="form-select"
+                          th:classappend="${#fields.hasErrors('supplierId')} ? 'is-invalid'" required>
+                    <option value="">-- Chọn nhà cung cấp đang hợp tác --</option>
+                    <option th:each="s : ${suppliers}" th:value="${s.id}"
+                            th:text="${s.name + (s.taxCode != null and !s.taxCode.isBlank() ? ' (MST: ' + s.taxCode + ')' : '')}"></option>
+                  </select>
+                  <div class="invalid-feedback" th:errors="*{supplierId}"></div>
+                  <div class="form-text small text-muted" th:if="${#lists.isEmpty(suppliers)}">
+                    Chưa có nhà cung cấp đang hoạt động. Liên hệ Admin để thêm nhà cung cấp trước khi lập phiếu nhập.
+                  </div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-semibold small">Ghi chú</label>

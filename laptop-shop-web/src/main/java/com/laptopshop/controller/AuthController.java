@@ -3,7 +3,6 @@ package com.laptopshop.controller;
 import com.laptopshop.config.CustomUserDetails;
 import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
-import com.laptopshop.dto.ResetPasswordDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +34,7 @@ public class AuthController {
                             @RequestParam(required = false) String required,
                             Model model) {
         if (error != null) {
-            model.addAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.");
+            model.addAttribute("errorMessage", "Tên đăng nhập / Email hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.");
         }
         if (logout != null) {
             model.addAttribute("successMessage", "Bạn đã đăng xuất thành công.");
@@ -57,6 +56,18 @@ public class AuthController {
                                   BindingResult bindingResult,
                                   Model model,
                                   RedirectAttributes ra) {
+        if (!bindingResult.hasFieldErrors("username") && accountService.existsByUsername(registerDTO.getUsername())) {
+            bindingResult.rejectValue("username", "duplicate.username",
+                    "Tên đăng nhập '" + registerDTO.getUsername().trim() + "' đã tồn tại. Vui lòng chọn tên khác.");
+        }
+        if (!bindingResult.hasFieldErrors("email") && accountService.existsByEmail(registerDTO.getEmail())) {
+            bindingResult.rejectValue("email", "duplicate.email",
+                    "Email '" + registerDTO.getEmail().trim() + "' đã được đăng ký cho tài khoản khác.");
+        }
+        if (registerDTO.getPassword() != null && registerDTO.getConfirmPassword() != null
+                && !registerDTO.getPassword().equals(registerDTO.getConfirmPassword())) {
+            bindingResult.rejectValue("confirmPassword", "mismatch", "Mật khẩu xác nhận không khớp.");
+        }
         if (bindingResult.hasErrors()) {
             return "auth/register";
         }
@@ -99,7 +110,6 @@ public class AuthController {
             ra.addFlashAttribute("successMessage", "Cập nhật hồ sơ cá nhân thành công!");
             return "redirect:/tai-khoan";
         } catch (RuntimeException ex) {
-            // Giữ nguyên dữ liệu người dùng vừa nhập và hiển thị lỗi ngay trên form (không redirect làm mất dữ liệu)
             profileDTO.setCurrentPassword(null);
             profileDTO.setNewPassword(null);
             profileDTO.setConfirmNewPassword(null);
@@ -109,7 +119,6 @@ public class AuthController {
         }
     }
 
-    /** Làm mới thông tin người dùng đang đăng nhập (họ tên trên header...) ngay sau khi cập nhật hồ sơ, không cần đăng nhập lại. */
     private void refreshPrincipal(Account account, Integer customerId,
                                   HttpServletRequest request, HttpServletResponse response) {
         CustomUserDetails fresh = new CustomUserDetails(account, customerId);
@@ -119,54 +128,6 @@ public class AuthController {
         context.setAuthentication(token);
         SecurityContextHolder.setContext(context);
         new HttpSessionSecurityContextRepository().saveContext(context, request, response);
-    }
-
-    @GetMapping("/forgot-password")
-    public String forgotPasswordPage() {
-        return "auth/forgot-password";
-    }
-
-    @PostMapping("/forgot-password")
-    public String handleForgotPassword(@RequestParam String email,
-                                       HttpServletRequest request,
-                                       RedirectAttributes ra) {
-        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
-                + request.getContextPath();
-        accountService.createPasswordResetToken(email);
-        ra.addFlashAttribute("successMessage",
-                "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu (hiệu lực 30 phút) đã được gửi. "
-                        + "Trên môi trường thử nghiệm, vui lòng xem token tại console máy chủ.");
-        return "redirect:/forgot-password";
-    }
-
-    @GetMapping("/reset-password")
-    public String resetPasswordPage(@RequestParam(required = false) String token, Model model) {
-        boolean valid = accountService.isResetTokenValid(token);
-        ResetPasswordDTO dto = new ResetPasswordDTO();
-        dto.setToken(token);
-        model.addAttribute("resetDTO", dto);
-        model.addAttribute("tokenValid", valid);
-        return "auth/reset-password";
-    }
-
-    @PostMapping("/reset-password")
-    public String handleResetPassword(@Valid @ModelAttribute("resetDTO") ResetPasswordDTO resetDTO,
-                                      BindingResult bindingResult,
-                                      Model model,
-                                      RedirectAttributes ra) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("tokenValid", true);
-            return "auth/reset-password";
-        }
-        try {
-            accountService.resetPassword(resetDTO);
-            ra.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.");
-            return "redirect:/login";
-        } catch (RuntimeException ex) {
-            model.addAttribute("tokenValid", accountService.isResetTokenValid(resetDTO.getToken()));
-            model.addAttribute("errorMessage", ex.getMessage());
-            return "auth/reset-password";
-        }
     }
 
     @GetMapping("/tai-khoan/doi-mat-khau-bat-buoc")
@@ -202,9 +163,10 @@ public class AuthController {
     }
 
     @GetMapping("/403")
-    public String accessDenied(Model model) {
-        model.addAttribute("errorTitle", "403 - Không có quyền truy cập");
-        model.addAttribute("errorMessage", "Tài khoản của bạn không được phép truy cập khu vực này.");
+    public String accessDenied(HttpServletResponse response, Model model) {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        model.addAttribute("errorTitle", "Không có quyền truy cập");
+        model.addAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này.");
         return "error/403";
     }
 }

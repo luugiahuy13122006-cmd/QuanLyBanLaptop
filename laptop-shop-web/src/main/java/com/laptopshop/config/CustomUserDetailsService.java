@@ -23,9 +23,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Account account = accountRepository.findByUsernameIgnoreCase(username.trim())
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản: " + username));
+    public UserDetails loadUserByUsername(String loginInput) throws UsernameNotFoundException {
+        String key = loginInput == null ? "" : loginInput.trim();
+        Account account = accountRepository.findByUsernameIgnoreCase(key)
+                .or(() -> accountRepository.findByEmailIgnoreCase(key))
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản: " + key));
         Integer customerId = customerRepository.findByAccountId(account.getId())
                 .map(c -> c.getId())
                 .orElse(null);

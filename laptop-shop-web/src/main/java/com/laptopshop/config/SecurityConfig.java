@@ -160,9 +160,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/", "/san-pham/**", "/tim-kiem", "/thong-tin/**",
-                    "/qr-pay/**", "/bao-hanh/**", "/tin-tuc/**", "/ho-tro/**",
+                    "/qr-pay/**", "/bao-hanh/**", "/ho-tro/**",
                     "/api/webhooks/payment", "/api/store/**", "/api/coupons/check", "/api/chat/**",
-                    "/login", "/register", "/forgot-password", "/reset-password",
+                    "/login", "/register",
                     "/403", "/error", "/error/**",
                     "/css/**", "/images/**", "/js/**", "/vendor/**",
                     "/manifest.json", "/sw.js", "/robots.txt", "/sitemap.xml"
@@ -173,14 +173,11 @@ public class SecurityConfig {
                     "/yeu-thich/**", "/so-sanh/**"
                 ).authenticated()
                 .requestMatchers("/orders/place").hasAnyRole("ADMIN", "STAFF")
-                .requestMatchers("/admin/accounts/**", "/admin/audit-logs/**").hasRole("ADMIN")
-                .requestMatchers("/admin/import-receipts/*/approve", "/admin/import-receipts/*/reject").hasRole("ADMIN")
                 .requestMatchers(
-                    "/admin/laptops/add/**", "/admin/laptops/edit/**", "/admin/laptops/delete/**",
-                    "/admin/categories/add/**", "/admin/categories/edit/**", "/admin/categories/delete/**",
-                    "/admin/brands/add/**", "/admin/brands/edit/**", "/admin/brands/delete/**",
-                    "/admin/customers/delete/**"
+                    "/admin/accounts/**", "/admin/audit-logs/**",
+                    "/admin/coupons/**", "/admin/suppliers/**"
                 ).hasRole("ADMIN")
+                .requestMatchers("/admin/import-receipts/*/approve", "/admin/import-receipts/*/reject").hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
                 .anyRequest().authenticated()
             )

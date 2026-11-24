@@ -31,11 +31,13 @@
                     <div class="fw-semibold" th:text="${r.laptop.name}"></div>
                   </td>
                   <td class="small">
-                    <div class="fw-medium" th:text="${r.customer.customerName}"></div>
+                    <div class="fw-medium" th:text="${r.reviewerDisplayName}"></div>
+                    <div class="text-muted small" th:if="${r.anonymous}" th:text="'(Tài khoản: ' + ${r.customer.customerName} + ')'"></div>
                     <span th:if="${r.verifiedPurchase}" class="badge-soft badge-soft-success">Đã mua hàng</span>
+                    <span th:if="${r.anonymous}" class="badge-soft badge-soft-slate">Ẩn danh</span>
                   </td>
                   <td style="max-width: 280px;">
-                    <div class="text-warning fw-bold small" th:text="${r.rating + ' ★ ' + (r.title ?: '')}"></div>
+                    <div class="text-warning fw-bold small" th:text="${r.rating + ' ★'}"></div>
                     <div class="small" th:text="${r.content}"></div>
                   </td>
                   <td>
@@ -43,7 +45,7 @@
                     <span th:unless="${r.approved}" class="badge-soft badge-soft-warning">Chờ duyệt</span>
                   </td>
                   <td>
-                    <form th:action="@{/admin/reviews/{id}/moderate(id=${r.id})}" method="post" class="d-grid gap-1">
+                    <form th:if="${staffPerms['REVIEWS']?.canEdit()}" th:action="@{/admin/reviews/{id}/moderate(id=${r.id})}" method="post" class="d-grid gap-1">
                       <input type="text" name="shopReply" th:value="${r.shopReply}" class="form-control form-control-sm" placeholder="Phản hồi từ shop..."/>
                       <div class="d-flex gap-1">
                         <button type="submit" name="approve" value="true" class="btn btn-sm btn-success flex-grow-1">Duyệt hiển thị</button>
