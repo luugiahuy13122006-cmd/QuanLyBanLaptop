@@ -1,267 +1,193 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title th:text="${laptop.name + ' - Nexora Laptop'}">Chi tiết sản phẩm</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
+  <th:block th:replace="~{fragments/head :: commonHead(${laptop.name})}"/>
+  <script type="application/ld+json" th:inline="javascript">
+    {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": /*[[${laptop.name}]]*/ "Laptop",
+      "sku": /*[[${laptop.sku}]]*/ "SKU",
+      "brand": {"@type": "Brand", "name": /*[[${laptop.brandName}]]*/ "Brand"},
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "VND",
+        "price": /*[[${laptop.salePrice}]]*/ 0,
+        "availability": /*[[${laptop.stockQuantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'}]]*/ "https://schema.org/InStock"
+      }
+    }
+  </script>
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-3 py-md-4">
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb small mb-0">
-      <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none"><i class="bi bi-house-door me-1"></i>Trang chủ</a></li>
-      <li class="breadcrumb-item"><a th:href="@{/(categoryId=${laptop.category.id})}" class="text-decoration-none" th:text="${laptop.categoryName}">Danh mục</a></li>
-      <li class="breadcrumb-item"><a th:href="@{/(brandId=${laptop.brand.id})}" class="text-decoration-none" th:text="${laptop.brandName}">Thương hiệu</a></li>
-      <li class="breadcrumb-item active text-truncate" style="max-width: 280px;" th:text="${laptop.name}">Tên laptop</li>
+<main id="mainContent" class="container py-4">
+  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+  <nav aria-label="breadcrumb" class="mb-3 small">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li>
+      <li class="breadcrumb-item"><a th:href="@{/(categoryId=${laptop.category.id})}" th:text="${laptop.categoryName}">Danh mục</a></li>
+      <li class="breadcrumb-item active" th:text="${laptop.name}">Chi tiết</li>
     </ol>
   </nav>
 
-  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
-
-  <div class="pro-card p-3 p-md-4 mb-4">
+  <!-- Main Bento Product Section -->
+  <section class="nx-filter-bar p-3 p-md-4 mb-4">
     <div class="row g-4">
-      <!-- Left Column: Gallery + Highlights + Policies -->
+      <!-- Gallery -->
       <div class="col-lg-5">
-        <div class="pv-gallery-main mb-3">
-          <img id="mainProductImg" th:src="${galleryImages[0]}" th:alt="${laptop.name}"/>
-          <button type="button" class="pv-gallery-nav" style="left: 12px;" onclick="shiftThumb(-1)" title="Ảnh trước">
-            <i class="bi bi-chevron-left"></i>
-          </button>
-          <button type="button" class="pv-gallery-nav" style="right: 12px;" onclick="shiftThumb(1)" title="Ảnh sau">
-            <i class="bi bi-chevron-right"></i>
-          </button>
+        <div class="nx-thumb-box rounded-4 mb-3 border" style="aspect-ratio: 4/3;">
+          <span class="nx-badge-discount" th:if="${laptop.discountPercent > 0}" th:text="'Giảm ' + ${laptop.discountPercent} + '%'"></span>
+          <img id="nxMainProductImg" th:src="${laptop.displayImageUrl}" th:alt="${laptop.name}" style="max-height: 360px;"/>
         </div>
-
-        <div class="d-flex align-items-center gap-2 mb-3">
-          <button type="button" class="btn btn-sm btn-light border pro-btn-icon" onclick="shiftThumb(-1)" title="Ảnh trước">
-            <i class="bi bi-chevron-left"></i>
-          </button>
-          <div class="pv-thumb-list flex-grow-1" id="thumbContainer">
-            <div class="pv-thumb-item" th:each="imgUrl, st : ${galleryImages}"
-                 th:classappend="${st.index == 0} ? 'active'"
-                 th:attr="data-img=${imgUrl}, data-idx=${st.index}"
-                 onclick="selectThumb(this)">
-              <img th:src="${imgUrl}" th:alt="${laptop.name + ' góc ' + (st.index + 1)}"/>
-            </div>
-          </div>
-          <button type="button" class="btn btn-sm btn-light border pro-btn-icon" onclick="shiftThumb(1)" title="Ảnh sau">
-            <i class="bi bi-chevron-right"></i>
-          </button>
-        </div>
-
-        <div class="pv-policy-box mb-3">
-          <div class="fw-bold mb-2 d-flex align-items-center gap-2">
-            <i class="bi bi-stars text-primary"></i>Đặc điểm nổi bật
-          </div>
-          <ul class="mb-0 ps-3 small text-secondary d-flex flex-column gap-1">
-            <li th:if="${laptop.cpu != null}">Vi xử lý: <strong class="text-dark" th:text="${laptop.cpu}"></strong></li>
-            <li th:if="${laptop.ramGb != null}">Bộ nhớ RAM: <strong class="text-dark" th:text="${laptop.ramGb + ' GB'}"></strong> | Ổ cứng: <strong class="text-dark" th:text="${laptop.storage}"></strong></li>
-            <li th:if="${laptop.gpu != null}">Đồ họa: <strong class="text-dark" th:text="${laptop.gpu}"></strong></li>
-            <li th:if="${laptop.screenSize != null}">Màn hình: <strong class="text-dark" th:text="${laptop.screenSize + ' inch'}"></strong></li>
-          </ul>
-        </div>
-
-        <div class="pv-policy-box">
-          <div class="fw-bold mb-2">Chính sách bán hàng</div>
-          <div class="d-flex flex-column gap-2 small">
-            <div class="d-flex align-items-center gap-2"><i class="bi bi-truck text-primary fs-5"></i><span>Miễn phí giao hàng cho đơn từ 5 triệu</span></div>
-            <div class="d-flex align-items-center gap-2"><i class="bi bi-shield-check text-success fs-5"></i><span>Cam kết hàng chính hãng 100%, nguyên hộp</span></div>
-            <div class="d-flex align-items-center gap-2"><i class="bi bi-arrow-repeat text-info fs-5"></i><span>Đổi trả miễn phí trong 10 ngày nếu lỗi NSX</span></div>
-          </div>
+        <div class="nx-thumb-strip d-flex flex-wrap gap-2 justify-content-center" th:if="${galleryImages != null}">
+          <img th:each="img, st : ${galleryImages}" th:src="${img}" th:classappend="${st.first} ? 'active'"
+               onclick="document.getElementById('nxMainProductImg').src=this.src; this.parentElement.querySelectorAll('img').forEach(i=>i.classList.remove('active')); this.classList.add('active');"
+               alt="Ảnh sản phẩm"/>
         </div>
       </div>
 
-      <!-- Right Column: Title, Price, Gifts, Cart Action -->
+      <!-- Details & Actions -->
       <div class="col-lg-7">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <a th:href="@{/(brandId=${laptop.brand.id})}" class="badge-soft badge-soft-info text-decoration-none" th:text="${laptop.brandName}">ASUS</a>
-          <span class="badge-soft badge-soft-slate" th:text="${laptop.categoryName}">Văn phòng</span>
-        </div>
-
-        <h1 class="h3 fw-bold mb-2" th:text="${laptop.name}">Tên Laptop</h1>
-
-        <div class="d-flex flex-wrap align-items-center gap-3 small text-muted mb-3">
-          <span>SKU: <code class="px-2 py-1 rounded bg-light text-dark" th:text="${laptop.sku}">LT001</code></span>
-          <span th:if="${laptop.stockQuantity > 0}" class="badge-soft badge-soft-success">
-            <i class="bi bi-check-circle-fill"></i> Còn hàng (<span th:text="${laptop.stockQuantity}"></span> máy)
-          </span>
-          <span th:unless="${laptop.stockQuantity > 0}" class="badge-soft badge-soft-danger">
-            <i class="bi bi-x-circle-fill"></i> Tạm hết hàng
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" th:text="${laptop.brandName}">Brand</span>
+          <span class="badge bg-info bg-opacity-10 text-info px-3 py-2" th:text="${laptop.categoryName}">Category</span>
+          <span class="small text-muted font-mono-code">SKU: <strong th:text="${laptop.sku}"></strong></span>
+          <span class="small text-warning ms-auto" th:if="${reviewCount > 0}">
+            <i class="bi bi-star-fill"></i> <strong th:text="${avgRating}">5.0</strong>
+            (<span th:text="${reviewCount}">0</span> đánh giá)
           </span>
         </div>
 
-        <div class="p-3 p-md-4 rounded-4 mb-3" style="background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%); border: 1px solid #DBEAFE;">
-          <div class="d-flex flex-wrap align-items-baseline gap-2">
-            <div class="pv-price display-6" th:text="${#numbers.formatDecimal(laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
-            <span th:if="${laptop.discounted}" class="pv-discount-tag fs-6" th:text="${'-' + laptop.discountPercent + '%'}"></span>
+        <h1 class="h3 fw-bold mb-3" th:text="${laptop.name}">Laptop</h1>
+
+        <div class="p-3 rounded-4 mb-3" style="background: var(--surface-2); border: 1px solid var(--border);">
+          <div class="d-flex flex-wrap align-items-baseline gap-3">
+            <div class="nx-price-now fs-2 tabular-nums" th:text="${#numbers.formatDecimal(laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            <div class="nx-price-old fs-5 tabular-nums" th:if="${laptop.discounted}" th:text="${#numbers.formatDecimal(laptop.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
           </div>
-          <div th:if="${laptop.discounted}" class="d-flex flex-wrap align-items-center gap-2 mt-1">
-            <span class="pv-old-price fs-6" th:text="${#numbers.formatDecimal(laptop.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-            <span class="badge-soft badge-soft-success">
-              Tiết kiệm <span th:text="${#numbers.formatDecimal(laptop.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-            </span>
+          <div class="small text-success mt-1 fw-semibold">
+            <i class="bi bi-shield-check me-1"></i>Giá đã bao gồm VAT 10% • Bảo hành chính hãng <span th:text="${laptop.warrantyMonths ?: 12}">12</span> tháng
           </div>
-          <div class="small text-muted mt-2"><i class="bi bi-receipt me-1"></i>Đã bao gồm VAT • Hỗ trợ xuất hóa đơn điện tử</div>
         </div>
 
-        <div class="pv-gift-box mb-4">
-          <span class="pv-gift-badge"><i class="bi bi-gift-fill me-1"></i>Ưu đãi đặc quyền khi đặt mua</span>
-          <ul class="mb-0 ps-3 small d-flex flex-column gap-1">
-            <li th:if="${laptop.discounted}" class="fw-semibold text-danger">
-              Giảm trực tiếp <span th:text="${#numbers.formatDecimal(laptop.discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}"></span> (đã áp dụng vào giá bán)
-            </li>
-            <li>01 Balo Laptop chính hãng chống sốc trị giá 900.000 ₫</li>
-            <li>Chuột không dây &amp; lót chuột cao cấp khi mua kèm Laptop</li>
-            <li>Miễn phí cài đặt phần mềm văn phòng &amp; vệ sinh máy trọn đời</li>
-          </ul>
+        <div class="row g-2 small mb-4">
+          <div class="col-6 col-sm-4"><div class="p-2 rounded-3 border" style="background: var(--surface-2);"><strong>CPU:</strong> <span th:text="${laptop.cpu ?: '-'}"></span></div></div>
+          <div class="col-6 col-sm-4"><div class="p-2 rounded-3 border" style="background: var(--surface-2);"><strong>RAM:</strong> <span th:text="${laptop.ram ?: '-'}"></span></div></div>
+          <div class="col-6 col-sm-4"><div class="p-2 rounded-3 border" style="background: var(--surface-2);"><strong>SSD:</strong> <span th:text="${laptop.storage ?: '-'}"></span></div></div>
+          <div class="col-6 col-sm-4"><div class="p-2 rounded-3 border" style="background: var(--surface-2);"><strong>GPU:</strong> <span th:text="${laptop.gpu ?: '-'}"></span></div></div>
+          <div class="col-6 col-sm-4"><div class="p-2 rounded-3 border" style="background: var(--surface-2);"><strong>Màn hình:</strong> <span th:text="${laptop.screenSize != null ? laptop.screenSize + ' inch' : '-'}"></span></div></div>
+          <div class="col-6 col-sm-4"><div class="p-2 rounded-3 border" style="background: var(--surface-2);"><strong>Tồn kho:</strong>
+            <span th:classappend="${laptop.stockQuantity > 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}"
+                  th:text="${laptop.stockQuantity > 0 ? laptop.stockQuantity + ' chiếc' : 'Hết hàng'}"></span>
+          </div></div>
         </div>
 
-        <form th:if="${laptop.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${laptop.id})}" method="post">
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <label class="fw-semibold mb-0">Số lượng:</label>
-            <div class="input-group" style="width: 136px;">
-              <button class="btn btn-outline-secondary" type="button" onclick="changeQty(-1)">-</button>
-              <input id="qtyInput" type="number" name="quantity" value="1" min="1" th:max="${laptop.stockQuantity}"
-                     class="form-control text-center fw-bold tabular-nums"/>
-              <button class="btn btn-outline-secondary" type="button" onclick="changeQty(1)">+</button>
-            </div>
-          </div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <form th:if="${laptop.stockQuantity > 0 and laptop.isActive}" th:action="@{/gio-hang/them/{id}(id=${laptop.id})}" method="post" class="d-flex flex-wrap gap-2 flex-grow-1">
+            <input type="number" name="quantity" value="1" min="1" th:max="${laptop.stockQuantity}"
+                   class="form-control text-center fw-bold" style="width: 82px;"/>
+            <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary px-4 py-2 flex-grow-1">
+              <i class="bi bi-lightning-fill me-1"></i><span th:text="#{btn.buy_now}">Mua ngay</span>
+            </button>
+            <button type="submit" class="btn btn-outline-primary rounded-3 px-4 py-2">
+              <i class="bi bi-cart-plus me-1"></i><span th:text="#{btn.add_to_cart}">Thêm vào giỏ</span>
+            </button>
+          </form>
 
-          <div class="row g-2">
-            <div class="col-sm-6">
-              <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary btn-lg w-100 py-3">
-                <i class="bi bi-lightning-fill me-1"></i>MUA NGAY
-              </button>
-            </div>
-            <div class="col-sm-6">
-              <button type="submit" name="buyNow" value="false" class="btn btn-pv-outline btn-lg w-100 py-3">
-                <i class="bi bi-cart-plus me-1"></i>THÊM VÀO GIỎ
-              </button>
-            </div>
+          <form th:action="@{/yeu-thich/toggle/{id}(id=${laptop.id})}" method="post">
+            <button type="submit" class="btn rounded-3 py-2 px-3"
+                    th:classappend="${inWishlist} ? 'btn-danger' : 'btn-outline-danger'">
+              <i class="bi" th:classappend="${inWishlist} ? 'bi-heart-fill' : 'bi-heart'"></i>
+            </button>
+          </form>
+          <form th:action="@{/so-sanh/them/{id}(id=${laptop.id})}" method="post">
+            <button type="submit" class="btn btn-outline-secondary rounded-3 py-2 px-3" title="So sánh cấu hình">
+              <i class="bi bi-columns-gap"></i>
+            </button>
+          </form>
+        </div>
+
+        <p class="small text-muted mb-0" th:if="${laptop.description != null}" th:text="${laptop.description}"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Customer Reviews -->
+  <section class="nx-filter-bar p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <h5 class="fw-bold mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Đánh giá từ khách hàng đã mua</h5>
+      <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2" th:text="${reviewCount + ' đánh giá được duyệt'}"></span>
+    </div>
+
+    <div th:if="${reviews.empty}" class="text-muted small py-3">Chưa có đánh giá nào được hiển thị cho mẫu máy này.</div>
+    <div class="d-flex flex-column gap-3 mb-4" th:if="${!reviews.empty}">
+      <div class="p-3 rounded-4 border" th:each="rv : ${reviews}">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div>
+            <strong th:text="${rv.customer.customerName}">Khách hàng</strong>
+            <span class="badge bg-success bg-opacity-10 text-success ms-2"><i class="bi bi-patch-check-fill me-1"></i>Đã mua tại NEXORA</span>
           </div>
-        </form>
-        <div th:unless="${laptop.stockQuantity > 0}" class="alert alert-warning rounded-3 mb-0">
-          <i class="bi bi-exclamation-triangle me-2"></i>Sản phẩm hiện đang tạm hết hàng. Vui lòng chọn mẫu laptop khác bên dưới.
+          <span class="text-warning fw-bold" th:text="${rv.rating} + '/5 ★'">5/5</span>
+        </div>
+        <div class="fw-semibold small" th:if="${rv.title != null}" th:text="${rv.title}"></div>
+        <p class="small mb-2" th:text="${rv.content}"></p>
+        <div class="p-2 rounded-3 small bg-primary bg-opacity-10" th:if="${rv.shopReply != null}">
+          <strong><i class="bi bi-shop me-1"></i>Phản hồi từ NEXORA:</strong> <span th:text="${rv.shopReply}"></span>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Technical Specs & Description Tabs -->
-  <div class="pro-card p-3 p-md-4 mb-4">
-    <ul class="nav nav-pills mb-3 gap-2" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active fw-semibold" data-bs-toggle="pill" data-bs-target="#tabSpecs" type="button">
-          <i class="bi bi-cpu me-1"></i>Thông số kỹ thuật
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link fw-semibold" data-bs-toggle="pill" data-bs-target="#tabDesc" type="button">
-          <i class="bi bi-file-text me-1"></i>Chi tiết sản phẩm
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content">
-      <div class="tab-pane fade show active" id="tabSpecs">
-        <div class="table-responsive">
-          <table class="table pro-table mb-0">
-            <tbody>
-              <tr><th class="text-muted" style="width: 30%;">Mã sản phẩm (SKU)</th><td><code th:text="${laptop.sku}"></code></td></tr>
-              <tr><th class="text-muted">Thương hiệu</th><td class="fw-semibold" th:text="${laptop.brandName}"></td></tr>
-              <tr><th class="text-muted">Danh mục</th><td th:text="${laptop.categoryName}"></td></tr>
-              <tr><th class="text-muted">CPU</th><td th:text="${laptop.cpu ?: '-'}"></td></tr>
-              <tr><th class="text-muted">RAM</th><td th:text="${laptop.ramGb != null ? laptop.ramGb + ' GB' : '-'}"></td></tr>
-              <tr><th class="text-muted">Lưu trữ</th><td th:text="${laptop.storage ?: '-'}"></td></tr>
-              <tr><th class="text-muted">Card đồ họa (GPU)</th><td th:text="${laptop.gpu ?: '-'}"></td></tr>
-              <tr><th class="text-muted">Kích thước màn hình</th><td th:text="${laptop.screenSize != null ? laptop.screenSize + ' inch' : '-'}"></td></tr>
-              <tr><th class="text-muted">Hệ điều hành</th><td th:text="${laptop.operatingSystem ?: '-'}"></td></tr>
-              <tr><th class="text-muted">Màu sắc</th><td th:text="${laptop.color ?: '-'}"></td></tr>
-            </tbody>
-          </table>
-        </div>
+    <form sec:authorize="isAuthenticated()" th:action="@{/san-pham/{id}/danh-gia(id=${laptop.id})}" method="post" class="border-top pt-3 row g-2">
+      <div class="col-12"><strong class="small">Gửi đánh giá của bạn (dành cho khách hàng đã hoàn thành đơn mua máy này):</strong></div>
+      <div class="col-sm-3">
+        <select name="rating" class="form-select form-select-sm">
+          <option value="5">5 Sao - Tuyệt vời</option>
+          <option value="4">4 Sao - Rất tốt</option>
+          <option value="3">3 Sao - Ổn</option>
+          <option value="2">2 Sao - Chưa hài lòng</option>
+          <option value="1">1 Sao - Kém</option>
+        </select>
       </div>
-      <div class="tab-pane fade" id="tabDesc">
-        <p class="mb-0 text-secondary" th:text="${laptop.description ?: 'Sản phẩm chính hãng, bảo hành theo tiêu chuẩn nhà sản xuất.'}"></p>
+      <div class="col-sm-4"><input type="text" name="title" class="form-control form-control-sm" placeholder="Tiêu đề ngắn (tùy chọn)"/></div>
+      <div class="col-sm-5 d-flex gap-2">
+        <input type="text" name="content" class="form-control form-control-sm" placeholder="Chia sẻ trải nghiệm thực tế..." required/>
+        <button type="submit" class="btn btn-pv-primary btn-sm px-3">Gửi</button>
       </div>
-    </div>
-  </div>
+    </form>
+  </section>
 
   <!-- Related Products -->
-  <div th:if="${!#lists.isEmpty(relatedLaptops)}">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="h5 fw-bold mb-0"><i class="bi bi-stars text-primary me-2"></i>Sản phẩm liên quan</h2>
-      <a th:href="@{/(categoryId=${laptop.category.id})}" class="small fw-semibold text-decoration-none">Xem tất cả &rsaquo;</a>
-    </div>
+  <section th:if="${relatedLaptops != null and !relatedLaptops.isEmpty()}" class="mb-5">
+    <h5 class="fw-bold mb-3"><i class="bi bi-grid-fill text-primary me-2"></i>Sản phẩm tương tự</h5>
     <div class="row g-3">
       <div class="col-6 col-md-3" th:each="rel : ${relatedLaptops}">
-        <div class="pv-card h-100 d-flex flex-column">
-          <a th:href="@{/san-pham/{id}(id=${rel.id})}" class="pv-img-wrap text-decoration-none">
+        <div class="nx-card p-3">
+          <a th:href="@{/san-pham/{id}(id=${rel.id})}" class="nx-thumb-box rounded-3 mb-2">
             <img th:src="${rel.displayImageUrl}" th:alt="${rel.name}"/>
-            <span class="pv-promo-badge is-deal" th:if="${rel.discounted}">
-              TIẾT KIỆM <span th:text="${#numbers.formatDecimal(rel.discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}"></span>
-            </span>
           </a>
-          <div class="p-3 d-flex flex-column flex-grow-1">
-            <div class="text-uppercase fw-bold mb-1" style="font-size: 0.7rem; color: var(--brand-slate-500);" th:text="${rel.brandName}"></div>
-            <a th:href="@{/san-pham/{id}(id=${rel.id})}" class="pv-card-title mb-2" th:text="${rel.name}"></a>
-            <div class="mb-2">
-              <span class="pv-spec-tag" th:if="${rel.ramGb != null}" th:text="${rel.ramGb + 'GB'}"></span>
-              <span class="pv-spec-tag" th:if="${rel.storageGb != null}" th:text="${rel.storage}"></span>
-            </div>
-            <div class="mt-auto">
-              <div class="d-flex align-items-center gap-2 mb-1" th:if="${rel.discounted}">
-                <span class="pv-old-price" th:text="${#numbers.formatDecimal(rel.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-                <span class="pv-discount-tag" th:text="${'-' + rel.discountPercent + '%'}"></span>
-              </div>
-              <div class="pv-price fs-6 mb-2"
-                   th:text="${#numbers.formatDecimal(rel.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
-              <form th:if="${rel.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${rel.id})}" method="post">
-                <button type="submit" class="btn btn-pv-outline btn-sm w-100">Thêm vào giỏ</button>
-              </form>
-            </div>
-          </div>
+          <a th:href="@{/san-pham/{id}(id=${rel.id})}" class="fw-bold small text-reset text-truncate d-block mb-1" th:text="${rel.name}"></a>
+          <div class="nx-price-now fs-6 tabular-nums" th:text="${#numbers.formatDecimal(rel.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </main>
 
+<!-- Mobile Sticky Buy Bar -->
+<div class="nx-mobile-sticky-buy d-md-none" th:if="${laptop.stockQuantity > 0 and laptop.isActive}">
+  <div>
+    <div class="small text-muted">Giá bán</div>
+    <div class="fw-bold text-primary" th:text="${#numbers.formatDecimal(laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+  </div>
+  <form th:action="@{/gio-hang/them/{id}(id=${laptop.id})}" method="post">
+    <input type="hidden" name="quantity" value="1"/>
+    <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary px-4">Mua ngay</button>
+  </form>
+</div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  var currentThumbIdx = 0;
-  function selectThumb(el) {
-    var items = document.querySelectorAll('.pv-thumb-item');
-    items.forEach(function(i) { i.classList.remove('active'); });
-    el.classList.add('active');
-    currentThumbIdx = parseInt(el.getAttribute('data-idx') || '0', 10);
-    document.getElementById('mainProductImg').src = el.getAttribute('data-img');
-  }
-  function shiftThumb(delta) {
-    var items = document.querySelectorAll('.pv-thumb-item');
-    if (!items.length) return;
-    currentThumbIdx = (currentThumbIdx + delta + items.length) % items.length;
-    selectThumb(items[currentThumbIdx]);
-  }
-  function changeQty(delta) {
-    var input = document.getElementById('qtyInput');
-    var max = parseInt(input.getAttribute('max') || '99', 10);
-    var val = parseInt(input.value || '1', 10) + delta;
-    if (val < 1) val = 1;
-    if (val > max) val = max;
-    input.value = val;
-  }
-</script>
+<th:block th:replace="~{fragments/scripts :: commonScripts}"/>
 </body>
 </html>

@@ -6,9 +6,11 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title th:text="'Báo cáo doanh thu năm ' + ${year} + ' - ' + ${shop.name}">Báo cáo doanh thu</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <link rel="stylesheet" th:href="@{/vendor/bootstrap-icons/bootstrap-icons.min.css}"
+        onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css';"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/laptop-default.svg}"/>
+  <script th:src="@{/vendor/html2pdf/html2pdf.bundle.min.js}" defer
+          onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';"></script>
   <style>
     :root { --ink: #0F172A; --muted: #475569; --line: #CBD5E1; --brand: #1D4ED8; --soft: #F1F5F9; }
     * { box-sizing: border-box; }
@@ -38,15 +40,11 @@
     }
     @keyframes sheetIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
     .sheet::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #2563EB, #6D28D9, #06B6D4); }
-    .watermark {
-      position: absolute; top: 48%; left: 50%; width: 120mm; height: 120mm; transform: translate(-50%, -50%) rotate(-14deg);
-      opacity: .045; pointer-events: none; background: url('/images/brand/nexora-mark.svg') center/contain no-repeat; z-index: 0;
-    }
-    .sheet > *:not(.watermark) { position: relative; z-index: 1; }
+    .sheet > * { position: relative; z-index: 1; }
 
     .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
     .brand { display: flex; align-items: center; gap: 12px; }
-    .brand img { width: 52px; height: 52px; }
+    .brand-mark { width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg,#2563EB,#06B6D4); color:#fff; display:flex; align-items:center; justify-content:center; font: 800 18px 'Inter', Arial, sans-serif; }
     .brand .name { font: 800 21px 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif; letter-spacing: .05em; }
     .brand .name em { font-style: normal; color: #6D28D9; }
     .brand .sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
@@ -105,9 +103,12 @@
 <body>
 
 <div class="toolbar no-print">
-  <div class="title"><i class="bi bi-file-earmark-bar-graph"></i>Xuất báo cáo doanh thu</div>
+  <div class="title">
+    <i class="bi bi-file-earmark-bar-graph"></i>
+    <span>Báo cáo doanh thu năm <strong th:text="${year}">2026</strong></span>
+  </div>
   <div class="actions">
-    <label for="yearSelect" style="font-size:13px;">Năm:</label>
+    <label for="yearSelect" style="font-size:13px;color:#CBD5E1;">Năm:</label>
     <select id="yearSelect" onchange="window.location.href='?year=' + this.value">
       <option th:each="y : ${years}" th:value="${y}" th:text="${y}" th:selected="${y == year}">2026</option>
     </select>
@@ -119,12 +120,9 @@
 </div>
 
 <div class="sheet" id="reportSheet">
-  <div class="watermark"></div>
-
-  <!-- Đầu trang: cửa hàng + thông tin xuất -->
   <div class="head">
     <div class="brand">
-      <img th:src="@{/images/brand/nexora-mark.svg}" alt="Logo"/>
+      <div class="brand-mark">NX</div>
       <div>
         <div class="name">NEX<em>ORA</em> <span style="font-size:13px;letter-spacing:.12em;color:#475569;">LAPTOP</span></div>
         <div class="sub" th:text="${shop.address}">Địa chỉ</div>
@@ -146,7 +144,6 @@
     <div class="period" th:text="'Kỳ báo cáo: 01/01/' + ${year} + ' - 31/12/' + ${year}">Kỳ báo cáo</div>
   </div>
 
-  <!-- I. Tổng quan -->
   <h2>I. Tổng quan kết quả kinh doanh</h2>
   <div class="kpis keep">
     <div class="kpi"><div class="l">Doanh thu</div>
@@ -164,7 +161,6 @@
       <div class="s">Doanh thu trừ chi phí nhập kho</div></div>
   </div>
 
-  <!-- II. Theo tháng -->
   <h2>II. Doanh thu và chi phí nhập kho theo tháng</h2>
   <table class="data keep">
     <thead>
@@ -195,7 +191,6 @@
     </tfoot>
   </table>
 
-  <!-- III + IV -->
   <div class="two">
     <div class="keep">
       <h2>III. Đơn hàng theo trạng thái</h2>
@@ -211,7 +206,7 @@
       </table>
     </div>
     <div class="keep">
-      <h2>IV. Sản phẩm sắp hết hàng (≤ 5)</h2>
+      <h2>IV. Sản phẩm sắp hết hàng (&le; 5)</h2>
       <table class="data">
         <thead><tr><th>Sản phẩm</th><th style="width:22%">Tồn kho</th></tr></thead>
         <tbody>
@@ -225,7 +220,6 @@
     </div>
   </div>
 
-  <!-- V -->
   <h2>V. Top 5 laptop bán chạy nhất</h2>
   <table class="data keep">
     <thead><tr><th style="width:6%">STT</th><th style="width:16%">Mã SKU</th><th>Tên sản phẩm</th><th style="width:12%">SL bán</th><th style="width:22%">Doanh thu (₫)</th></tr></thead>

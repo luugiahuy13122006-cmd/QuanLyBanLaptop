@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Phiếu nhập kho - Nexora Admin</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
-</head>
+<head th:replace="~{fragments/head :: commonHead('Quản lý Phiếu nhập kho')}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -55,7 +44,7 @@
               <thead>
                 <tr>
                   <th>ID</th><th>Mã phiếu</th><th>Nhà cung cấp</th><th>Người lập</th>
-                  <th>Ngày lập</th><th class="text-end">Tổng tiền</th><th class="text-center">Trạng thái</th><th class="text-center">Chi tiết</th>
+                  <th>Ngày lập</th><th class="text-end">Tổng tiền</th><th>Công nợ</th><th class="text-center">Trạng thái</th><th class="text-center">Chi tiết</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,6 +55,11 @@
                   <td th:text="${r.createdBy != null ? r.createdBy.fullName : '-'}"></td>
                   <td class="small text-muted tabular-nums" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                   <td class="text-end pv-price tabular-nums text-nowrap" th:text="${#numbers.formatDecimal(r.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                  <td>
+                    <span class="badge-soft"
+                          th:classappend="${r.payableStatus == 'PAID' ? 'badge-soft-success' : (r.payableStatus == 'PARTIAL' ? 'badge-soft-warning' : 'badge-soft-slate')}"
+                          th:text="${r.payableStatus ?: 'UNPAID'}"></span>
+                  </td>
                   <td class="text-center">
                     <span class="badge-soft"
                           th:classappend="${r.status.name() == 'APPROVED' ? 'badge-soft-success' : (r.status.name() == 'REJECTED' ? 'badge-soft-danger' : 'badge-soft-warning')}"
@@ -76,25 +70,18 @@
                   </td>
                 </tr>
                 <tr th:if="${receiptPage.empty}">
-                  <td colspan="8" class="text-center text-muted py-5">Chưa có phiếu nhập kho nào.</td>
+                  <td colspan="9" class="text-center text-muted py-5">Chưa có phiếu nhập kho nào.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <nav th:if="${receiptPage.totalPages > 1}" class="mt-4">
-          <ul class="pagination pro-pagination justify-content-center">
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, receiptPage.totalPages - 1)}"
-                th:classappend="${i == receiptPage.number} ? 'active'">
-              <a class="page-link" th:href="@{/admin/import-receipts(page=${i}, status=${selectedStatus}, keyword=${keyword})}" th:text="${i + 1}"></a>
-            </li>
-          </ul>
-        </nav>
+        <nav th:replace="~{fragments/ui :: paginationBar(${receiptPage}, '/admin/import-receipts')}"></nav>
       </div>
     </main>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
 </body>
 </html>

@@ -8,6 +8,7 @@ import com.laptopshop.entity.Laptop;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface StatisticsService {
     BigDecimal getTotalRevenue();
@@ -17,4 +18,12 @@ public interface StatisticsService {
     List<Laptop> getLowStockLaptops(int threshold);
     BigDecimal getTotalImportCost();
     List<MonthlyImportCostDTO> getMonthlyImportCost(int year);
+
+    BigDecimal getRevenueToday();
+    BigDecimal getRevenueThisWeek();
+    BigDecimal getRevenueThisMonth();
+    BigDecimal getTotalGrossProfit();
+    double getCancellationRatePercent();
+    BigDecimal getAverageOrderValue();
+    List<Map<String, Object>> getStaffPerformance();
 }

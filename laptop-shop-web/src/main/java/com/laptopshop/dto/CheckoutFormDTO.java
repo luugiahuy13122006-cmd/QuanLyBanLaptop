@@ -34,6 +34,11 @@ public class CheckoutFormDTO {
     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
     private String note;
 
+    @Size(max = 30, message = "Mã giảm giá tối đa 30 ký tự")
+    private String couponCode;
+
+    private String deliveryMethod = "DELIVERY";
+
     public String getRecipientName() { return recipientName; }
     public void setRecipientName(String recipientName) { this.recipientName = recipientName; }
     public String getRecipientPhone() { return recipientPhone; }
@@ -46,4 +51,8 @@ public class CheckoutFormDTO {
     public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+    public String getDeliveryMethod() { return deliveryMethod; }
+    public void setDeliveryMethod(String deliveryMethod) { this.deliveryMethod = deliveryMethod; }
 }

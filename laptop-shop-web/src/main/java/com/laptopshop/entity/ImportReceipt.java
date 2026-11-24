@@ -31,6 +31,16 @@ public class ImportReceipt {
     @Column(name = "TongTien", nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "MaNhaCungCap")
+    private Supplier supplierEntity;
+
+    @Column(name = "DaThanhToan", nullable = false, precision = 18, scale = 2)
+    private BigDecimal paidAmount = BigDecimal.ZERO;
+
+    @Column(name = "TrangThaiCongNo", nullable = false, length = 20)
+    private String payableStatus = "UNPAID";
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "NguoiTao", nullable = false)
     private Account createdBy;
@@ -51,7 +61,21 @@ public class ImportReceipt {
     @OneToMany(mappedBy = "receipt", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ImportReceiptDetail> details = new ArrayList<>();
 
+    @Version
+    @Column(name = "PhienBan", nullable = false)
+    private Integer version = 0;
+
     public ImportReceipt() {}
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) this.createdAt = LocalDateTime.now();
+        if (this.status == null) this.status = ImportReceiptStatus.PENDING;
+        if (this.totalAmount == null) this.totalAmount = BigDecimal.ZERO;
+        if (this.paidAmount == null) this.paidAmount = BigDecimal.ZERO;
+        if (this.payableStatus == null) this.payableStatus = "UNPAID";
+        if (this.version == null) this.version = 0;
+    }
 
     public void addDetail(ImportReceiptDetail detail) {
         details.add(detail);
@@ -88,4 +112,12 @@ public class ImportReceipt {
     public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
     public List<ImportReceiptDetail> getDetails() { return details; }
     public void setDetails(List<ImportReceiptDetail> details) { this.details = details; }
+    public Supplier getSupplierEntity() { return supplierEntity; }
+    public void setSupplierEntity(Supplier supplierEntity) { this.supplierEntity = supplierEntity; }
+    public BigDecimal getPaidAmount() { return paidAmount; }
+    public void setPaidAmount(BigDecimal paidAmount) { this.paidAmount = paidAmount; }
+    public String getPayableStatus() { return payableStatus; }
+    public void setPayableStatus(String payableStatus) { this.payableStatus = payableStatus; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 }

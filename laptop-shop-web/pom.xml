@@ -72,6 +72,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- JavaMail (Email thông báo đơn hàng / đặt lại mật khẩu) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- H2 Database cho JUnit Test tự động không cần SQL Server -->
         <dependency>
             <groupId>com.h2database</groupId>

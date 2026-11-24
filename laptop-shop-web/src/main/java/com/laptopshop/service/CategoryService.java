@@ -6,6 +6,7 @@ import com.laptopshop.entity.Category;
 import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
 import com.laptopshop.repository.CategoryRepository;
+import com.laptopshop.util.PaginationUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,7 +35,7 @@ public class CategoryService {
             default -> "name";
         };
         Sort sort = "desc".equalsIgnoreCase(direction) ? Sort.by(sortField).descending() : Sort.by(sortField).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = PageRequest.of(PaginationUtils.clampPage(page), PaginationUtils.clampSize(size, 10, 100), sort);
         return repo.searchByKeyword(keyword == null ? "" : keyword.trim(), pageable);
     }
 

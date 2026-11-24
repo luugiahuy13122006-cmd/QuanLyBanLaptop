@@ -23,4 +23,13 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Intege
            "GROUP BY d.laptop.id, d.skuSnapshot, d.laptopNameSnapshot, d.laptop.brand.name " +
            "ORDER BY SUM(d.quantity) DESC")
     List<TopSellingLaptopDTO> findTopSellingLaptops(Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(d.costPriceSnapshot * d.quantity), 0) FROM OrderDetail d " +
+           "WHERE (d.order.status = com.laptopshop.entity.OrderStatus.COMPLETED " +
+           "   OR EXISTS (SELECT p FROM Payment p WHERE p.order = d.order AND p.paymentStatus = com.laptopshop.entity.PaymentStatus.PAID)) " +
+           "AND d.order.status <> com.laptopshop.entity.OrderStatus.CANCELLED " +
+           "AND d.order.status <> com.laptopshop.entity.OrderStatus.RETURNED " +
+           "AND d.order.status <> com.laptopshop.entity.OrderStatus.REFUND_REQUESTED " +
+           "AND d.order.status <> com.laptopshop.entity.OrderStatus.REFUNDED")
+    java.math.BigDecimal calculateTotalCogs();
 }

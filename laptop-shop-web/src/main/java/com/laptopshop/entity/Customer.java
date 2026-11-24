@@ -1,6 +1,7 @@
 package com.laptopshop.entity;
 
 // Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang
+import com.laptopshop.util.VietnameseTextNormalizer;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -31,6 +32,13 @@ public class Customer {
     @Column(name = "NgayTao", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "TenKhongDau", length = 150)
+    private String nameAscii;
+
+    @Version
+    @Column(name = "PhienBan", nullable = false)
+    private Integer version = 0;
+
     public Customer() {
     }
 
@@ -54,6 +62,17 @@ public class Customer {
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) this.createdAt = LocalDateTime.now();
+        if (this.version == null) this.version = 0;
+        refreshAscii();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        refreshAscii();
+    }
+
+    private void refreshAscii() {
+        this.nameAscii = VietnameseTextNormalizer.normalizeTruncated(this.customerName, 150);
     }
 
     public Integer getId() { return id; }
@@ -80,4 +99,10 @@ public class Customer {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getNameAscii() { return nameAscii; }
+    public void setNameAscii(String nameAscii) { this.nameAscii = nameAscii; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 }

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="'Hóa đơn ' + ${order.orderCode} + ' - ' + (${shopProperties?.shop?.name ?: 'NEXORA LAPTOP'})">Hóa đơn bán hàng</title>
+  <link rel="stylesheet" th:href="@{/vendor/bootstrap-icons/bootstrap-icons.min.css}"
+        onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css';"/>
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/laptop-default.svg}"/>
+  <script th:src="@{/vendor/html2pdf/html2pdf.bundle.min.js}" defer
+          onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';"></script>
+  <style>
+    :root { --ink: #0f172a; --muted: #475569; --line: #cbd5e1; --brand: #2563eb; --soft: #f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e2e8f0; color: var(--ink); font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 13px; line-height: 1.5; }
+    .toolbar {
+      position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: #0b1120; color: #fff; box-shadow: 0 6px 18px rgba(15, 23, 42, .3);
+    }
+    .tbtn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border: 0; border-radius: 10px; cursor: pointer;
+      font: 600 13px inherit; color: #fff; text-decoration: none;
+    }
+    .tbtn-print { background: linear-gradient(135deg, #2563eb, #4f46e5); }
+    .tbtn-pdf { background: linear-gradient(135deg, #dc2626, #ea580c); }
+    .tbtn-back { background: #334155; }
+    .invoice-sheet {
+      width: 196mm; margin: 24px auto 40px; padding: 14mm 12mm; background: #fff;
+      box-shadow: 0 18px 46px -12px rgba(15, 23, 42, .32); border-top: 6px solid var(--brand);
+    }
+    .inv-head { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+    .inv-brand { display: flex; gap: 12px; align-items: center; }
+    .inv-logo { width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #06b6d4); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; }
+    .inv-title { text-align: center; margin: 16px 0; }
+    .inv-title h1 { margin: 0; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; }
+    .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .inv-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--soft); }
+    table.items { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-bottom: 14px; }
+    table.items th, table.items td { border: 1px solid var(--line); padding: 7px 9px; }
+    table.items thead th { background: #e2e8f0; font-size: 11.5px; text-transform: uppercase; }
+    .num { text-align: right; } .ctr { text-align: center; }
+    .inv-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center; margin-top: 28px; }
+    .inv-sign .space { height: 22mm; }
+    @page { size: A4; margin: 10mm; }
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      .invoice-sheet { width: auto; margin: 0; padding: 0; box-shadow: none; border-top: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="toolbar no-print">
+  <div class="fw-bold"><i class="bi bi-receipt me-2"></i>Hóa đơn bán hàng &amp; Phiếu giao nhận — <span th:text="${order.orderCode}"></span></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button type="button" class="tbtn tbtn-print" onclick="window.print()"><i class="bi bi-printer"></i>In hóa đơn</button>
+    <button type="button" class="tbtn tbtn-pdf" id="btnInvoicePdf"><i class="bi bi-file-earmark-pdf"></i>Tải file PDF</button>
+    <a class="tbtn tbtn-back" href="javascript:history.back()"><i class="bi bi-arrow-left"></i>Quay lại</a>
+  </div>
+</div>
+
+<div class="invoice-sheet" id="invoiceSheet">
+  <div class="inv-head">
+    <div class="inv-brand">
+      <div class="inv-logo">NX</div>
+      <div>
+        <div style="font-size:18px;font-weight:800;" th:text="${shopProperties?.shop?.name ?: 'NEXORA LAPTOP'}">NEXORA LAPTOP</div>
+        <div style="color:#475569;font-size:12px;" th:text="${shopProperties?.shop?.address ?: 'Quận 1, TP. Hồ Chí Minh'}">Địa chỉ</div>
+        <div style="color:#475569;font-size:12px;">
+          Hotline: <strong th:text="${shopProperties?.shop?.phone ?: '0901 234 567'}">0901 234 567</strong> ·
+          Email: <span th:text="${shopProperties?.shop?.email ?: 'cskh@nexoralaptop.vn'}">cskh@nexoralaptop.vn</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:12px;">
+      <div>Số hóa đơn: <strong th:text="${order.orderCode}">HD</strong></div>
+      <div>Ngày lập: <strong th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></strong></div>
+      <div>Trạng thái: <strong th:text="${order.orderStatus.displayName}"></strong></div>
+    </div>
+  </div>
+
+  <div class="inv-title">
+    <h1>HÓA ĐƠN BÁN HÀNG &amp; PHIẾU BẢO HÀNH</h1>
+    <div style="color:#475569;font-size:12px;">Kiêm phiếu xuất kho giao hàng chính hãng NEXORA LAPTOP</div>
+  </div>
+
+  <div class="inv-grid">
+    <div class="inv-box">
+      <div style="font-weight:700;margin-bottom:4px;text-transform:uppercase;font-size:11.5px;color:#2563eb;">Thông tin khách hàng / Người nhận</div>
+      <div>Họ tên: <strong th:text="${order.recipientName}"></strong></div>
+      <div>Điện thoại: <strong th:text="${order.recipientPhone}"></strong></div>
+      <div>Địa chỉ: <span th:text="${order.deliveryAddress}"></span></div>
+    </div>
+    <div class="inv-box">
+      <div style="font-weight:700;margin-bottom:4px;text-transform:uppercase;font-size:11.5px;color:#2563eb;">Thanh toán &amp; Vận chuyển</div>
+      <div>Hình thức: <strong th:text="${payment != null ? payment.paymentMethod.displayName : order.paymentMethod.displayName}"></strong></div>
+      <div>Trạng thái TT: <strong th:text="${payment != null ? payment.paymentStatus.displayName : order.paymentStatus.displayName}"></strong></div>
+      <div th:if="${order.carrierName != null or order.trackingCode != null}">
+        Vận đơn: <strong th:text="${(order.carrierName ?: '') + ' ' + (order.trackingCode ?: '')}"></strong>
+      </div>
+    </div>
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr><th style="width:6%">STT</th><th style="width:15%">SKU</th><th>Tên sản phẩm</th><th style="width:16%">Đơn giá</th><th style="width:8%">SL</th><th style="width:19%">Thành tiền</th></tr>
+    </thead>
+    <tbody>
+      <tr th:each="d, st : ${order.orderDetails}">
+        <td class="ctr" th:text="${st.count}">1</td>
+        <td><code th:text="${d.skuSnapshot}"></code></td>
+        <td>
+          <div style="font-weight:600;" th:text="${d.laptopNameSnapshot}"></div>
+          <small style="color:#64748b;">Bảo hành chính hãng 12–24 tháng (tra cứu theo Serial tại /bao-hanh)</small>
+        </td>
+        <td class="num" th:text="${#numbers.formatDecimal(d.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+        <td class="ctr" th:text="${d.quantity}"></td>
+        <td class="num" style="font-weight:700;" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr><td colspan="5" class="num">Tạm tính</td><td class="num" th:text="${#numbers.formatDecimal(order.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td></tr>
+      <tr><td colspan="5" class="num">Giảm giá <span th:if="${order.couponCode != null}" th:text="'(' + ${order.couponCode} + ')'"></span></td>
+          <td class="num" th:text="'-' + ${#numbers.formatDecimal(order.discount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td></tr>
+      <tr><td colspan="5" class="num">Phí vận chuyển</td>
+          <td class="num" th:text="${order.shippingFee != null and order.shippingFee.signum() > 0 ? #numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Miễn phí (0 ₫)'}"></td></tr>
+      <tr><td colspan="5" class="num" style="font-weight:800;font-size:14px;">TỔNG THANH TOÁN</td>
+          <td class="num" style="font-weight:800;font-size:15px;color:#1d4ed8;" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td></tr>
+    </tfoot>
+  </table>
+
+  <div style="font-size:11.5px;color:#475569;border:1px dashed #cbd5e1;border-radius:6px;padding:8px 10px;">
+    <strong>Lưu ý:</strong> Quý khách vui lòng kiểm tra nguyên seal/cấu hình máy khi nhận hàng. Tra cứu trạng thái bảo hành điện tử theo số Serial tại website cửa hàng.
+  </div>
+
+  <div class="inv-sign">
+    <div>
+      <strong>Khách hàng / Người nhận hàng</strong>
+      <div style="font-size:11px;color:#64748b;">(Ký, ghi rõ họ tên)</div>
+      <div class="space"></div>
+      <div th:text="${order.recipientName}"></div>
+    </div>
+    <div>
+      <strong>Đại diện NEXORA LAPTOP</strong>
+      <div style="font-size:11px;color:#64748b;">(Ký, đóng dấu xác nhận)</div>
+      <div class="space"></div>
+      <div>Cửa hàng Laptop Chính Hãng</div>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  document.getElementById('btnInvoicePdf')?.addEventListener('click', function () {
+    const el = document.getElementById('invoiceSheet');
+    const code = /*[[${order.orderCode}]]*/ 'HD';
+    if (!window.html2pdf) { window.print(); return; }
+    window.html2pdf().set({
+      margin: [6, 6, 6, 6],
+      filename: 'HoaDon_' + code + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(el).save();
+  });
+</script>
+</body>
+</html>

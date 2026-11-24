@@ -9,6 +9,7 @@ import com.laptopshop.dto.AccountDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.entity.Role;
 import com.laptopshop.service.AccountService;
+import com.laptopshop.util.PaginationUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -70,7 +71,8 @@ public class AccountController {
                 ? Sort.by(sortField).descending()
                 : Sort.by(sortField).ascending();
 
-        Page<Account> accountPage = accountService.getAccounts(keyword, roleId, PageRequest.of(page, size, sort));
+        Page<Account> accountPage = accountService.getAccounts(keyword, roleId,
+                PageRequest.of(PaginationUtils.clampPage(page), PaginationUtils.clampSize(size, 8, 100), sort));
         model.addAttribute("accountPage", accountPage);
         model.addAttribute("roles", accountService.getAllRoles());
         model.addAttribute("keyword", keyword);

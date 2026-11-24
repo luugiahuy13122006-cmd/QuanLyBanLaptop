@@ -13,6 +13,7 @@ import com.laptopshop.repository.LaptopRepository;
 import com.laptopshop.service.CustomerService;
 import com.laptopshop.service.FileStorageService;
 import com.laptopshop.service.OrderService;
+import com.laptopshop.util.PaginationUtils;
 import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -70,7 +72,8 @@ public class OrderController {
         Sort sort = "asc".equalsIgnoreCase(direction)
                 ? Sort.by(sortField).ascending()
                 : Sort.by(sortField).descending();
-        Page<Order> orderPage = orderService.getOrders(status, keyword, PageRequest.of(page, size, sort));
+        Page<Order> orderPage = orderService.getOrders(status, keyword,
+                PageRequest.of(PaginationUtils.clampPage(page), PaginationUtils.clampSize(size, 8, 100), sort));
         model.addAttribute("orderPage", orderPage);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("keyword", keyword);
@@ -200,6 +203,32 @@ public class OrderController {
         return "redirect:/admin/orders/" + id;
     }
 
+    @PostMapping("/admin/orders/{id}/tracking")
+    public String updateTracking(
+            @PathVariable Integer id,
+            @RequestParam(required = false) String carrierName,
+            @RequestParam(required = false) String trackingCode,
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            RedirectAttributes ra) {
+        try {
+            Integer actorId = currentUser != null ? currentUser.getAccountId() : null;
+            orderService.updateShippingInfo(id, carrierName, trackingCode, actorId);
+            ra.addFlashAttribute("successMessage", "Cập nhật thông tin vận chuyển & mã vận đơn thành công.");
+        } catch (Exception ex) {
+            ra.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/orders/" + id;
+    }
+
+    @GetMapping("/admin/orders/{id}/invoice")
+    public String printAdminInvoice(@PathVariable Integer id, Model model) {
+        Order order = orderService.getOrderById(id);
+        model.addAttribute("order", order);
+        model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
+        model.addAttribute("shopProperties", shopProperties);
+        return "admin/orders/invoice";
+    }
+
     @GetMapping("/admin/orders/pending-proofs")
     public String listPendingProofs(Model model) {
         model.addAttribute("pendingPayments", orderService.getPaymentsAwaitingConfirmation());
@@ -219,13 +248,50 @@ public class OrderController {
     // ==================== CUSTOMER ====================
 
     @GetMapping("/don-hang-cua-toi")
-    public String myOrders(@AuthenticationPrincipal CustomUserDetails currentUser, Model model) {
+    public String myOrders(@RequestParam(required = false) String keyword,
+                           @RequestParam(required = false) OrderStatus status,
+                           @RequestParam(defaultValue = "0") int page,
+                           @AuthenticationPrincipal CustomUserDetails currentUser,
+                           Model model) {
         if (currentUser == null) return "redirect:/login";
-        List<Order> orders = orderService.getOrdersByCustomerId(
+        List<Order> all = orderService.getOrdersByCustomerId(
                 currentUser.getCustomerId() != null ? currentUser.getCustomerId() : -1);
-        model.addAttribute("orders", orders);
+        List<Order> filtered = all.stream().filter(o -> {
+            if (status != null && o.getStatus() != status) return false;
+            if (keyword != null && !keyword.isBlank()) {
+                String kw = keyword.trim().toLowerCase();
+                return o.getOrderCode().toLowerCase().contains(kw);
+            }
+            return true;
+        }).toList();
+        int safePage = PaginationUtils.clampPage(page);
+        int pageSize = 8;
+        int start = Math.min(safePage * pageSize, filtered.size());
+        int end = Math.min(start + pageSize, filtered.size());
+        List<Order> pageContent = filtered.subList(start, end);
+        int totalPages = Math.max(1, (int) Math.ceil((double) filtered.size() / pageSize));
+        model.addAttribute("orders", pageContent);
+        model.addAttribute("allOrderCount", all.size());
+        model.addAttribute("filteredCount", filtered.size());
+        model.addAttribute("currentPage", safePage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("statuses", OrderStatus.values());
         model.addAttribute("shopProperties", shopProperties);
         return "customer/my-orders";
+    }
+
+    @GetMapping("/don-hang-cua-toi/{id}/hoa-don")
+    public String printCustomerInvoice(@PathVariable Integer id,
+                                       @AuthenticationPrincipal CustomUserDetails currentUser,
+                                       Model model) {
+        if (currentUser == null) return "redirect:/login";
+        Order order = orderService.getOrderForCustomer(id, currentUser.getAccountId());
+        model.addAttribute("order", order);
+        model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
+        model.addAttribute("shopProperties", shopProperties);
+        return "admin/orders/invoice";
     }
 
     @GetMapping("/don-hang-cua-toi/{id}")
@@ -314,10 +380,13 @@ public class OrderController {
     // ==================== API ====================
 
     @PostMapping("/orders/place")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @ResponseBody
-    public ResponseEntity<?> placeOrderApi(@Valid @RequestBody PlaceOrderRequest request) {
+    public ResponseEntity<?> placeOrderApi(@Valid @RequestBody PlaceOrderRequest request,
+                                           @AuthenticationPrincipal CustomUserDetails currentUser) {
         try {
-            Order order = orderService.placeOrder(request);
+            Integer actorId = currentUser != null ? currentUser.getAccountId() : null;
+            Order order = orderService.placeOrder(request, actorId);
             return ResponseEntity.ok(Map.of(
                     "status", "SUCCESS",
                     "orderId", order.getId(),

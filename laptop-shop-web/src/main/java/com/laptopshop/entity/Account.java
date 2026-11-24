@@ -38,6 +38,19 @@ public class Account {
     @Column(name = "NgayTao", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "SoLanDangNhapSai", nullable = false)
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "KhoaDenLuc")
+    private LocalDateTime lockedUntil;
+
+    @Column(name = "BatBuocDoiMatKhau", nullable = false)
+    private Boolean mustChangePassword = false;
+
+    @Version
+    @Column(name = "PhienBan", nullable = false)
+    private Integer version = 0;
+
     public Account() {
     }
 
@@ -45,6 +58,9 @@ public class Account {
     protected void onCreate() {
         if (this.createdAt == null) this.createdAt = LocalDateTime.now();
         if (this.isActive == null) this.isActive = true;
+        if (this.failedLoginAttempts == null) this.failedLoginAttempts = 0;
+        if (this.mustChangePassword == null) this.mustChangePassword = false;
+        if (this.version == null) this.version = 0;
     }
 
     public Integer getId() { return id; }
@@ -73,4 +89,16 @@ public class Account {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Integer getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) { this.failedLoginAttempts = failedLoginAttempts; }
+
+    public LocalDateTime getLockedUntil() { return lockedUntil; }
+    public void setLockedUntil(LocalDateTime lockedUntil) { this.lockedUntil = lockedUntil; }
+
+    public Boolean getMustChangePassword() { return mustChangePassword; }
+    public void setMustChangePassword(Boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 }

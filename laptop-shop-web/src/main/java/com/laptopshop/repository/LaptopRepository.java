@@ -27,6 +27,7 @@ public interface LaptopRepository extends JpaRepository<Laptop, Integer> {
     @EntityGraph(attributePaths = {"category", "brand"})
     @Query("SELECT l FROM Laptop l " +
            "WHERE (:keyword IS NULL OR :keyword = '' OR LOWER(l.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "       OR LOWER(COALESCE(l.nameAscii, '')) LIKE LOWER(CONCAT('%', :asciiKeyword, '%')) " +
            "       OR LOWER(l.sku) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "       OR LOWER(l.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "       OR LOWER(l.cpu) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
@@ -36,6 +37,7 @@ public interface LaptopRepository extends JpaRepository<Laptop, Integer> {
            "AND (:maxPrice IS NULL OR l.salePrice <= :maxPrice)")
     Page<Laptop> filterLaptops(
             @Param("keyword") String keyword,
+            @Param("asciiKeyword") String asciiKeyword,
             @Param("categoryId") Integer categoryId,
             @Param("brandId") Integer brandId,
             @Param("minPrice") BigDecimal minPrice,
@@ -48,6 +50,7 @@ public interface LaptopRepository extends JpaRepository<Laptop, Integer> {
     @Query("SELECT l FROM Laptop l " +
            "WHERE l.isActive = true " +
            "AND (:keyword IS NULL OR :keyword = '' OR LOWER(l.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(COALESCE(l.nameAscii, '')) LIKE LOWER(CONCAT('%', :asciiKeyword, '%')) " +
            "     OR LOWER(l.sku) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "     OR LOWER(l.brand.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "     OR LOWER(l.cpu) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
@@ -58,6 +61,7 @@ public interface LaptopRepository extends JpaRepository<Laptop, Integer> {
            "AND (:discountedOnly = false OR l.listPrice > l.salePrice)")
     Page<Laptop> filterActiveLaptops(
             @Param("keyword") String keyword,
+            @Param("asciiKeyword") String asciiKeyword,
             @Param("categoryId") Integer categoryId,
             @Param("brandId") Integer brandId,
             @Param("minPrice") BigDecimal minPrice,
@@ -73,9 +77,12 @@ public interface LaptopRepository extends JpaRepository<Laptop, Integer> {
 
     @Query("SELECT l FROM Laptop l JOIN FETCH l.brand b JOIN FETCH l.category c " +
            "WHERE LOWER(l.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(COALESCE(l.nameAscii, '')) LIKE LOWER(CONCAT('%', :asciiKeyword, '%')) " +
            "OR LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(l.sku) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<Laptop> searchByKeyword(@Param("keyword") String keyword);
+    List<Laptop> searchByKeyword(@Param("keyword") String keyword, @Param("asciiKeyword") String asciiKeyword);
+
+    Optional<Laptop> findBySkuIgnoreCase(String sku);
 
     @Query("SELECT l FROM Laptop l JOIN FETCH l.brand JOIN FETCH l.category ORDER BY l.id")
     List<Laptop> findAllWithDetails();

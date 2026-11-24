@@ -49,4 +49,6 @@ public interface OrderService {
 
     Optional<Payment> getPaymentByOrderId(Integer orderId);
     List<OrderStatusHistory> getOrderStatusHistory(Integer orderId);
+
+    Order updateShippingInfo(Integer orderId, String carrierName, String trackingCode, Integer actorId);
 }

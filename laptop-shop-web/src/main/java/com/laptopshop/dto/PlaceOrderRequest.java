@@ -24,6 +24,8 @@ public class PlaceOrderRequest {
     private String shippingAddress;
 
     private BigDecimal discount = BigDecimal.ZERO;
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+    private String couponCode;
     private String note;
 
     @NotEmpty(message = "Đơn hàng phải chứa ít nhất 1 sản phẩm laptop")
@@ -52,6 +54,12 @@ public class PlaceOrderRequest {
 
     public BigDecimal getDiscount() { return discount; }
     public void setDiscount(BigDecimal discount) { this.discount = discount; }
+
+    public BigDecimal getShippingFee() { return shippingFee; }
+    public void setShippingFee(BigDecimal shippingFee) { this.shippingFee = shippingFee; }
+
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }

@@ -3,6 +3,7 @@ package com.laptopshop.service;
 import com.laptopshop.dto.AccountDTO;
 import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
+import com.laptopshop.dto.ResetPasswordDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.entity.Role;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,12 @@ public interface AccountService {
     void toggleActive(Integer id, Integer currentAccountId);
     void deleteAccount(Integer id, Integer currentAccountId);
     Account updateProfile(String username, ProfileUpdateDTO dto);
-    /** Dựng sẵn dữ liệu form hồ sơ cá nhân (họ tên, email, SĐT, địa chỉ giao hàng nếu là khách hàng). */
     ProfileUpdateDTO getProfileForm(String username);
+
+    void recordFailedLogin(String username);
+    void resetFailedLogin(String username);
+    String createPasswordResetToken(String email);
+    boolean isResetTokenValid(String rawToken);
+    void resetPassword(ResetPasswordDTO dto);
+    Account forceChangePassword(String username, String currentPassword, String newPassword, String confirmPassword);
 }

@@ -3,6 +3,7 @@ package com.laptopshop.entity;
 // Thành viên phụ trách: TV2 - Phạm Hữu Hiệu
 // Thực thể ánh xạ bảng Laptop trong CSDL QL_Laptop (cột tiếng Việt, giữ chữ Laptop).
 
+import com.laptopshop.util.VietnameseTextNormalizer;
 import jakarta.persistence.*;
 import org.springframework.core.io.ClassPathResource;
 import java.math.BigDecimal;
@@ -80,6 +81,19 @@ public class Laptop {
     @Column(name = "NgayCapNhat")
     private LocalDateTime updatedAt;
 
+    @Column(name = "TenKhongDau", length = 250)
+    private String nameAscii;
+
+    @Column(name = "BaoHanhThang", nullable = false)
+    private Integer warrantyMonths = 12;
+
+    @Column(name = "LuotXem", nullable = false)
+    private Integer viewCount = 0;
+
+    @Version
+    @Column(name = "PhienBan", nullable = false)
+    private Integer version = 0;
+
     public Laptop() {
     }
 
@@ -91,11 +105,23 @@ public class Laptop {
             this.listPrice = this.salePrice != null ? this.salePrice : BigDecimal.ZERO;
         }
         if (this.stockQuantity == null) this.stockQuantity = 0;
+        if (this.warrantyMonths == null) this.warrantyMonths = 12;
+        if (this.viewCount == null) this.viewCount = 0;
+        if (this.version == null) this.version = 0;
+        refreshAscii();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        refreshAscii();
+    }
+
+    private void refreshAscii() {
+        String raw = (this.name != null ? this.name : "") + " " +
+                (this.cpu != null ? this.cpu : "") + " " +
+                (this.gpu != null ? this.gpu : "");
+        this.nameAscii = VietnameseTextNormalizer.normalizeTruncated(raw, 250);
     }
 
     public Integer getId() { return id; }
@@ -161,6 +187,18 @@ public class Laptop {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getNameAscii() { return nameAscii; }
+    public void setNameAscii(String nameAscii) { this.nameAscii = nameAscii; }
+
+    public Integer getWarrantyMonths() { return warrantyMonths; }
+    public void setWarrantyMonths(Integer warrantyMonths) { this.warrantyMonths = warrantyMonths; }
+
+    public Integer getViewCount() { return viewCount; }
+    public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 
     // Helpers cho Socket protocol & giao diện Storefront / Phong Vũ
     public String getBrandName() { return brand == null ? "" : brand.getName(); }

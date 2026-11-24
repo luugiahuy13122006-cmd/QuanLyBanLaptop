@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{fragments/head :: commonHead('So sánh Laptop')}"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main id="mainContent" class="container py-4 py-md-5">
+  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+  <h2 class="fw-bold mb-4"><i class="bi bi-columns-gap text-primary me-2"></i>So sánh thông số Laptop (tối đa 4 máy)</h2>
+
+  <div th:if="${laptops.empty}" class="nx-filter-bar text-center py-5">
+    <p class="text-muted mb-3">Danh sách so sánh đang trống. Hãy chọn biểu tượng <i class="bi bi-columns-gap"></i> trên thẻ sản phẩm để thêm vào bảng.</p>
+    <a th:href="@{/}" class="btn btn-pv-primary px-4">Chọn Laptop để so sánh</a>
+  </div>
+
+  <div class="nx-filter-bar p-0 overflow-hidden" th:if="${!laptops.empty}">
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle mb-0 nx-compare-table">
+        <thead>
+          <tr>
+            <th style="min-width: 160px;">Thông số</th>
+            <th th:each="l : ${laptops}" class="text-center" style="min-width: 220px;">
+              <img th:src="${l.displayImageUrl}" alt="" style="height: 90px; object-fit: contain;" class="mb-2 d-block mx-auto"/>
+              <a th:href="@{/san-pham/{id}(id=${l.id})}" class="fw-bold small d-block mb-1" th:text="${l.name}"></a>
+              <form th:action="@{/so-sanh/xoa/{id}(id=${l.id})}" method="post">
+                <button type="submit" class="btn btn-xs btn-outline-danger btn-sm py-0 px-2">Bỏ</button>
+              </form>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Giá bán</td><td th:each="l : ${laptops}" class="text-center fw-bold text-primary tabular-nums" th:text="${#numbers.formatDecimal(l.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td></tr>
+          <tr><td>Thương hiệu</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.brandName}"></td></tr>
+          <tr><td>CPU</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.cpu}"></td></tr>
+          <tr><td>RAM</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.ram}"></td></tr>
+          <tr><td>Ổ cứng SSD</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.storage}"></td></tr>
+          <tr><td>Card đồ họa</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.gpu}"></td></tr>
+          <tr><td>Màn hình</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.screenSize != null ? l.screenSize + ' inch' : '-'}"></td></tr>
+          <tr><td>Hệ điều hành</td><td th:each="l : ${laptops}" class="text-center" th:text="${l.operatingSystem}"></td></tr>
+          <tr><td>Bảo hành</td><td th:each="l : ${laptops}" class="text-center" th:text="${(l.warrantyMonths ?: 12) + ' tháng'}"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/scripts :: commonScripts}"/>
+</body>
+</html>

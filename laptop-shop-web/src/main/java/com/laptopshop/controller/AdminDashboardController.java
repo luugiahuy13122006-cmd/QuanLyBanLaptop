@@ -56,6 +56,12 @@ public class AdminDashboardController {
         model.addAttribute("totalAccounts", accountRepository.count());
         model.addAttribute("totalRevenue", statisticsService.getTotalRevenue());
         model.addAttribute("totalImportCost", statisticsService.getTotalImportCost());
+        model.addAttribute("revenueToday", statisticsService.getRevenueToday());
+        model.addAttribute("revenueThisWeek", statisticsService.getRevenueThisWeek());
+        model.addAttribute("revenueThisMonth", statisticsService.getRevenueThisMonth());
+        model.addAttribute("grossProfit", statisticsService.getTotalGrossProfit());
+        model.addAttribute("averageOrderValue", statisticsService.getAverageOrderValue());
+        model.addAttribute("cancellationRate", statisticsService.getCancellationRatePercent());
         model.addAttribute("lowStockLaptops", statisticsService.getLowStockLaptops(5));
         model.addAttribute("pendingProofCount", paymentRepository.countByPaymentStatus(PaymentStatus.PENDING_CONFIRMATION));
         model.addAttribute("pendingImportCount", importReceiptRepository.countByStatus(

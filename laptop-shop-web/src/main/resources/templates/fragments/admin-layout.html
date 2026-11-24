@@ -1,112 +1,85 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV5 - Vũ Gia Bảo (Layout quản trị dùng chung & phân quyền menu theo vai trò) -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
 <!-- Mobile Navbar -->
-<nav th:fragment="adminTopbar" class="navbar navbar-dark d-lg-none px-3 py-2" style="background: #0F172A; border-bottom: 1px solid rgba(255,255,255,0.08);">
+<nav th:fragment="adminTopbar" class="navbar navbar-dark d-lg-none px-3 py-2 no-print"
+     style="background: #0b1120; border-bottom: 1px solid rgba(255,255,255,0.08);">
   <a class="navbar-brand fw-bold d-flex align-items-center gap-2" th:href="@{/admin/dashboard}">
     <span th:replace="~{fragments/brand :: mark(32)}"></span>
     <span class="fs-6">NEXORA Admin</span>
   </a>
-  <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileMenu">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  <div class="d-flex align-items-center gap-2">
+    <button type="button" class="btn btn-sm btn-outline-light" data-theme-toggle title="Sáng / Tối">
+      <i class="bi bi-moon-stars-fill" data-theme-icon></i>
+    </button>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
   <div class="collapse navbar-collapse mt-2 pb-2" id="adminMobileMenu">
     <ul class="navbar-nav gap-1">
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2 me-2"></i>Tổng quan</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/laptops}"><i class="bi bi-pc-display me-2"></i>Laptop</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/categories}"><i class="bi bi-tags me-2"></i>Danh mục</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/brands}"><i class="bi bi-award me-2"></i>Thương hiệu</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/customers}"><i class="bi bi-people me-2"></i>Khách hàng</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/pos}"><i class="bi bi-upc-scan me-2"></i>Bán hàng POS</a></li>
       <li class="nav-item"><a class="nav-link" th:href="@{/admin/orders}"><i class="bi bi-box-seam me-2"></i>Đơn hàng</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/laptops}"><i class="bi bi-pc-display me-2"></i>Laptop</a></li>
       <li class="nav-item"><a class="nav-link" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed me-2"></i>Phiếu nhập kho</a></li>
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line me-2"></i>Thống kê doanh thu</a></li>
-      <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-        <a class="nav-link" th:href="@{/admin/accounts}"><i class="bi bi-shield-lock me-2"></i>Tài khoản &amp; Quyền</a>
-      </li>
-      <li class="nav-item mt-2"><a class="nav-link text-info fw-semibold" th:href="@{/}"><i class="bi bi-shop me-2"></i>Xem Website bán hàng</a></li>
-      <li class="nav-item mt-2">
-        <form th:action="@{/logout}" method="post">
-          <button type="submit" class="btn btn-outline-light btn-sm w-100"><i class="bi bi-box-arrow-right me-1"></i>Đăng xuất</button>
-        </form>
-      </li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/warranties}"><i class="bi bi-shield-check me-2"></i>Bảo hành &amp; Serial</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line me-2"></i>Thống kê &amp; Báo cáo</a></li>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')"><a class="nav-link" th:href="@{/admin/accounts}"><i class="bi bi-shield-lock me-2"></i>Tài khoản</a></li>
+      <li class="nav-item" sec:authorize="hasRole('ADMIN')"><a class="nav-link" th:href="@{/admin/audit-logs}"><i class="bi bi-journal-text me-2"></i>Nhật ký hệ thống</a></li>
+      <li class="nav-item mt-2"><a class="nav-link text-info fw-semibold" th:href="@{/}"><i class="bi bi-shop me-2"></i>Website bán hàng</a></li>
     </ul>
   </div>
 </nav>
 
-<!-- Desktop Figma Dark-Slate Sidebar -->
-<nav th:fragment="adminSidebar" class="col-lg-2 d-none d-lg-flex flex-column sidebar pro-sidebar sticky-lg-top" style="max-height: 100vh; overflow-y: auto;">
-  <div class="px-2 pb-3 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+<!-- Desktop Sidebar -->
+<nav th:fragment="adminSidebar" class="col-lg-2 d-none d-lg-flex flex-column sidebar pro-sidebar sticky-lg-top no-print" style="max-height: 100vh; overflow-y: auto;">
+  <div class="d-flex align-items-center justify-content-between px-1 pb-3 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
     <div th:replace="~{fragments/brand :: lockup(true, 'Admin Workspace', '/admin/dashboard')}"></div>
+    <button type="button" class="btn btn-sm btn-outline-light border-0" data-theme-toggle title="Sáng / Tối">
+      <i class="bi bi-moon-stars-fill" data-theme-icon></i>
+    </button>
   </div>
 
   <div class="flex-grow-1">
     <div class="pro-nav-label">Tổng quan</div>
     <ul class="nav flex-column">
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri == '/admin' || currentUri == '/admin/dashboard'} ? 'active'" th:href="@{/admin/dashboard}">
-          <i class="bi bi-grid-1x2"></i> <span>Dashboard</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/statistics')} ? 'active'" th:href="@{/admin/statistics}">
-          <i class="bi bi-bar-chart-line"></i> <span>Thống kê &amp; Báo cáo</span>
-        </a>
-      </li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri == '/admin' || currentUri == '/admin/dashboard'} ? 'active'" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/pos')} ? 'active'" th:href="@{/admin/pos}"><i class="bi bi-upc-scan"></i><span>Bán tại quầy (POS)</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/statistics')} ? 'active'" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line"></i><span>Thống kê &amp; Báo cáo</span></a></li>
     </ul>
 
     <div class="pro-nav-label">Sản phẩm &amp; Kho</div>
     <ul class="nav flex-column">
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/laptops')} ? 'active'" th:href="@{/admin/laptops}">
-          <i class="bi bi-pc-display"></i> <span>Laptop</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/categories')} ? 'active'" th:href="@{/admin/categories}">
-          <i class="bi bi-tags"></i> <span>Danh mục</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/brands')} ? 'active'" th:href="@{/admin/brands}">
-          <i class="bi bi-award"></i> <span>Thương hiệu</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/import-receipts')} ? 'active'" th:href="@{/admin/import-receipts}">
-          <i class="bi bi-truck-flatbed"></i> <span>Phiếu nhập kho</span>
-        </a>
-      </li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/laptops')} ? 'active'" th:href="@{/admin/laptops}"><i class="bi bi-pc-display"></i><span>Laptop</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/categories')} ? 'active'" th:href="@{/admin/categories}"><i class="bi bi-tags"></i><span>Danh mục</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/brands')} ? 'active'" th:href="@{/admin/brands}"><i class="bi bi-award"></i><span>Thương hiệu</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/import-receipts')} ? 'active'" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed"></i><span>Phiếu nhập kho</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/suppliers')} ? 'active'" th:href="@{/admin/suppliers}"><i class="bi bi-building"></i><span>Nhà cung cấp</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/stock-movements')} ? 'active'" th:href="@{/admin/stock-movements}"><i class="bi bi-arrow-left-right"></i><span>Biến động kho</span></a></li>
     </ul>
 
-    <div class="pro-nav-label">Bán hàng &amp; Khách</div>
+    <div class="pro-nav-label">Bán hàng &amp; CSKH</div>
     <ul class="nav flex-column">
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/orders')} ? 'active'" th:href="@{/admin/orders}">
-          <i class="bi bi-box-seam"></i> <span>Đơn hàng</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/customers')} ? 'active'" th:href="@{/admin/customers}">
-          <i class="bi bi-people"></i> <span>Khách hàng</span>
-        </a>
-      </li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/orders')} ? 'active'" th:href="@{/admin/orders}"><i class="bi bi-box-seam"></i><span>Đơn hàng</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/customers')} ? 'active'" th:href="@{/admin/customers}"><i class="bi bi-people"></i><span>Khách hàng</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/coupons')} ? 'active'" th:href="@{/admin/coupons}"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/warranties')} ? 'active'" th:href="@{/admin/warranties}"><i class="bi bi-shield-check"></i><span>Bảo hành &amp; Serial</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/reviews')} ? 'active'" th:href="@{/admin/reviews}"><i class="bi bi-star-half"></i><span>Duyệt đánh giá</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/content')} ? 'active'" th:href="@{/admin/content}"><i class="bi bi-chat-square-text"></i><span>Nội dung &amp; Chat</span></a></li>
     </ul>
 
     <div class="pro-nav-label" sec:authorize="hasRole('ADMIN')">Hệ thống</div>
     <ul class="nav flex-column" sec:authorize="hasRole('ADMIN')">
-      <li class="nav-item">
-        <a class="nav-link" th:classappend="${currentUri.startsWith('/admin/accounts')} ? 'active'" th:href="@{/admin/accounts}">
-          <i class="bi bi-shield-lock"></i> <span>Tài khoản &amp; Quyền</span>
-        </a>
-      </li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/accounts')} ? 'active'" th:href="@{/admin/accounts}"><i class="bi bi-shield-lock"></i><span>Tài khoản &amp; Quyền</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/audit-logs')} ? 'active'" th:href="@{/admin/audit-logs}"><i class="bi bi-journal-text"></i><span>Nhật ký hệ thống</span></a></li>
     </ul>
   </div>
 
   <div class="pt-3 mt-3" style="border-top: 1px solid rgba(255,255,255,0.08);">
-    <div class="pro-admin-userbox d-flex align-items-center gap-2 mb-2">
+    <div class="d-flex align-items-center gap-2 mb-2">
       <span class="pro-avatar-circle"><i class="bi bi-person-fill"></i></span>
       <div class="overflow-hidden lh-sm">
         <div class="text-white fw-semibold text-truncate" style="font-size: 0.8rem;" th:text="${currentUserFullName}">Admin</div>
@@ -128,11 +101,11 @@
 
 <!-- Flash Alerts dùng chung -->
 <div th:fragment="flashMessages">
-  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show rounded-3 border-0 shadow-xs" role="alert">
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-xs" role="alert">
     <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
-  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-3 border-0 shadow-xs" role="alert">
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-xs" role="alert">
     <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>

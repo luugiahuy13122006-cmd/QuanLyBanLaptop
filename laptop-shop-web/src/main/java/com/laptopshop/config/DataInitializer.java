@@ -8,6 +8,8 @@ import com.laptopshop.repository.RoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,15 +23,18 @@ public class DataInitializer implements CommandLineRunner {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final CodeSequenceRepository codeSequenceRepository;
+    private final Environment environment;
 
     public DataInitializer(RoleRepository roleRepository,
                            AccountRepository accountRepository,
                            PasswordEncoder passwordEncoder,
-                           CodeSequenceRepository codeSequenceRepository) {
+                           CodeSequenceRepository codeSequenceRepository,
+                           Environment environment) {
         this.roleRepository = roleRepository;
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.codeSequenceRepository = codeSequenceRepository;
+        this.environment = environment;
     }
 
     @Override
@@ -42,10 +47,14 @@ public class DataInitializer implements CommandLineRunner {
         ensureSequence("DON_HANG");
         ensureSequence("PHIEU_NHAP");
 
+        boolean isProd = environment.acceptsProfiles(Profiles.of("prod"));
         String legacyPlaceholderHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
         accountRepository.findAll().forEach(acc -> {
             if (legacyPlaceholderHash.equals(acc.getPasswordHash())) {
                 acc.setPasswordHash(passwordEncoder.encode("123456"));
+                if (isProd) {
+                    acc.setMustChangePassword(true);
+                }
                 accountRepository.save(acc);
                 log.info("[INIT] Đã chuẩn hóa mật khẩu BCrypt (123456) cho tài khoản '{}'", acc.getUsername());
             }

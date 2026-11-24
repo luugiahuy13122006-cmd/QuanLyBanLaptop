@@ -1,15 +1,20 @@
 package com.laptopshop.exception;
 
-// Thành viên phụ trách: TV5 - Vũ Gia Bảo
-// Xử lý ngoại lệ tập trung (@ControllerAdvice) và cung cấp thuộc tính dùng chung (currentUri, cartCount) cho mọi giao diện.
-
 import com.laptopshop.config.CustomUserDetails;
 import com.laptopshop.config.ShopProperties;
+import com.laptopshop.service.CartService;
+import com.laptopshop.service.WishlistAndCompareService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,13 +31,23 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    private final ShopProperties shopProperties;
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    public GlobalExceptionHandler(ShopProperties shopProperties) {
+    private final ShopProperties shopProperties;
+    private final Environment environment;
+    private final ObjectProvider<CartService> cartServiceProvider;
+    private final ObjectProvider<WishlistAndCompareService> compareServiceProvider;
+
+    public GlobalExceptionHandler(ShopProperties shopProperties,
+                                  Environment environment,
+                                  ObjectProvider<CartService> cartServiceProvider,
+                                  ObjectProvider<WishlistAndCompareService> compareServiceProvider) {
         this.shopProperties = shopProperties;
+        this.environment = environment;
+        this.cartServiceProvider = cartServiceProvider;
+        this.compareServiceProvider = compareServiceProvider;
     }
 
-    /** Thông tin cửa hàng (tên, hotline, địa chỉ, email, giờ làm việc) dùng chung cho header, footer, báo cáo. */
     @ModelAttribute("shop")
     public ShopProperties.ShopInfo shop() {
         return shopProperties.getShop();
@@ -41,7 +56,6 @@ public class GlobalExceptionHandler {
     @ModelAttribute("currentUri")
     public String currentUri(HttpServletRequest request) {
         if (request != null) {
-            // Khởi tạo CSRF token trước khi Thymeleaf render để tránh lỗi commit response khi trang dài
             Object csrfAttr = request.getAttribute(CsrfToken.class.getName());
             if (csrfAttr instanceof CsrfToken csrfToken) {
                 csrfToken.getToken();
@@ -83,6 +97,11 @@ public class GlobalExceptionHandler {
     public int cartCount(HttpServletRequest request) {
         if (request == null) return 0;
         HttpSession session = request.getSession(false);
+        Integer accountId = currentAccountId();
+        CartService cartService = cartServiceProvider.getIfAvailable();
+        if (cartService != null) {
+            return cartService.getCartCount(accountId, session);
+        }
         if (session == null) return 0;
         Object cartObj = session.getAttribute("cart");
         if (cartObj instanceof Map<?, ?> cart) {
@@ -94,11 +113,29 @@ public class GlobalExceptionHandler {
         return 0;
     }
 
+    @ModelAttribute("compareCount")
+    public int compareCount(HttpServletRequest request) {
+        if (request == null) return 0;
+        WishlistAndCompareService svc = compareServiceProvider.getIfAvailable();
+        return svc != null ? svc.getCompareIds(request.getSession(false)).size() : 0;
+    }
+
+    private Integer currentAccountId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)
+                && auth.getPrincipal() instanceof CustomUserDetails cud) {
+            return cud.getAccountId();
+        }
+        return null;
+    }
+
     @ExceptionHandler({ResourceNotFoundException.class, NoResourceFoundException.class})
     public String handleNotFound(Exception ex, Model model, HttpServletResponse response) {
         response.setStatus(HttpStatus.NOT_FOUND.value());
         model.addAttribute("errorTitle", "Không tìm thấy trang hoặc dữ liệu");
-        model.addAttribute("errorMessage", ex.getMessage());
+        model.addAttribute("errorMessage", ex instanceof NoResourceFoundException
+                ? "Đường dẫn bạn truy cập không tồn tại hoặc đã bị thay đổi."
+                : ex.getMessage());
         return "error/404";
     }
 
@@ -118,6 +155,14 @@ public class GlobalExceptionHandler {
         return "error/error";
     }
 
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public String handleOptimisticLock(ObjectOptimisticLockingFailureException ex, Model model, HttpServletResponse response) {
+        response.setStatus(HttpStatus.CONFLICT.value());
+        model.addAttribute("errorTitle", "Xung đột cập nhật đồng thời");
+        model.addAttribute("errorMessage", "Dữ liệu vừa được người dùng khác cập nhật. Vui lòng tải lại trang và thử lại.");
+        return "error/error";
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public String handleDataIntegrity(DataIntegrityViolationException ex, Model model, HttpServletResponse response) {
         response.setStatus(HttpStatus.CONFLICT.value());
@@ -128,9 +173,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public String handleGeneral(Exception ex, Model model, HttpServletResponse response) {
+        log.error("[UNHANDLED] {}", ex.getMessage(), ex);
         response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         model.addAttribute("errorTitle", "Lỗi hệ thống");
-        model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Lỗi không xác định");
+        boolean isProd = environment.acceptsProfiles(Profiles.of("prod"));
+        model.addAttribute("errorMessage", isProd
+                ? "Hệ thống đang gặp sự cố tạm thời. Vui lòng thử lại sau hoặc liên hệ quản trị viên."
+                : (ex.getMessage() != null ? ex.getMessage() : "Lỗi không xác định"));
         return "error/error";
     }
 }

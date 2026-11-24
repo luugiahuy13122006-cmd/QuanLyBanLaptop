@@ -27,6 +27,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     long countByCustomerId(Integer customerId);
     long countByCreatedBy(Integer createdBy);
     boolean existsByOrderCodeIgnoreCase(String orderCode);
+    Optional<Order> findByOrderCodeIgnoreCase(String orderCode);
 
     @EntityGraph(attributePaths = {"customer", "payments"})
     @Query("SELECT o FROM Order o WHERE " +
@@ -88,4 +89,20 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT new com.laptopshop.dto.OrderStatusCountDTO(o.status, COUNT(o)) " +
            "FROM Order o GROUP BY o.status")
     List<OrderStatusCountDTO> countOrdersByStatus();
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+           "WHERE o.orderDate >= :from " +
+           "AND (o.status = com.laptopshop.entity.OrderStatus.COMPLETED " +
+           "   OR EXISTS (SELECT p FROM Payment p WHERE p.order = o AND p.paymentStatus = com.laptopshop.entity.PaymentStatus.PAID)) " +
+           "AND o.status <> com.laptopshop.entity.OrderStatus.CANCELLED " +
+           "AND o.status <> com.laptopshop.entity.OrderStatus.RETURNED " +
+           "AND o.status <> com.laptopshop.entity.OrderStatus.REFUND_REQUESTED " +
+           "AND o.status <> com.laptopshop.entity.OrderStatus.REFUNDED")
+    BigDecimal calculateRevenueSince(@Param("from") LocalDateTime from);
+
+    @Query("SELECT o.createdBy, COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+           "WHERE o.createdBy IS NOT NULL AND o.status <> com.laptopshop.entity.OrderStatus.CANCELLED " +
+           "AND o.status <> com.laptopshop.entity.OrderStatus.RETURNED " +
+           "GROUP BY o.createdBy ORDER BY COALESCE(SUM(o.totalAmount), 0) DESC")
+    List<Object[]> getStaffSalesPerformance();
 }

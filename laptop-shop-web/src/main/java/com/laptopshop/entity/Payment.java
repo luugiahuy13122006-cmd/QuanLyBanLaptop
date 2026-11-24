@@ -49,6 +49,13 @@ public class Payment {
     @Column(name = "NguoiXacNhan")
     private Integer confirmedBy;
 
+    @Column(name = "MaThamChieuCong", length = 120)
+    private String gatewayRef;
+
+    @Version
+    @Column(name = "PhienBan", nullable = false)
+    private Integer version = 0;
+
     public Payment() {}
 
     public Payment(Order order, PaymentMethod paymentMethod, PaymentStatus paymentStatus, BigDecimal amount, String transactionCode) {
@@ -69,6 +76,7 @@ public class Payment {
         if (this.paymentMethod == null) this.paymentMethod = PaymentMethod.BANK_TRANSFER;
         if (this.paymentStatus == null) this.paymentStatus = PaymentStatus.UNPAID;
         if (this.amount == null) this.amount = BigDecimal.ZERO;
+        if (this.version == null) this.version = 0;
     }
 
     public Integer getId() { return id; }
@@ -107,4 +115,10 @@ public class Payment {
 
     public Integer getConfirmedBy() { return confirmedBy; }
     public void setConfirmedBy(Integer confirmedBy) { this.confirmedBy = confirmedBy; }
+
+    public String getGatewayRef() { return gatewayRef; }
+    public void setGatewayRef(String gatewayRef) { this.gatewayRef = gatewayRef; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 }

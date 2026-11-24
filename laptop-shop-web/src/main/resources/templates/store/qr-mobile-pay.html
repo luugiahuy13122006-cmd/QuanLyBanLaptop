@@ -5,8 +5,11 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title th:text="'Xác nhận chuyển khoản ' + ${order.orderCode} + ' - Nexora Laptop'">Xác nhận thanh toán QR</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" th:href="@{/vendor/bootstrap/bootstrap.min.css}" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css';"/>
+  <link rel="stylesheet" th:href="@{/vendor/bootstrap-icons/bootstrap-icons.min.css}" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css';"/>
+  <link rel="stylesheet" th:href="@{/css/tokens.css}"/>
+  <link rel="stylesheet" th:href="@{/css/base.css}"/>
+  <link rel="stylesheet" th:href="@{/css/components.css}"/>
   <link th:href="@{/css/style.css}" rel="stylesheet"/>
   <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
   <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
@@ -111,20 +114,25 @@
           </div>
         </div>
 
-        <form id="mobileConfirmForm" th:action="@{/qr-pay/{id}/{token}/confirm(id=${order.id},token=${qrToken})}" method="post">
-          <button type="submit" id="mobileConfirmBtn" class="btn btn-pv-primary btn-glow-cta btn-lg w-100 py-3 fw-bold">
-            <i class="bi bi-check2-circle me-2"></i>Xác nhận đã chuyển khoản
-          </button>
-        </form>
+        <div th:if="${demoPaymentMode}">
+          <form id="mobileConfirmForm" th:action="@{/qr-pay/{id}/{token}/confirm(id=${order.id},token=${qrToken})}" method="post">
+            <button type="submit" id="mobileConfirmBtn" class="btn btn-pv-primary btn-glow-cta btn-lg w-100 py-3 fw-bold">
+              <i class="bi bi-check2-circle me-2"></i>Xác nhận đã chuyển khoản (DEMO)
+            </button>
+          </form>
+        </div>
+        <div th:unless="${demoPaymentMode}" class="alert alert-info small rounded-3">
+          <i class="bi bi-bank me-1"></i>Hệ thống vận hành thật: sau khi bạn chuyển khoản đúng nội dung <strong th:text="${order.orderCode}"></strong>, Webhook ngân hàng sẽ tự động xác nhận trong vài giây.
+        </div>
         <div class="text-center small text-muted mt-3">
-          <i class="bi bi-shield-check text-success me-1"></i>Sau khi bấm, trang web trên máy tính sẽ tự động cập nhật thành công.
+          <i class="bi bi-shield-check text-success me-1"></i>Sau khi xác nhận, trang web trên máy tính sẽ tự động cập nhật thành công.
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<th:block th:replace="~{fragments/scripts :: commonScripts}"/>
 <script>
   (function () {
     var form = document.getElementById('mobileConfirmForm');

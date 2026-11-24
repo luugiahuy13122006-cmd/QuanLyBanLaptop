@@ -77,6 +77,13 @@ public class StatisticsController {
         model.addAttribute("selectedYear", selectedYear);
         model.addAttribute("totalRevenue", statisticsService.getTotalRevenue());
         model.addAttribute("totalImportCost", statisticsService.getTotalImportCost());
+        model.addAttribute("revenueToday", statisticsService.getRevenueToday());
+        model.addAttribute("revenueThisWeek", statisticsService.getRevenueThisWeek());
+        model.addAttribute("revenueThisMonth", statisticsService.getRevenueThisMonth());
+        model.addAttribute("grossProfit", statisticsService.getTotalGrossProfit());
+        model.addAttribute("averageOrderValue", statisticsService.getAverageOrderValue());
+        model.addAttribute("cancellationRate", statisticsService.getCancellationRatePercent());
+        model.addAttribute("staffPerformance", statisticsService.getStaffPerformance());
         model.addAttribute("monthlyRevenues", statisticsService.getMonthlyRevenue(selectedYear));
         model.addAttribute("monthlyImportCosts", statisticsService.getMonthlyImportCost(selectedYear));
         model.addAttribute("topSellingLaptops", statisticsService.getTopSellingLaptops(5));
@@ -157,7 +164,14 @@ public class StatisticsController {
     }
 
     private static String csv(String s) {
-        return "\"" + (s == null ? "" : s.replace("\"", "\"\"")) + "\"";
+        String val = s == null ? "" : s;
+        if (!val.isEmpty()) {
+            char first = val.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+                val = "'" + val;
+            }
+        }
+        return "\"" + val.replace("\"", "\"\"") + "\"";
     }
 
     private static String money(BigDecimal v) {

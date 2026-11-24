@@ -18,6 +18,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Optional<Payment> findByProofImage(String proofImage);
 
+    boolean existsByGatewayRef(String gatewayRef);
+
+    Optional<Payment> findFirstByOrder_OrderCodeOrderByIdDesc(String orderCode);
+
     @EntityGraph(attributePaths = {"order"})
     List<Payment> findByPaymentStatusOrderByCreatedAtAsc(PaymentStatus status);
 

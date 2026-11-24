@@ -22,9 +22,12 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     @Query("SELECT c FROM Customer c WHERE " +
            "(:keyword IS NULL OR :keyword = '' OR " +
            "LOWER(c.customerName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(COALESCE(c.nameAscii, '')) LIKE LOWER(CONCAT('%', :asciiKeyword, '%')) OR " +
            "LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "c.phone LIKE CONCAT('%', :keyword, '%'))")
-    Page<Customer> searchCustomers(@Param("keyword") String keyword, Pageable pageable);
+    Page<Customer> searchCustomers(@Param("keyword") String keyword,
+                                   @Param("asciiKeyword") String asciiKeyword,
+                                   Pageable pageable);
 
     Optional<Customer> findByEmailIgnoreCase(String email);
     Optional<Customer> findByAccountId(Integer accountId);

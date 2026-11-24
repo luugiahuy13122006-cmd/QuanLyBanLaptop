@@ -1,12 +1,9 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
-<!-- Footer NEXORA LAPTOP theo chuẩn website bán lẻ: cam kết dịch vụ, thông tin cửa hàng, hỗ trợ khách hàng, danh mục, thanh toán -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 <footer th:fragment="footer" class="nx-footer">
   <div class="container position-relative">
-    <!-- Dải cam kết -->
     <div class="row g-3 nx-trust">
       <div class="col-6 col-lg-3">
         <div class="nx-trust-item"><i class="bi bi-patch-check-fill"></i>
@@ -14,24 +11,23 @@
       </div>
       <div class="col-6 col-lg-3">
         <div class="nx-trust-item"><i class="bi bi-truck"></i>
-          <div><strong>Giao hàng toàn quốc</strong><span>Miễn phí, kiểm tra hàng khi nhận</span></div></div>
+          <div><strong>Freeship đơn từ 15 triệu</strong><span>Giao nhanh toàn quốc, kiểm tra máy</span></div></div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="nx-trust-item"><i class="bi bi-arrow-repeat"></i>
-          <div><strong>Đổi trả 10 ngày</strong><span>Lỗi nhà sản xuất đổi máy mới</span></div></div>
+        <div class="nx-trust-item"><i class="bi bi-shield-check"></i>
+          <div><strong>Bảo hành Serial điện tử</strong><span>Tra cứu online tức thì 24/7</span></div></div>
       </div>
       <div class="col-6 col-lg-3">
         <div class="nx-trust-item"><i class="bi bi-wallet2"></i>
-          <div><strong>Thanh toán linh hoạt</strong><span>VietQR tức thì hoặc tiền mặt (COD)</span></div></div>
+          <div><strong>Thanh toán đa kênh</strong><span>VietQR tức thì hoặc COD tiền mặt</span></div></div>
       </div>
     </div>
 
-    <!-- Cột thông tin -->
     <div class="row g-4 py-5">
-      <div class="col-lg-4 nx-col">
+      <div class="col-lg-4">
         <div th:replace="~{fragments/brand :: lockup(true, 'Laptop & Tech Store', '/')}"></div>
         <p class="small mt-3 mb-3 nx-muted" style="max-width: 340px;"
-           th:text="${shop?.slogan ?: 'Laptop chính hãng - Công nghệ trong tầm tay'}">Laptop chính hãng - Công nghệ trong tầm tay</p>
+           th:text="${shop?.slogan ?: 'Laptop chính hãng - Công nghệ trong tầm tay'}"></p>
         <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
           <li><i class="bi bi-geo-alt-fill text-info me-2"></i><span th:text="${shop?.address ?: 'TP. Hồ Chí Minh'}">Địa chỉ</span></li>
           <li><i class="bi bi-telephone-fill text-info me-2"></i>Hotline:
@@ -43,49 +39,48 @@
         </ul>
       </div>
 
-      <div class="col-6 col-lg-2 nx-col">
-        <h6 class="mb-3">Mua sắm</h6>
+      <div class="col-6 col-lg-2">
+        <h6 class="text-white fw-bold mb-3">Mua sắm</h6>
         <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
           <li><a th:href="@{/}">Tất cả laptop</a></li>
           <li><a th:href="@{/(categoryId=2)}">Laptop gaming</a></li>
           <li><a th:href="@{/(categoryId=1)}">Laptop văn phòng</a></li>
-          <li><a th:href="@{/(categoryId=3)}">Laptop đồ họa</a></li>
-          <li><a th:href="@{/(categoryId=4)}">Laptop mỏng nhẹ</a></li>
-          <li><a th:href="@{/(discountedOnly=true)}">Khuyến mãi &amp; giảm giá</a></li>
+          <li><a th:href="@{/(categoryId=10)}">Laptop AI 2026</a></li>
+          <li><a th:href="@{/so-sanh}">So sánh cấu hình</a></li>
+          <li><a th:href="@{/tin-tuc}">Tin công nghệ &amp; FAQ</a></li>
         </ul>
       </div>
 
-      <div class="col-6 col-lg-3 nx-col">
-        <h6 class="mb-3">Hỗ trợ khách hàng</h6>
+      <div class="col-6 col-lg-3">
+        <h6 class="text-white fw-bold mb-3">Hỗ trợ &amp; Chính sách</h6>
         <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+          <li><a th:href="@{/bao-hanh}">Tra cứu bảo hành Serial</a></li>
+          <li><a th:href="@{/ho-tro}">Chat trực tuyến với NV</a></li>
           <li><a th:href="@{/thong-tin/huong-dan-mua-hang}">Hướng dẫn mua hàng</a></li>
-          <li><a th:href="@{/thong-tin/huong-dan-thanh-toan}">Hướng dẫn thanh toán (VietQR &amp; COD)</a></li>
+          <li><a th:href="@{/thong-tin/huong-dan-thanh-toan}">Thanh toán VietQR &amp; COD</a></li>
           <li><a th:href="@{/thong-tin/chinh-sach-bao-hanh}">Chính sách bảo hành</a></li>
-          <li><a th:href="@{/thong-tin/chinh-sach-doi-tra}">Chính sách đổi trả &amp; hoàn tiền</a></li>
-          <li><a th:href="@{/thong-tin/chinh-sach-van-chuyen}">Chính sách vận chuyển</a></li>
-          <li><a th:href="@{/thong-tin/chinh-sach-bao-mat}">Chính sách bảo mật</a></li>
+          <li><a th:href="@{/thong-tin/chinh-sach-doi-tra}">Đổi trả &amp; hoàn tiền</a></li>
         </ul>
       </div>
 
-      <div class="col-lg-3 nx-col">
-        <h6 class="mb-3">Về Nexora</h6>
+      <div class="col-lg-3">
+        <h6 class="text-white fw-bold mb-3">Tài khoản &amp; Thanh toán</h6>
         <ul class="list-unstyled small d-flex flex-column gap-2 mb-3">
-          <li><a th:href="@{/thong-tin/gioi-thieu}">Giới thiệu cửa hàng</a></li>
-          <li><a th:href="@{/thong-tin/lien-he}">Liên hệ &amp; góp ý</a></li>
+          <li><a th:href="@{/thong-tin/gioi-thieu}">Giới thiệu NEXORA</a></li>
+          <li><a th:href="@{/thong-tin/lien-he}">Liên hệ showroom</a></li>
           <li sec:authorize="hasRole('CUSTOMER')"><a th:href="@{/don-hang-cua-toi}">Đơn hàng của tôi</a></li>
+          <li><a th:href="@{/yeu-thich}">Sản phẩm yêu thích</a></li>
         </ul>
-        <div class="small fw-semibold text-white mb-2">Phương thức thanh toán</div>
         <div class="d-flex flex-wrap gap-2">
-          <span class="nx-pay-chip"><i class="bi bi-qr-code"></i>VietQR / Chuyển khoản</span>
-          <span class="nx-pay-chip"><i class="bi bi-cash-coin"></i>Tiền mặt khi nhận hàng (COD)</span>
+          <span class="nx-pay-chip"><i class="bi bi-qr-code"></i>VietQR</span>
+          <span class="nx-pay-chip"><i class="bi bi-cash-coin"></i>Tiền mặt COD</span>
         </div>
-        <div class="small nx-muted mt-2">Hỗ trợ thanh toán chuyển khoản VietQR tức thì hoặc thanh toán tiền mặt khi nhận hàng.</div>
       </div>
     </div>
 
     <div class="nx-footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 py-3 small">
       <span>&copy; 2026 <strong class="text-white" th:text="${shop?.name ?: 'NEXORA LAPTOP'}">NEXORA LAPTOP</strong>. Bảo lưu mọi quyền.</span>
-      <span class="nx-muted">Đồ án môn Công nghệ Java - Nhóm 5 · Spring Boot · SQL Server · Socket TCP</span>
+      <span class="nx-muted">Hệ thống quản lý bán hàng Laptop · Spring Boot 3 · SQL Server · TCP Socket</span>
     </div>
   </div>
 </footer>

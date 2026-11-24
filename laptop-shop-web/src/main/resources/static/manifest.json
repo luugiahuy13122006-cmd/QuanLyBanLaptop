@@ -1,0 +1,15 @@
+{
+  "name": "NEXORA LAPTOP — Hệ thống bán laptop chính hãng",
+  "short_name": "NEXORA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/images/laptop-default.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

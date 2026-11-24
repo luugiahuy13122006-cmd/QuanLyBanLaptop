@@ -1,159 +1,67 @@
 <!DOCTYPE html>
-<!-- Thành viên phụ trách: TV3 - Trương Xuân Đạt -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Nexora Laptop - Laptop chính hãng, công nghệ trong tầm tay</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
+  <th:block th:replace="~{fragments/head :: commonHead('Trang chủ - Cửa hàng Laptop chính hãng')}"/>
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-3 py-md-4">
+<main id="mainContent" class="container py-4">
   <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-  <!-- Hero Section: Category Sidebar + Figma Mesh Banner -->
-  <div class="row g-3 g-lg-4 mb-4">
-    <div class="col-lg-3 d-none d-lg-block">
-      <div class="pv-cat-sidebar h-100 d-flex flex-column">
-        <div class="px-3 py-3 fw-bold text-white d-flex align-items-center justify-content-between"
-             style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);">
-          <span class="small text-uppercase" style="letter-spacing: 0.05em;"><i class="bi bi-grid-fill me-2 text-info"></i>Danh mục Laptop</span>
-          <span class="badge rounded-pill" style="background: rgba(255,255,255,0.16); font-size: 0.68rem;" th:text="${#lists.size(categories)}"></span>
-        </div>
-        <div class="list-group list-group-flush flex-grow-1">
-          <a th:href="@{/}" class="list-group-item list-group-item-action"
-             th:classappend="${categoryId == null} ? 'active-cat'">
-            <span><i class="bi bi-laptop me-2 text-primary"></i>Tất cả Laptop</span>
-            <i class="bi bi-chevron-right small opacity-50"></i>
-          </a>
-          <a th:each="c, st : ${categories}" th:if="${st.index < 8}"
-             th:href="@{/(categoryId=${c.id})}"
-             class="list-group-item list-group-item-action"
-             th:classappend="${c.id == categoryId} ? 'active-cat'">
-            <span th:text="${c.name}">Danh mục</span>
-            <i class="bi bi-chevron-right small opacity-50"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12 col-lg-9 d-flex flex-column">
-      <div class="pv-hero-banner p-4 p-md-5 d-flex flex-column justify-content-between flex-grow-1 anim-fade-up">
-        <span class="hero-orb hero-orb-1"></span>
-        <span class="hero-orb hero-orb-2"></span>
-        <div class="row g-3 align-items-center position-relative" style="z-index: 2;">
-          <div class="col-xl-8">
-            <span class="badge rounded-pill px-3 py-2 fw-bold mb-3 d-inline-flex align-items-center gap-2"
-                  style="background: rgba(251, 191, 36, 0.18); color: #FDE68A; border: 1px solid rgba(251, 191, 36, 0.38);">
-              <i class="bi bi-lightning-charge-fill text-warning"></i> NEXORA LAPTOP • BỘ SƯU TẬP 2026
-            </span>
-            <h1 class="display-6 fw-bold mb-2 lh-sm">Laptop Chính Hãng<br class="d-none d-sm-inline"/> Công Nghệ Trong Tầm Tay</h1>
-            <p class="mb-3" style="max-width: 520px; color: #CBD5E1; font-size: 0.95rem;">
-              Đầy đủ các dòng Dell, HP, Lenovo, ASUS, Acer, MacBook, MSI, Gigabyte. Hỗ trợ thanh toán VietQR tức thì &amp; Tiền mặt khi nhận hàng (COD).
-            </p>
-          </div>
-          <div class="col-xl-4 d-none d-xl-block">
-            <div class="hero-glass-stat d-flex flex-column gap-2 small">
-              <div class="d-flex align-items-center gap-2">
-                <span class="pro-live-dot"></span>
-                <span class="fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em; color: #93C5FD;">Hệ thống Realtime</span>
-              </div>
-              <div class="d-flex justify-content-between pt-1" style="border-top: 1px solid rgba(255,255,255,0.12);">
-                <span class="text-white-50">Thanh toán QR</span>
-                <strong class="text-warning">Tức thì 24/7</strong>
-              </div>
-              <div class="d-flex justify-content-between">
-                <span class="text-white-50">Bảo hành</span>
-                <strong class="text-white">Chính hãng 100%</strong>
-              </div>
-              <div class="d-flex justify-content-between">
-                <span class="text-white-50">Vận chuyển</span>
-                <strong class="text-info">FreeShip toàn quốc</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="position-relative mt-3" style="z-index: 2;">
-          <div class="d-flex flex-wrap gap-2 mb-3">
-            <a th:href="@{/(categoryId=2)}" class="btn btn-warning fw-bold px-3 py-2 text-dark">
-              <i class="bi bi-controller me-1"></i>Laptop Gaming
-            </a>
-            <a th:href="@{/(categoryId=1)}" class="btn btn-light fw-semibold px-3 py-2" style="color: #1D4ED8;">
-              <i class="bi bi-briefcase me-1"></i>Laptop Văn phòng
-            </a>
-            <a th:href="@{/(categoryId=4)}" class="btn btn-outline-light fw-semibold px-3 py-2">
-              Mỏng nhẹ Cao cấp
-            </a>
-          </div>
-          <div class="d-flex flex-wrap gap-2 pt-1">
-            <span class="pro-hero-chip"><i class="bi bi-shield-check text-info me-1"></i>Bảo hành chính hãng</span>
-            <span class="pro-hero-chip"><i class="bi bi-truck text-warning me-1"></i>FreeShip toàn quốc</span>
-            <span class="pro-hero-chip"><i class="bi bi-qr-code-scan text-success me-1"></i>Thanh toán VietQR tức thì</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Brand Filter Pills -->
-      <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
-        <span class="small fw-semibold text-muted me-1"><i class="bi bi-award me-1"></i>Thương hiệu:</span>
-        <a th:href="@{/}" class="pv-brand-chip" th:classappend="${brandId == null} ? 'active'">Tất cả hãng</a>
-        <a th:each="b, st : ${brands}" th:if="${st.index < 8}"
-           th:href="@{/(brandId=${b.id})}"
-           class="pv-brand-chip"
-           th:classappend="${b.id == brandId} ? 'active'"
-           th:text="${b.name}">Hãng</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Flash Sale Showcase -->
-  <section class="pv-flash-section mb-4"
-           th:if="${flashSaleLaptops != null && !#lists.isEmpty(flashSaleLaptops) && (keyword == null || keyword.isBlank()) && categoryId == null && brandId == null && !discountedOnly}">
-    <div class="d-flex justify-content-between align-items-center mb-3 text-white flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning text-dark" style="width: 34px; height: 34px;">
-          <i class="bi bi-lightning-charge-fill fs-5"></i>
+  <!-- Hero Banner / Dynamic Carousel -->
+  <section class="nx-hero mb-4 nx-reveal">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <span class="nx-hero-badge mb-3">
+          <i class="bi bi-stars"></i> NEXORA LAPTOP 2026 • CHÍNH HÃNG VAT • BẢO HÀNH SERIAL ĐIỆN TỬ
         </span>
-        <div>
-          <h2 class="h5 fw-bold mb-0 text-white text-uppercase">Giảm giá sốc hôm nay</h2>
-          <div class="small" style="color: rgba(255,255,255,0.75);">Ưu đãi trực tiếp vào giá bán • Số lượng có hạn</div>
+        <h1 class="display-6 fw-bold mb-2"
+            th:text="${banners != null and !banners.isEmpty()} ? ${banners[0].title} : 'Hiệu năng bứt phá — Định chuẩn Laptop 2026'">
+          Hiệu năng bứt phá
+        </h1>
+        <p class="lead fs-6 opacity-75 mb-4"
+           th:text="${banners != null and !banners.isEmpty()} ? ${banners[0].subtitle} : 'Sẵn kho Laptop Gaming RTX 4060, MacBook M4, Ultrabook AI. Freeship từ 15 triệu, hỗ trợ VietQR tức thì & COD toàn quốc.'"></p>
+        <div class="d-flex flex-wrap gap-2">
+          <a th:href="@{/(discountedOnly=true)}" class="btn btn-pv-primary px-4 py-2">
+            <i class="bi bi-lightning-charge-fill me-1"></i>Săn Flash Sale
+          </a>
+          <a th:href="@{/bao-hanh}" class="btn btn-outline-light rounded-3 px-3 py-2">
+            <i class="bi bi-shield-check me-1"></i>Tra cứu bảo hành
+          </a>
+          <a th:href="@{/so-sanh}" class="btn btn-outline-info rounded-3 px-3 py-2">
+            <i class="bi bi-columns-gap me-1"></i>So sánh (<span th:text="${compareCount ?: 0}">0</span>)
+          </a>
         </div>
       </div>
-      <a th:href="@{/(discountedOnly=true)}" class="btn btn-sm btn-light fw-semibold rounded-pill px-3" style="color: #C2410C;">
-        Xem tất cả deal <i class="bi bi-arrow-right ms-1"></i>
-      </a>
-    </div>
-    <div class="row g-3">
-      <div class="col-6 col-md-3" th:each="f : ${flashSaleLaptops}">
-        <div class="pv-card h-100 d-flex flex-column">
-          <a th:href="@{/san-pham/{id}(id=${f.id})}" class="pv-img-wrap text-decoration-none">
-            <img th:src="${f.displayImageUrl}" th:alt="${f.name}"/>
-            <span class="pv-promo-badge is-deal">
-              GIẢM <span th:text="${#numbers.formatDecimal(f.discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}"></span>
-            </span>
-          </a>
-          <div class="p-3 d-flex flex-column flex-grow-1">
-            <a th:href="@{/san-pham/{id}(id=${f.id})}" class="pv-card-title mb-2" th:text="${f.name}">Tên laptop</a>
-            <div class="mb-2">
-              <span class="pv-spec-tag" th:if="${f.ramGb != null}" th:text="${f.ramGb + 'GB RAM'}"></span>
-              <span class="pv-spec-tag" th:if="${f.storageGb != null}" th:text="${f.storage}"></span>
+      <div class="col-lg-5 d-none d-lg-block">
+        <div class="row g-2 text-start">
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);">
+              <i class="bi bi-cpu fs-4 text-info"></i>
+              <div class="fw-bold mt-2">Core Ultra &amp; M4</div>
+              <div class="small opacity-75">Cấu hình AI mới nhất</div>
             </div>
-            <div class="mt-auto">
-              <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="pv-old-price" th:text="${#numbers.formatDecimal(f.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-                <span class="pv-discount-tag" th:text="${'-' + f.discountPercent + '%'}"></span>
-              </div>
-              <div class="pv-price fs-5 text-danger"
-                   th:text="${#numbers.formatDecimal(f.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);">
+              <i class="bi bi-truck fs-4 text-success"></i>
+              <div class="fw-bold mt-2">Freeship ≥ 15Tr</div>
+              <div class="small opacity-75">Kiểm tra máy trước nhận</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);">
+              <i class="bi bi-ticket-perforated fs-4 text-warning"></i>
+              <div class="fw-bold mt-2">Mã: NEXORA10</div>
+              <div class="small opacity-75">Giảm 10% tối đa 1.5Tr</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);">
+              <i class="bi bi-chat-dots fs-4 text-info"></i>
+              <div class="fw-bold mt-2">Tư vấn 24/7</div>
+              <div class="small opacity-75">Hỗ trợ chat trực tuyến</div>
             </div>
           </div>
         </div>
@@ -161,156 +69,147 @@
     </div>
   </section>
 
-  <!-- Modern Filter & Sort Bar -->
-  <form th:action="@{/}" method="get" class="pro-card p-3 p-md-4 mb-4">
-    <div class="row g-2 g-md-3 align-items-end">
+  <!-- Flash Sale Section -->
+  <section class="nx-flash-bar mb-4 nx-reveal" th:if="${flashSaleLaptops != null and !flashSaleLaptops.isEmpty() and keyword == null and categoryId == null and brandId == null and !discountedOnly}">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-danger rounded-pill px-3 py-2 fs-6"><i class="bi bi-fire me-1"></i>FLASH SALE HÔM NAY</span>
+        <span class="small text-muted d-none d-sm-inline">Kết thúc sau:</span>
+        <span id="nxFlashCountdown" class="nx-countdown-pill">12:00:00</span>
+      </div>
+      <a th:href="@{/(discountedOnly=true)}" class="small fw-semibold">Xem tất cả ưu đãi <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="row g-2 g-sm-3">
+      <div class="col-6 col-md-3" th:each="fs : ${flashSaleLaptops}">
+        <div class="nx-card p-2 p-sm-3">
+          <a th:href="@{/san-pham/{id}(id=${fs.id})}" class="nx-thumb-box rounded-3 mb-2">
+            <span class="nx-badge-discount" th:if="${fs.discountPercent > 0}" th:text="'-' + ${fs.discountPercent} + '%'">-15%</span>
+            <img th:src="${fs.displayImageUrl}" th:alt="${fs.name}"/>
+          </a>
+          <a th:href="@{/san-pham/{id}(id=${fs.id})}" class="fw-bold text-reset small text-truncate d-block mb-1" th:text="${fs.name}"></a>
+          <div class="d-flex flex-wrap align-items-baseline gap-1 gap-sm-2">
+            <span class="nx-price-now fs-6 tabular-nums" th:text="${#numbers.formatDecimal(fs.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+            <span class="nx-price-old tabular-nums" th:if="${fs.discounted}" th:text="${#numbers.formatDecimal(fs.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter & Sort Bar -->
+  <section class="nx-filter-bar mb-4 nx-reveal">
+    <form th:action="@{/}" method="get" class="row g-2 align-items-end">
       <div class="col-12 col-md-3">
-        <label class="form-label small fw-semibold text-muted mb-1">Từ khóa tìm kiếm</label>
-        <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm" placeholder="Tên máy, SKU, CPU..."/>
+        <label class="form-label small fw-semibold mb-1">Từ khóa</label>
+        <input type="text" class="form-control form-control-sm" name="keyword" th:value="${keyword}" placeholder="Tên, SKU, CPU, GPU..."/>
       </div>
       <div class="col-6 col-md-2">
-        <label class="form-label small fw-semibold text-muted mb-1">Danh mục</label>
-        <select name="categoryId" class="form-select form-select-sm">
+        <label class="form-label small fw-semibold mb-1">Danh mục</label>
+        <select class="form-select form-select-sm" name="categoryId">
           <option value="">Tất cả danh mục</option>
           <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}" th:selected="${c.id == categoryId}"></option>
         </select>
       </div>
       <div class="col-6 col-md-2">
-        <label class="form-label small fw-semibold text-muted mb-1">Thương hiệu</label>
-        <select name="brandId" class="form-select form-select-sm">
+        <label class="form-label small fw-semibold mb-1">Thương hiệu</label>
+        <select class="form-select form-select-sm" name="brandId">
           <option value="">Tất cả hãng</option>
           <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}" th:selected="${b.id == brandId}"></option>
         </select>
       </div>
       <div class="col-6 col-md-2">
-        <label class="form-label small fw-semibold text-muted mb-1">Sắp xếp theo</label>
-        <select name="sortBy" class="form-select form-select-sm">
-          <option value="id" th:selected="${sortBy == 'id'}">Nổi bật</option>
-          <option value="salePrice" th:selected="${sortBy == 'salePrice'}">Giá bán</option>
-          <option value="name" th:selected="${sortBy == 'name'}">Tên sản phẩm</option>
+        <label class="form-label small fw-semibold mb-1">Sắp xếp</label>
+        <select class="form-select form-select-sm" name="sortBy">
+          <option value="id" th:selected="${sortBy == 'id'}">Mới nhất / Mặc định</option>
+          <option value="salePrice" th:selected="${sortBy == 'salePrice'}">Theo giá bán</option>
+          <option value="name" th:selected="${sortBy == 'name'}">Theo tên A-Z</option>
+          <option value="viewCount" th:selected="${sortBy == 'viewCount'}">Lượt xem nhiều</option>
         </select>
       </div>
       <div class="col-6 col-md-1">
-        <label class="form-label small fw-semibold text-muted mb-1">Thứ tự</label>
-        <select name="direction" class="form-select form-select-sm">
+        <label class="form-label small fw-semibold mb-1">Thứ tự</label>
+        <select class="form-select form-select-sm" name="direction">
           <option value="asc" th:selected="${direction == 'asc'}">Tăng</option>
           <option value="desc" th:selected="${direction == 'desc'}">Giảm</option>
         </select>
       </div>
       <div class="col-12 col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-pv-primary btn-sm flex-grow-1 py-2">
-          <i class="bi bi-funnel me-1"></i>Lọc
-        </button>
-        <a th:href="@{/}" class="btn btn-outline-secondary btn-sm py-2" title="Xóa bộ lọc">
-          <i class="bi bi-arrow-clockwise"></i>
-        </a>
+        <button type="submit" class="btn btn-pv-primary btn-sm flex-grow-1"><i class="bi bi-funnel me-1"></i>Lọc</button>
+        <a th:href="@{/}" class="btn btn-outline-secondary btn-sm" title="Xóa bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
       </div>
-      <div class="col-12 pt-1">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" role="switch" name="discountedOnly" value="true" id="discountedOnly" th:checked="${discountedOnly}"/>
-          <label class="form-check-label small fw-semibold text-danger" for="discountedOnly">
-            <i class="bi bi-tag-fill me-1"></i>Chỉ hiển thị Laptop đang giảm giá sốc
-          </label>
-        </div>
-      </div>
-    </div>
-  </form>
-
-  <!-- Catalog Header -->
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2 class="h5 fw-bold mb-0 d-flex align-items-center gap-2">
-      <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 34px; height: 34px; font-size: 1rem;">
-        <i class="bi bi-laptop"></i>
-      </span>
-      <span th:text="${keyword != null && !keyword.isBlank() ? 'Kết quả tìm kiếm: ' + keyword : (discountedOnly ? 'Laptop Đang Giảm Giá Sốc' : 'Laptop bán chạy & Nổi bật')}"></span>
-    </h2>
-    <span class="badge-soft badge-soft-slate">Hiển thị <strong th:text="${laptopPage.totalElements}">0</strong> sản phẩm</span>
-  </div>
+    </form>
+  </section>
 
   <!-- Product Grid -->
-  <div class="row g-3" th:if="${!laptopPage.empty}">
-    <div class="col-6 col-md-4 col-lg-3" th:each="p : ${laptopPage.content}">
-      <div class="pv-card h-100 d-flex flex-column">
-        <a th:href="@{/san-pham/{id}(id=${p.id})}" class="pv-img-wrap text-decoration-none">
-          <img th:src="${p.displayImageUrl}" th:alt="${p.name}"/>
-          <span class="pv-promo-badge is-deal" th:if="${p.discounted}">
-            TIẾT KIỆM <span th:text="${#numbers.formatDecimal(p.discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}"></span>
-          </span>
-          <span class="pv-promo-badge" th:unless="${p.discounted}">
-            <i class="bi bi-patch-check-fill text-info me-1"></i>CHÍNH HÃNG
-          </span>
-        </a>
-        <div class="p-3 d-flex flex-column flex-grow-1">
-          <div class="d-flex justify-content-between align-items-center mb-2 gap-1">
-            <span class="text-uppercase fw-bold" style="font-size: 0.7rem; color: var(--brand-slate-500); letter-spacing: 0.04em;" th:text="${p.brandName}">BRAND</span>
-            <span class="badge-soft"
-                  th:classappend="${p.stockQuantity > 0 ? 'badge-soft-success' : 'badge-soft-danger'}"
-                  style="font-size: 0.68rem; padding: 2px 8px;"
-                  th:text="${p.stockQuantity > 0 ? 'Còn ' + p.stockQuantity : 'Hết hàng'}"></span>
-          </div>
+  <section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0"><i class="bi bi-laptop text-primary me-2"></i>Danh sách Laptop
+        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-1" th:text="${laptopPage.totalElements}">0</span>
+      </h4>
+    </div>
 
-          <a th:href="@{/san-pham/{id}(id=${p.id})}" class="pv-card-title mb-2" th:text="${p.name}">Tên laptop</a>
+    <div th:if="${laptopPage.empty}" class="nx-filter-bar text-center py-5">
+      <i class="bi bi-search display-4 text-muted mb-3 d-block"></i>
+      <h5 class="fw-bold">Không tìm thấy mẫu laptop phù hợp</h5>
+      <p class="text-muted small mb-3">Hãy thử đổi từ khóa hoặc xóa bộ lọc để xem toàn bộ sản phẩm đang kinh doanh.</p>
+      <a th:href="@{/}" class="btn btn-pv-primary px-4">Xem tất cả laptop</a>
+    </div>
 
-          <div class="mb-3">
-            <span class="pv-spec-tag" th:if="${p.cpu != null}" th:text="${p.cpu}">CPU</span>
-            <span class="pv-spec-tag" th:if="${p.ramGb != null}" th:text="${p.ramGb + 'GB RAM'}">RAM</span>
-            <span class="pv-spec-tag" th:if="${p.storageGb != null}" th:text="${p.storage}">SSD</span>
-          </div>
-
-          <div class="mt-auto">
-            <div class="d-flex align-items-center gap-2 mb-1" th:if="${p.discounted}">
-              <span class="pv-old-price" th:text="${#numbers.formatDecimal(p.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-              <span class="pv-discount-tag" th:text="${'-' + p.discountPercent + '%'}"></span>
+    <div class="row g-3 g-md-4" th:if="${!laptopPage.empty}">
+      <div class="col-12 col-sm-6 col-lg-3 nx-reveal" th:each="lp : ${laptopPage.content}">
+        <article class="nx-card p-3">
+          <div class="nx-thumb-box rounded-3 mb-3">
+            <span class="nx-badge-discount" th:if="${lp.discountPercent > 0}" th:text="'-' + ${lp.discountPercent} + '%'"></span>
+            <div class="nx-card-quick-actions">
+              <form th:action="@{/yeu-thich/toggle/{id}(id=${lp.id})}" method="post" class="d-inline">
+                <input type="hidden" name="redirect" value="/"/>
+                <button type="submit" class="nx-icon-btn" title="Yêu thích"><i class="bi bi-heart"></i></button>
+              </form>
+              <form th:action="@{/so-sanh/them/{id}(id=${lp.id})}" method="post" class="d-inline">
+                <button type="submit" class="nx-icon-btn" title="So sánh"><i class="bi bi-columns-gap"></i></button>
+              </form>
             </div>
-            <div class="pv-price fs-5 mb-2"
-                 th:text="${#numbers.formatDecimal(p.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            <a th:href="@{/san-pham/{id}(id=${lp.id})}" class="d-flex align-items-center justify-content-center w-100 h-100">
+              <img th:src="${lp.displayImageUrl}" th:alt="${lp.name}"/>
+            </a>
+          </div>
 
-            <form th:if="${p.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${p.id})}" method="post">
-              <button type="submit" class="btn btn-pv-outline btn-sm w-100 py-2">
-                <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.7rem;" th:text="${lp.brandName}">Brand</span>
+            <span class="small text-muted font-mono-code" style="font-size: 0.72rem;" th:text="${lp.sku}">SKU</span>
+          </div>
+
+          <h6 class="fw-bold mb-2" style="min-height: 2.5rem;">
+            <a th:href="@{/san-pham/{id}(id=${lp.id})}" class="text-reset stretched-link-title" th:text="${lp.name}">Laptop Name</a>
+          </h6>
+
+          <div class="nx-spec-pills mb-3">
+            <span class="nx-spec-pill" th:if="${lp.cpu != null}" th:text="${lp.cpu}">CPU</span>
+            <span class="nx-spec-pill" th:if="${lp.ram != ''}" th:text="${lp.ram}">RAM</span>
+            <span class="nx-spec-pill" th:if="${lp.storage != ''}" th:text="${lp.storage}">SSD</span>
+          </div>
+
+          <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center gap-2">
+            <div>
+              <div class="nx-price-now tabular-nums" th:text="${#numbers.formatDecimal(lp.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+              <div class="nx-price-old tabular-nums" th:if="${lp.discounted}" th:text="${#numbers.formatDecimal(lp.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            </div>
+            <form th:if="${lp.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${lp.id})}" method="post">
+              <button type="submit" class="btn btn-pv-primary btn-sm px-3" title="Thêm vào giỏ">
+                <i class="bi bi-cart-plus"></i>
               </button>
             </form>
-            <a th:unless="${p.stockQuantity > 0}" th:href="@{/san-pham/{id}(id=${p.id})}"
-               class="btn btn-outline-secondary btn-sm w-100 py-2">Xem chi tiết</a>
+            <span th:if="${lp.stockQuantity <= 0}" class="badge bg-secondary">Hết hàng</span>
           </div>
-        </div>
+        </article>
       </div>
     </div>
-  </div>
 
-  <!-- Empty State -->
-  <div class="pro-card p-5 text-center" th:if="${laptopPage.empty}">
-    <div class="pro-kpi-icon pro-kpi-icon-slate mx-auto mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
-      <i class="bi bi-search"></i>
-    </div>
-    <h5 class="fw-bold mb-1">Không tìm thấy sản phẩm phù hợp</h5>
-    <p class="text-muted small mb-3">Thử thay đổi từ khóa hoặc xóa bộ lọc hiện tại để xem toàn bộ danh mục.</p>
-    <a th:href="@{/}" class="btn btn-pv-primary px-4">Xem tất cả laptop</a>
-  </div>
-
-  <!-- Pagination -->
-  <nav th:if="${laptopPage.totalPages > 1}" class="mt-4">
-    <ul class="pagination pro-pagination justify-content-center">
-      <li class="page-item" th:classappend="${laptopPage.first} ? 'disabled'">
-        <a class="page-link" th:href="@{/(page=${laptopPage.number - 1}, keyword=${keyword}, categoryId=${categoryId}, brandId=${brandId}, discountedOnly=${discountedOnly}, sortBy=${sortBy}, direction=${direction})}">
-          <i class="bi bi-chevron-left"></i> Trước
-        </a>
-      </li>
-      <li class="page-item" th:each="i : ${#numbers.sequence(0, laptopPage.totalPages - 1)}"
-          th:classappend="${i == laptopPage.number} ? 'active'">
-        <a class="page-link" th:text="${i + 1}"
-           th:href="@{/(page=${i}, keyword=${keyword}, categoryId=${categoryId}, brandId=${brandId}, discountedOnly=${discountedOnly}, sortBy=${sortBy}, direction=${direction})}"></a>
-      </li>
-      <li class="page-item" th:classappend="${laptopPage.last} ? 'disabled'">
-        <a class="page-link" th:href="@{/(page=${laptopPage.number + 1}, keyword=${keyword}, categoryId=${categoryId}, brandId=${brandId}, discountedOnly=${discountedOnly}, sortBy=${sortBy}, direction=${direction})}">
-          Sau <i class="bi bi-chevron-right"></i>
-        </a>
-      </li>
-    </ul>
-  </nav>
+    <div th:replace="~{fragments/ui :: paginationBar(${laptopPage}, '/')}"></div>
+  </section>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<th:block th:replace="~{fragments/scripts :: commonScripts}"/>
 </body>
 </html>

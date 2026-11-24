@@ -47,8 +47,27 @@ public class Order {
     @Column(name = "GiamGia", nullable = false, precision = 18, scale = 2)
     private BigDecimal discount = BigDecimal.ZERO;
 
+    @Column(name = "PhiVanChuyen", nullable = false, precision = 18, scale = 2)
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
+    @Column(name = "ThueVAT", nullable = false, precision = 18, scale = 2)
+    private BigDecimal vatAmount = BigDecimal.ZERO;
+
+    @Column(name = "MaGiamGia", length = 30)
+    private String couponCode;
+
     @Column(name = "TongTien", nullable = false, precision = 18, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @Column(name = "DonViVanChuyen", length = 100)
+    private String carrierName;
+
+    @Column(name = "MaVanDon", length = 60)
+    private String trackingCode;
+
+    @Version
+    @Column(name = "PhienBan", nullable = false)
+    private Integer version = 0;
 
     @Column(name = "GhiChu", length = 500)
     private String note;
@@ -84,6 +103,7 @@ public class Order {
     private List<OrderDetail> details = new ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
     private List<Payment> payments = new ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -98,7 +118,10 @@ public class Order {
         if (this.status == null) this.status = OrderStatus.PENDING;
         if (this.subtotal == null) this.subtotal = BigDecimal.ZERO;
         if (this.discount == null) this.discount = BigDecimal.ZERO;
+        if (this.shippingFee == null) this.shippingFee = BigDecimal.ZERO;
+        if (this.vatAmount == null) this.vatAmount = BigDecimal.ZERO;
         if (this.totalAmount == null) this.totalAmount = BigDecimal.ZERO;
+        if (this.version == null) this.version = 0;
     }
 
     @PreUpdate
@@ -180,8 +203,26 @@ public class Order {
     public BigDecimal getDiscount() { return discount; }
     public void setDiscount(BigDecimal discount) { this.discount = discount; }
 
+    public BigDecimal getShippingFee() { return shippingFee; }
+    public void setShippingFee(BigDecimal shippingFee) { this.shippingFee = shippingFee; }
+
+    public BigDecimal getVatAmount() { return vatAmount; }
+    public void setVatAmount(BigDecimal vatAmount) { this.vatAmount = vatAmount; }
+
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+
+    public String getCarrierName() { return carrierName; }
+    public void setCarrierName(String carrierName) { this.carrierName = carrierName; }
+
+    public String getTrackingCode() { return trackingCode; }
+    public void setTrackingCode(String trackingCode) { this.trackingCode = trackingCode; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }

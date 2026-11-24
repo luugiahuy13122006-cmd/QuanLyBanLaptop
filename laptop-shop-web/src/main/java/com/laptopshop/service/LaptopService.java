@@ -5,16 +5,16 @@ import com.laptopshop.dto.LaptopDTO;
 import com.laptopshop.entity.Brand;
 import com.laptopshop.entity.Category;
 import com.laptopshop.entity.Laptop;
+import com.laptopshop.entity.StockMovementType;
 import com.laptopshop.exception.BusinessException;
 import com.laptopshop.exception.ResourceNotFoundException;
-import com.laptopshop.repository.BrandRepository;
-import com.laptopshop.repository.CategoryRepository;
-import com.laptopshop.repository.ImportReceiptDetailRepository;
-import com.laptopshop.repository.LaptopRepository;
-import com.laptopshop.repository.OrderDetailRepository;
+import com.laptopshop.repository.*;
+import com.laptopshop.util.PaginationUtils;
+import com.laptopshop.util.VietnameseTextNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +44,7 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class LaptopService {
     private static final Logger log = LoggerFactory.getLogger(LaptopService.class);
+    private static final long MAX_PRODUCT_IMAGE_BYTES = 5L * 1024 * 1024;
 
     public static final List<Integer> VALID_RAM_OPTIONS = List.of(4, 8, 12, 16, 18, 24, 32, 36, 48, 64, 128);
     public static final List<Integer> VALID_STORAGE_OPTIONS = List.of(128, 256, 512, 1024, 2048, 4096);
@@ -55,23 +56,36 @@ public class LaptopService {
     );
     private static final Set<Integer> ALLOWED_RAM_SET = Set.copyOf(VALID_RAM_OPTIONS);
     private static final Set<Integer> ALLOWED_STORAGE_SET = Set.copyOf(VALID_STORAGE_OPTIONS);
+    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
 
     private final LaptopRepository laptopRepo;
     private final CategoryRepository categoryRepo;
     private final BrandRepository brandRepo;
     private final OrderDetailRepository orderDetailRepo;
     private final ImportReceiptDetailRepository importReceiptDetailRepo;
+    private final StockMovementRepository stockMovementRepo;
+    private final StockMovementService stockMovementService;
+    private final JobLockService jobLockService;
+    private final AuditLogService auditLogService;
 
     public LaptopService(LaptopRepository laptopRepo,
                          CategoryRepository categoryRepo,
                          BrandRepository brandRepo,
                          OrderDetailRepository orderDetailRepo,
-                         ImportReceiptDetailRepository importReceiptDetailRepo) {
+                         ImportReceiptDetailRepository importReceiptDetailRepo,
+                         StockMovementRepository stockMovementRepo,
+                         StockMovementService stockMovementService,
+                         JobLockService jobLockService,
+                         AuditLogService auditLogService) {
         this.laptopRepo = laptopRepo;
         this.categoryRepo = categoryRepo;
         this.brandRepo = brandRepo;
         this.orderDetailRepo = orderDetailRepo;
         this.importReceiptDetailRepo = importReceiptDetailRepo;
+        this.stockMovementRepo = stockMovementRepo;
+        this.stockMovementService = stockMovementService;
+        this.jobLockService = jobLockService;
+        this.auditLogService = auditLogService;
     }
 
     public Page<Laptop> filterLaptops(String keyword, Integer categoryId, Integer brandId,
@@ -79,7 +93,8 @@ public class LaptopService {
                                       int page, int size, String sortBy, String direction) {
         Pageable pageable = buildPageable(page, size, sortBy, direction);
         String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
-        return laptopRepo.filterLaptops(kw, categoryId, brandId, minPrice, maxPrice, pageable);
+        String asciiKw = kw == null ? "" : VietnameseTextNormalizer.normalize(kw);
+        return laptopRepo.filterLaptops(kw, asciiKw, categoryId, brandId, minPrice, maxPrice, pageable);
     }
 
     public Page<Laptop> filterActiveLaptops(String keyword, Integer categoryId, Integer brandId,
@@ -88,24 +103,26 @@ public class LaptopService {
                                             int page, int size, String sortBy, String direction) {
         Pageable pageable = buildPageable(page, size, sortBy, direction);
         String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
-        return laptopRepo.filterActiveLaptops(kw, categoryId, brandId, minPrice, maxPrice, discountedOnly, pageable);
+        String asciiKw = kw == null ? "" : VietnameseTextNormalizer.normalize(kw);
+        return laptopRepo.filterActiveLaptops(kw, asciiKw, categoryId, brandId, minPrice, maxPrice, discountedOnly, pageable);
     }
 
     public List<Laptop> getTopDiscountedLaptops(int limit) {
-        return laptopRepo.findTopDiscountedLaptops(PageRequest.of(0, limit));
+        return laptopRepo.findTopDiscountedLaptops(PageRequest.of(0, PaginationUtils.clampSize(limit, 8, 50)));
     }
 
     private Pageable buildPageable(int page, int size, String sortBy, String direction) {
-        String sortField = switch (sortBy) {
+        String sortField = switch (sortBy != null ? sortBy : "id") {
             case "name" -> "name";
             case "salePrice" -> "salePrice";
             case "stockQuantity" -> "stockQuantity";
+            case "viewCount" -> "viewCount";
             default -> "id";
         };
         Sort sort = "desc".equalsIgnoreCase(direction)
                 ? Sort.by(sortField).descending()
                 : Sort.by(sortField).ascending();
-        return PageRequest.of(page, size, sort);
+        return PageRequest.of(PaginationUtils.clampPage(page), PaginationUtils.clampSize(size, 10, 100), sort);
     }
 
     public Laptop getLaptopById(Integer id) {
@@ -113,15 +130,22 @@ public class LaptopService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy laptop ID: " + id));
     }
 
+    @Transactional
+    public void incrementViewCount(Integer id) {
+        laptopRepo.findById(id).ifPresent(l -> {
+            l.setViewCount((l.getViewCount() != null ? l.getViewCount() : 0) + 1);
+            laptopRepo.save(l);
+        });
+    }
+
     public List<Laptop> getAllLaptops() {
         return laptopRepo.findAllWithDetails();
     }
 
     public List<Laptop> searchLaptops(String keyword) {
-        return laptopRepo.searchByKeyword(keyword == null ? "" : keyword.trim());
+        String kw = keyword == null ? "" : keyword.trim();
+        return laptopRepo.searchByKeyword(kw, VietnameseTextNormalizer.normalize(kw));
     }
-
-    private static final Set<String> ALLOWED_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
 
     public List<String> getGalleryImages(Laptop laptop) {
         LinkedHashSet<String> images = new LinkedHashSet<>();
@@ -184,9 +208,11 @@ public class LaptopService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!"));
         Brand brand = brandRepo.findById(dto.getBrandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu!"));
-        Laptop l = buildLaptop(new Laptop(), dto, cat, brand, false);
+        Laptop l = buildLaptop(new Laptop(), dto, cat, brand, false, true);
         l.setSku(sku);
-        return laptopRepo.save(l);
+        Laptop saved = laptopRepo.save(l);
+        auditLogService.logAction("CREATE_LAPTOP", "Laptop", saved.getSku(), "Thêm laptop " + saved.getName());
+        return saved;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -204,9 +230,11 @@ public class LaptopService {
         String savedPathsCsv = saveUploadedLaptopImages(sku, imageFiles);
         dto.setImageUrl(savedPathsCsv);
 
-        Laptop l = buildLaptop(new Laptop(), dto, cat, brand, false);
+        Laptop l = buildLaptop(new Laptop(), dto, cat, brand, false, true);
         l.setSku(sku);
-        return laptopRepo.save(l);
+        Laptop saved = laptopRepo.save(l);
+        auditLogService.logAction("CREATE_LAPTOP", "Laptop", saved.getSku(), "Thêm laptop (5 ảnh) " + saved.getName());
+        return saved;
     }
 
     public String saveUploadedLaptopImages(String rawSku, MultipartFile[] imageFiles) {
@@ -229,6 +257,9 @@ public class LaptopService {
 
         for (int i = 0; i < validFiles.size(); i++) {
             MultipartFile file = validFiles.get(i);
+            if (file.getSize() > MAX_PRODUCT_IMAGE_BYTES) {
+                throw new BusinessException("Ảnh số " + (i + 1) + " vượt quá giới hạn 5MB.");
+            }
             String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename().trim() : "";
             String ext = "";
             int dot = originalName.lastIndexOf('.');
@@ -238,11 +269,13 @@ public class LaptopService {
             if (!ALLOWED_IMAGE_EXTENSIONS.contains(ext)) {
                 throw new BusinessException("Ảnh số " + (i + 1) + " ('" + originalName + "') không đúng định dạng! Chỉ chấp nhận .jpg, .png, .webp.");
             }
-            String contentType = file.getContentType();
-            if (contentType != null && !contentType.isBlank()
-                    && !contentType.toLowerCase(Locale.ROOT).startsWith("image/")
-                    && !contentType.equalsIgnoreCase("application/octet-stream")) {
-                throw new BusinessException("Tệp ảnh số " + (i + 1) + " không phải là tệp hình ảnh hợp lệ.");
+            try (InputStream in = file.getInputStream()) {
+                byte[] magic = in.readNBytes(12);
+                if (!hasValidImageMagic(magic)) {
+                    throw new BusinessException("Ảnh số " + (i + 1) + " không có chữ ký ảnh hợp lệ.");
+                }
+            } catch (IOException e) {
+                throw new BusinessException("Không đọc được dữ liệu ảnh số " + (i + 1) + ".");
             }
         }
 
@@ -260,51 +293,52 @@ public class LaptopService {
                 MultipartFile file = validFiles.get(i);
                 String fileName = (i + 1) + ".jpg";
                 Path destFile = staticDir.resolve(fileName);
-                writeAsJpgOrRaw(file, destFile);
+                reencodeStrictJpg(file, destFile, i + 1);
                 if (targetDir != null) {
                     Files.copy(destFile, targetDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
                 }
                 relativeUrls.add("/images/laptops/" + safeSku + "/" + fileName);
             }
+        } catch (BusinessException ex) {
+            throw ex;
         } catch (IOException e) {
             log.error("[UPLOAD] Lỗi lưu ảnh laptop SKU={}: {}", safeSku, e.getMessage());
-            throw new BusinessException("Không thể lưu tệp ảnh sản phẩm lên máy chủ: " + e.getMessage());
+            throw new BusinessException("Không thể lưu tệp ảnh sản phẩm lên máy chủ.");
         }
 
         return String.join(",", relativeUrls);
     }
 
-    private void writeAsJpgOrRaw(MultipartFile file, Path destFile) throws IOException {
-        String name = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase(Locale.ROOT) : "";
-        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, destFile, StandardCopyOption.REPLACE_EXISTING);
-            }
-            return;
-        }
+    private void reencodeStrictJpg(MultipartFile file, Path destFile, int index) throws IOException {
         try (InputStream in = file.getInputStream()) {
             BufferedImage img = ImageIO.read(in);
-            if (img != null) {
-                BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
-                Graphics2D g = rgb.createGraphics();
-                g.setColor(Color.WHITE);
-                g.fillRect(0, 0, img.getWidth(), img.getHeight());
-                g.drawImage(img, 0, 0, null);
-                g.dispose();
-                ImageIO.write(rgb, "jpg", destFile.toFile());
-                return;
+            if (img == null || img.getWidth() <= 0 || img.getHeight() <= 0) {
+                throw new BusinessException("Ảnh số " + index + " bị hỏng hoặc không phải hình ảnh hợp lệ.");
             }
-        } catch (Exception ignored) {
+            BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = rgb.createGraphics();
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, img.getWidth(), img.getHeight());
+            g.drawImage(img, 0, 0, null);
+            g.dispose();
+            if (!ImageIO.write(rgb, "jpg", destFile.toFile())) {
+                throw new BusinessException("Không thể mã hóa ảnh số " + index + " sang định dạng JPG.");
+            }
         }
-        try (InputStream in = file.getInputStream()) {
-            Files.copy(in, destFile, StandardCopyOption.REPLACE_EXISTING);
-        }
+    }
+
+    private static boolean hasValidImageMagic(byte[] h) {
+        if (h.length >= 3 && (h[0] & 0xFF) == 0xFF && (h[1] & 0xFF) == 0xD8 && (h[2] & 0xFF) == 0xFF) return true;
+        if (h.length >= 8 && (h[0] & 0xFF) == 0x89 && h[1] == 'P' && h[2] == 'N' && h[3] == 'G') return true;
+        if (h.length >= 12 && h[0] == 'R' && h[1] == 'I' && h[2] == 'F' && h[3] == 'F'
+                && h[8] == 'W' && h[9] == 'E' && h[10] == 'B' && h[11] == 'P') return true;
+        return false;
     }
 
     @Transactional
     public Laptop updateLaptop(Integer id, LaptopDTO dto) {
         validateRealHardwareSpecs(dto);
-        Laptop l = laptopRepo.findById(id)
+        Laptop l = laptopRepo.findByIdWithLock(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy laptop ID: " + id));
         String sku = dto.getSku().trim();
         if (laptopRepo.existsBySkuIgnoreCaseAndIdNot(sku, id)) {
@@ -314,10 +348,13 @@ public class LaptopService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!"));
         Brand brand = brandRepo.findById(dto.getBrandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu!"));
-        buildLaptop(l, dto, cat, brand, true);
+        // Không ghi đè SoLuongTon khi sửa thông tin sản phẩm (tồn kho chỉ biến động qua bán/nhập/điều chỉnh kho)
+        buildLaptop(l, dto, cat, brand, true, false);
         l.setSku(sku);
         l.setUpdatedAt(LocalDateTime.now());
-        return laptopRepo.save(l);
+        Laptop saved = laptopRepo.save(l);
+        auditLogService.logAction("UPDATE_LAPTOP", "Laptop", saved.getSku(), "Cập nhật thông tin " + saved.getName());
+        return saved;
     }
 
     private void validateRealHardwareSpecs(LaptopDTO dto) {
@@ -338,7 +375,7 @@ public class LaptopService {
 
     @Transactional
     public void deleteLaptop(Integer id) {
-        Laptop l = laptopRepo.findById(id)
+        Laptop l = laptopRepo.findByIdWithLock(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy laptop ID: " + id));
         long orderRefs = orderDetailRepo.countByLaptopId(id);
         if (orderRefs > 0) {
@@ -347,41 +384,69 @@ public class LaptopService {
         if (importReceiptDetailRepo.existsByLaptopId(id)) {
             throw new BusinessException("Không thể xóa! Laptop đã được nhập kho qua phiếu nhập. Hãy ẩn sản phẩm thay vì xóa.");
         }
-        laptopRepo.delete(l);
+        if (stockMovementRepo.existsByLaptop_Id(id)) {
+            throw new BusinessException("Không thể xóa! Laptop đã có lịch sử biến động tồn kho. Hãy ẩn sản phẩm thay vì xóa.");
+        }
+        try {
+            laptopRepo.delete(l);
+            laptopRepo.flush();
+            auditLogService.logAction("DELETE_LAPTOP", "Laptop", l.getSku(), "Xóa laptop " + l.getName());
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessException("Không thể xóa! Laptop đang được tham chiếu bởi dữ liệu khác. Hãy ẩn sản phẩm thay thế.");
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void updateStockSafe(Integer laptopId, int delta) {
+        updateStockSafe(laptopId, delta, StockMovementType.MANUAL_ADJUST, null, "Cập nhật tồn kho", null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void updateStockSafe(Integer laptopId, int delta, StockMovementType type,
+                                String referenceCode, String reason, Integer actorAccountId) {
         String threadName = Thread.currentThread().getName();
         log.info("[THREAD: {}] Bắt đầu cập nhật tồn kho laptop ID={}, delta={}", threadName, laptopId, delta);
         Laptop l = laptopRepo.findByIdWithLock(laptopId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy laptop ID: " + laptopId));
-        int newStock = l.getStockQuantity() + delta;
+        int oldStock = l.getStockQuantity() != null ? l.getStockQuantity() : 0;
+        int newStock = oldStock + delta;
         if (newStock < 0) {
-            throw new BusinessException("Tồn kho không đủ! Hiện còn: " + l.getStockQuantity());
+            throw new BusinessException("Tồn kho không đủ! Hiện còn: " + oldStock);
         }
         l.setStockQuantity(newStock);
         l.setUpdatedAt(LocalDateTime.now());
         laptopRepo.save(l);
+        if (delta != 0) {
+            stockMovementService.record(l, type != null ? type : StockMovementType.MANUAL_ADJUST,
+                    delta, oldStock, newStock, referenceCode, reason, actorAccountId);
+        }
         log.info("[THREAD: {}] Cập nhật thành công: laptop ID={}, tồn kho mới={}", threadName, laptopId, newStock);
     }
 
     @Scheduled(fixedDelay = 60000)
     public void checkLowStockAlert() {
-        String threadName = Thread.currentThread().getName();
-        log.info("[SCHEDULED | THREAD: {}] Kiểm tra tồn kho thấp...", threadName);
-        List<Laptop> lowStockList = laptopRepo.findLowStock(5);
-        if (lowStockList.isEmpty()) {
-            log.info("[SCHEDULED | THREAD: {}] Tất cả sản phẩm có tồn kho ổn định.", threadName);
-        } else {
-            log.warn("[SCHEDULED | THREAD: {}] Cảnh báo {} sản phẩm tồn kho thấp (<= 5):", threadName, lowStockList.size());
-            for (Laptop lp : lowStockList) {
-                log.warn("  >> ID={} | {} | Tồn kho: {}", lp.getId(), lp.getName(), lp.getStockQuantity());
+        if (!jobLockService.tryAcquire("CHECK_LOW_STOCK", 50)) {
+            return;
+        }
+        try {
+            String threadName = Thread.currentThread().getName();
+            log.info("[SCHEDULED | THREAD: {}] Kiểm tra tồn kho thấp...", threadName);
+            List<Laptop> lowStockList = laptopRepo.findLowStock(5);
+            if (lowStockList.isEmpty()) {
+                log.info("[SCHEDULED | THREAD: {}] Tất cả sản phẩm có tồn kho ổn định.", threadName);
+            } else {
+                log.warn("[SCHEDULED | THREAD: {}] Cảnh báo {} sản phẩm tồn kho thấp (<= 5):", threadName, lowStockList.size());
+                for (Laptop lp : lowStockList) {
+                    log.warn("  >> ID={} | {} | Tồn kho: {}", lp.getId(), lp.getName(), lp.getStockQuantity());
+                }
             }
+        } finally {
+            jobLockService.release("CHECK_LOW_STOCK");
         }
     }
 
-    private Laptop buildLaptop(Laptop l, LaptopDTO dto, Category cat, Brand brand, boolean keepExistingImageWhenBlank) {
+    private Laptop buildLaptop(Laptop l, LaptopDTO dto, Category cat, Brand brand,
+                               boolean keepExistingImageWhenBlank, boolean setInitialStock) {
         l.setName(dto.getName().trim());
         l.setCategory(cat);
         l.setBrand(brand);
@@ -397,7 +462,9 @@ public class LaptopService {
                 ? dto.getListPrice() : dto.getSalePrice();
         l.setListPrice(listPrice);
         l.setSalePrice(dto.getSalePrice());
-        l.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
+        if (setInitialStock) {
+            l.setStockQuantity(dto.getStockQuantity() != null ? dto.getStockQuantity() : 0);
+        }
         if (!keepExistingImageWhenBlank || (dto.getImageUrl() != null && !dto.getImageUrl().isBlank())) {
             l.setImageUrl(dto.getImageUrl());
         }

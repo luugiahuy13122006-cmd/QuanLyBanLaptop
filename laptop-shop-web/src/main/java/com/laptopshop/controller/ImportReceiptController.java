@@ -6,6 +6,7 @@ import com.laptopshop.entity.ImportReceipt;
 import com.laptopshop.entity.ImportReceiptStatus;
 import com.laptopshop.service.ImportReceiptService;
 import com.laptopshop.service.LaptopService;
+import com.laptopshop.util.PaginationUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,7 +40,7 @@ public class ImportReceiptController {
             Model model) {
         Page<ImportReceipt> receiptPage = importReceiptService.getReceipts(
                 status, keyword,
-                PageRequest.of(page, size, Sort.by("createdAt").descending())
+                PageRequest.of(PaginationUtils.clampPage(page), PaginationUtils.clampSize(size, 10, 100), Sort.by("createdAt").descending())
         );
         model.addAttribute("receiptPage", receiptPage);
         model.addAttribute("selectedStatus", status);

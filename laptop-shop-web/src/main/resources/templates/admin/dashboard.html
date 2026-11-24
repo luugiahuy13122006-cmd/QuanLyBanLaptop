@@ -1,19 +1,7 @@
 <!DOCTYPE html>
 <!-- Thành viên phụ trách: TV5 - Vũ Gia Bảo -->
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Tổng quan Quản trị - Nexora Admin</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
-</head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: commonHead('Tổng quan Quản trị')}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -22,10 +10,13 @@
     <main class="col-lg-10 p-0">
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-          <h4 class="fw-bold mb-0">Tổng quan Hệ thống</h4>
-          <div class="small text-muted">Theo dõi doanh thu, tồn kho thời gian thực &amp; vận hành đơn hàng</div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-grid-1x2 text-primary me-2"></i>Tổng quan Hệ thống NEXORA</h4>
+          <div class="small text-muted">Theo dõi doanh thu thời gian thực, lợi nhuận gộp &amp; vận hành đa kênh</div>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <a th:href="@{/admin/pos}" class="btn btn-success btn-sm px-3 fw-semibold">
+            <i class="bi bi-upc-scan me-1"></i>Bán tại quầy (POS)
+          </a>
           <a th:href="@{/admin/orders/create}" class="btn btn-pv-primary btn-sm px-3">
             <i class="bi bi-plus-lg me-1"></i>Tạo đơn hàng
           </a>
@@ -39,10 +30,10 @@
       <div class="p-3 p-md-4">
         <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-        <!-- 4 Primary Figma KPI Cards -->
-        <div class="row g-3 mb-4">
+        <!-- Primary KPIs -->
+        <div class="row g-3 mb-3">
           <div class="col-6 col-xl-3">
-            <div class="pro-kpi-card d-flex flex-column justify-content-between">
+            <div class="pro-kpi-card nx-reveal is-visible d-flex flex-column justify-content-between">
               <div>
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                   <div class="pro-kpi-label">Sản phẩm Laptop</div>
@@ -50,14 +41,14 @@
                 </div>
                 <div class="pro-kpi-value mb-2" th:text="${totalLaptops}">0</div>
               </div>
-              <a th:href="@{/admin/laptops}" class="small fw-semibold text-decoration-none text-primary">
-                Quản lý danh mục <i class="bi bi-arrow-right ms-1"></i>
+              <a th:href="@{/admin/laptops}" class="small fw-semibold">
+                Quản lý kho máy (<span th:text="${totalCategories}">0</span> DM / <span th:text="${totalBrands}">0</span> hãng) <i class="bi bi-arrow-right ms-1"></i>
               </a>
             </div>
           </div>
 
           <div class="col-6 col-xl-3">
-            <div class="pro-kpi-card d-flex flex-column justify-content-between">
+            <div class="pro-kpi-card nx-reveal is-visible d-flex flex-column justify-content-between">
               <div>
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                   <div class="pro-kpi-label">Khách hàng</div>
@@ -65,14 +56,14 @@
                 </div>
                 <div class="pro-kpi-value mb-2" th:text="${totalCustomers}">0</div>
               </div>
-              <a th:href="@{/admin/customers}" class="small fw-semibold text-decoration-none text-primary">
-                Xem danh sách <i class="bi bi-arrow-right ms-1"></i>
+              <a th:href="@{/admin/customers}" class="small fw-semibold">
+                Hồ sơ khách hàng <i class="bi bi-arrow-right ms-1"></i>
               </a>
             </div>
           </div>
 
           <div class="col-6 col-xl-3">
-            <div class="pro-kpi-card d-flex flex-column justify-content-between">
+            <div class="pro-kpi-card nx-reveal is-visible d-flex flex-column justify-content-between">
               <div>
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                   <div class="pro-kpi-label">Tổng Đơn hàng</div>
@@ -80,59 +71,95 @@
                 </div>
                 <div class="pro-kpi-value mb-2" th:text="${totalOrders}">0</div>
               </div>
-              <a th:href="@{/admin/orders}" class="small fw-semibold text-decoration-none text-primary">
-                Xử lý đơn hàng <i class="bi bi-arrow-right ms-1"></i>
+              <a th:href="@{/admin/orders}" class="small fw-semibold">
+                Tỷ lệ hủy: <strong th:text="${cancellationRate} + '%'">0%</strong> <i class="bi bi-arrow-right ms-1"></i>
               </a>
             </div>
           </div>
 
           <div class="col-6 col-xl-3">
-            <div class="pro-kpi-card d-flex flex-column justify-content-between">
+            <div class="pro-kpi-card nx-reveal is-visible d-flex flex-column justify-content-between">
               <div>
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                   <div class="pro-kpi-label">Doanh thu (Đã TT)</div>
                   <span class="pro-kpi-icon pro-kpi-icon-emerald"><i class="bi bi-currency-dollar"></i></span>
                 </div>
-                <div class="pro-kpi-value text-success mb-2 text-truncate" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+                <div class="pro-kpi-value text-success mb-2 text-truncate"
+                     th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
               </div>
-              <a th:href="@{/admin/statistics}" class="small fw-semibold text-decoration-none text-success">
-                Báo cáo chi tiết <i class="bi bi-arrow-right ms-1"></i>
+              <a th:href="@{/admin/statistics}" class="small fw-semibold text-success">
+                Lợi nhuận gộp: <span th:text="${#numbers.formatDecimal(grossProfit, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</span>
               </a>
             </div>
           </div>
         </div>
 
-        <!-- 2 Operational Strip Cards -->
+        <!-- Time-range Revenue Strip -->
         <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <div class="pro-kpi-card d-flex justify-content-between align-items-center gap-3">
-              <div class="d-flex align-items-center gap-3">
-                <span class="pro-kpi-icon pro-kpi-icon-slate"><i class="bi bi-truck-flatbed"></i></span>
-                <div>
-                  <div class="pro-kpi-label">Chi phí nhập kho</div>
-                  <div class="fw-bold fs-5 tabular-nums" th:text="${#numbers.formatDecimal(totalImportCost, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
-                </div>
-              </div>
-              <a th:href="@{/admin/import-receipts}" class="btn btn-sm btn-outline-primary text-nowrap">Phiếu nhập</a>
+          <div class="col-md-3">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Doanh thu hôm nay</div>
+              <div class="fw-bold fs-5 text-primary tabular-nums mt-1"
+                   th:text="${#numbers.formatDecimal(revenueToday, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
             </div>
           </div>
-
-          <div class="col-md-6">
-            <div class="pro-kpi-card d-flex justify-content-between align-items-center gap-3">
-              <div class="d-flex align-items-center gap-3">
-                <span class="pro-kpi-icon pro-kpi-icon-indigo"><i class="bi bi-clipboard-check"></i></span>
-                <div>
-                  <div class="pro-kpi-label">Phiếu nhập chờ duyệt</div>
-                  <div class="fw-bold fs-4 tabular-nums" th:text="${pendingImportCount ?: 0}">0</div>
-                </div>
-              </div>
-              <a th:href="@{/admin/import-receipts(status='PENDING')}" class="btn btn-sm btn-dark text-nowrap">Xem phiếu</a>
+          <div class="col-md-3">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Doanh thu tuần này</div>
+              <div class="fw-bold fs-5 text-info tabular-nums mt-1"
+                   th:text="${#numbers.formatDecimal(revenueThisWeek, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Doanh thu tháng này</div>
+              <div class="fw-bold fs-5 text-success tabular-nums mt-1"
+                   th:text="${#numbers.formatDecimal(revenueThisMonth, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Giá trị đơn TB (AOV)</div>
+              <div class="fw-bold fs-5 tabular-nums mt-1"
+                   th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
             </div>
           </div>
         </div>
 
-        <!-- Low Stock Table + Quick Actions -->
-        <div class="row g-4">
+        <!-- Operational Action Alerts -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="pro-kpi-card d-flex justify-content-between align-items-center gap-3">
+              <div>
+                <div class="pro-kpi-label">Chi phí nhập kho</div>
+                <div class="fw-bold fs-5 tabular-nums mt-1"
+                     th:text="${#numbers.formatDecimal(totalImportCost, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+              </div>
+              <a th:href="@{/admin/import-receipts}" class="btn btn-sm btn-outline-primary text-nowrap">Phiếu nhập</a>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="pro-kpi-card d-flex justify-content-between align-items-center gap-3">
+              <div>
+                <div class="pro-kpi-label">Phiếu nhập chờ duyệt</div>
+                <div class="fw-bold fs-4 tabular-nums mt-1 text-warning" th:text="${pendingImportCount ?: 0}">0</div>
+              </div>
+              <a th:href="@{/admin/import-receipts(status='PENDING')}" class="btn btn-sm btn-warning text-nowrap">Duyệt phiếu</a>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="pro-kpi-card d-flex justify-content-between align-items-center gap-3">
+              <div>
+                <div class="pro-kpi-label">Minh chứng CK chờ duyệt</div>
+                <div class="fw-bold fs-4 tabular-nums mt-1 text-danger" th:text="${pendingProofCount ?: 0}">0</div>
+              </div>
+              <a th:href="@{/admin/orders/pending-proofs}" class="btn btn-sm btn-danger text-nowrap">Đối soát ngay</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Low Stock + Quick Modules -->
+        <div class="row g-4 mb-4">
           <div class="col-lg-7">
             <div class="pro-card h-100">
               <div class="pro-card-header">
@@ -175,20 +202,24 @@
                 </h6>
               </div>
               <div class="p-3 d-grid gap-2">
-                <a th:href="@{/admin/orders/create}" class="pro-nav-pill justify-content-between py-2 px-3">
-                  <span><i class="bi bi-plus-circle text-primary me-2"></i>Tạo đơn hàng mới (Pessimistic Lock)</span>
+                <a th:href="@{/admin/pos}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-upc-scan text-success me-2"></i>Bán hàng tại quầy (POS) &amp; In hóa đơn</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
-                <a th:href="@{/admin/import-receipts}" class="pro-nav-pill justify-content-between py-2 px-3">
-                  <span><i class="bi bi-truck-flatbed text-info me-2"></i>Quản lý phiếu nhập kho</span>
+                <a th:href="@{/admin/warranties}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-shield-check text-primary me-2"></i>Quản lý Serial &amp; Tiếp nhận bảo hành</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
-                <a th:href="@{/admin/statistics}" class="pro-nav-pill justify-content-between py-2 px-3">
-                  <span><i class="bi bi-bar-chart-line text-success me-2"></i>Thống kê doanh thu &amp; bán chạy</span>
+                <a th:href="@{/admin/coupons}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-ticket-perforated text-warning me-2"></i>Mã giảm giá &amp; Khuyến mãi</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
                 <a th:href="@{/admin/statistics/report}" class="pro-nav-pill justify-content-between py-2 px-3">
-                  <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Xuất báo cáo doanh thu (In / PDF)</span>
+                  <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Xuất báo cáo doanh thu (In / PDF / Excel)</span>
+                  <i class="bi bi-chevron-right small text-muted"></i>
+                </a>
+                <a th:href="@{/admin/content}" class="pro-nav-pill justify-content-between py-2 px-3">
+                  <span><i class="bi bi-chat-square-text text-info me-2"></i>Tin công nghệ, Banner &amp; Chat hỗ trợ</span>
                   <i class="bi bi-chevron-right small text-muted"></i>
                 </a>
                 <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/accounts}" class="pro-nav-pill justify-content-between py-2 px-3">
@@ -199,10 +230,38 @@
             </div>
           </div>
         </div>
+
+        <!-- Recent Orders -->
+        <div class="pro-card" th:if="${recentOrders != null}">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-clock-history text-primary me-2"></i>5 Đơn hàng mới nhất</h6>
+            <a th:href="@{/admin/orders}" class="btn btn-sm btn-pv-outline">Xem tất cả</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table pro-table align-middle mb-0">
+              <thead>
+                <tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt</th><th class="text-end">Tổng tiền</th><th class="text-center">Trạng thái</th><th class="text-center">Thao tác</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="o : ${recentOrders.content}">
+                  <td><code class="fw-bold text-primary" th:text="${o.orderCode}"></code></td>
+                  <td th:text="${o.recipientName}"></td>
+                  <td class="small text-muted tabular-nums" th:text="${#temporals.format(o.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                  <td class="text-end pv-price tabular-nums" th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                  <td class="text-center"><span class="badge-soft badge-soft-info" th:text="${o.orderStatus.displayName}"></span></td>
+                  <td class="text-center"><a th:href="@{/admin/orders/{id}(id=${o.orderId})}" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                </tr>
+                <tr th:if="${recentOrders.empty}">
+                  <td colspan="6" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
 </body>
 </html>

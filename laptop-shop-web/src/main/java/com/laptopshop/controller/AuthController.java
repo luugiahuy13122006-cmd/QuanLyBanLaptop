@@ -3,6 +3,7 @@ package com.laptopshop.controller;
 import com.laptopshop.config.CustomUserDetails;
 import com.laptopshop.dto.ProfileUpdateDTO;
 import com.laptopshop.dto.RegisterDTO;
+import com.laptopshop.dto.ResetPasswordDTO;
 import com.laptopshop.entity.Account;
 import com.laptopshop.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -118,6 +119,86 @@ public class AuthController {
         context.setAuthentication(token);
         SecurityContextHolder.setContext(context);
         new HttpSessionSecurityContextRepository().saveContext(context, request, response);
+    }
+
+    @GetMapping("/forgot-password")
+    public String forgotPasswordPage() {
+        return "auth/forgot-password";
+    }
+
+    @PostMapping("/forgot-password")
+    public String handleForgotPassword(@RequestParam String email,
+                                       HttpServletRequest request,
+                                       RedirectAttributes ra) {
+        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
+                + request.getContextPath();
+        accountService.createPasswordResetToken(email);
+        ra.addFlashAttribute("successMessage",
+                "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu (hiệu lực 30 phút) đã được gửi. "
+                        + "Trên môi trường thử nghiệm, vui lòng xem token tại console máy chủ.");
+        return "redirect:/forgot-password";
+    }
+
+    @GetMapping("/reset-password")
+    public String resetPasswordPage(@RequestParam(required = false) String token, Model model) {
+        boolean valid = accountService.isResetTokenValid(token);
+        ResetPasswordDTO dto = new ResetPasswordDTO();
+        dto.setToken(token);
+        model.addAttribute("resetDTO", dto);
+        model.addAttribute("tokenValid", valid);
+        return "auth/reset-password";
+    }
+
+    @PostMapping("/reset-password")
+    public String handleResetPassword(@Valid @ModelAttribute("resetDTO") ResetPasswordDTO resetDTO,
+                                      BindingResult bindingResult,
+                                      Model model,
+                                      RedirectAttributes ra) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("tokenValid", true);
+            return "auth/reset-password";
+        }
+        try {
+            accountService.resetPassword(resetDTO);
+            ra.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.");
+            return "redirect:/login";
+        } catch (RuntimeException ex) {
+            model.addAttribute("tokenValid", accountService.isResetTokenValid(resetDTO.getToken()));
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/reset-password";
+        }
+    }
+
+    @GetMapping("/tai-khoan/doi-mat-khau-bat-buoc")
+    public String forceChangePasswordPage(@AuthenticationPrincipal CustomUserDetails currentUser, Model model) {
+        if (currentUser == null) return "redirect:/login";
+        model.addAttribute("username", currentUser.getUsername());
+        return "auth/force-change-password";
+    }
+
+    @PostMapping("/tai-khoan/doi-mat-khau-bat-buoc")
+    public String handleForceChangePassword(@AuthenticationPrincipal CustomUserDetails currentUser,
+                                            @RequestParam String currentPassword,
+                                            @RequestParam String newPassword,
+                                            @RequestParam String confirmPassword,
+                                            HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            Model model,
+                                            RedirectAttributes ra) {
+        if (currentUser == null) return "redirect:/login";
+        try {
+            Account updated = accountService.forceChangePassword(
+                    currentUser.getUsername(), currentPassword, newPassword, confirmPassword);
+            refreshPrincipal(updated, currentUser.getCustomerId(), request, response);
+            ra.addFlashAttribute("successMessage", "Đổi mật khẩu mới thành công!");
+            boolean staff = "ADMIN".equalsIgnoreCase(updated.getRole().getRoleName())
+                    || "STAFF".equalsIgnoreCase(updated.getRole().getRoleName());
+            return "redirect:" + (staff ? "/admin/dashboard" : "/");
+        } catch (RuntimeException ex) {
+            model.addAttribute("username", currentUser.getUsername());
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/force-change-password";
+        }
     }
 
     @GetMapping("/403")

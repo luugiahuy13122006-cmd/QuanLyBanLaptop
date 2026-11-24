@@ -1,18 +1,7 @@
 <!DOCTYPE html>
 <!-- Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Thống kê &amp; Báo cáo - Nexora Admin</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
-</head>
+<head th:replace="~{fragments/head :: commonHead('Thống kê & Báo cáo')}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -22,7 +11,7 @@
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
           <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line text-primary me-2"></i>Báo cáo Thống kê Kinh doanh</h4>
-          <div class="small text-muted">Phân tích doanh thu bán hàng, chi phí nhập kho &amp; sản phẩm bán chạy</div>
+          <div class="small text-muted">Doanh thu đa kỳ, lợi nhuận gộp COGS, hiệu suất nhân viên &amp; xuất báo cáo A4</div>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
           <form th:action="@{/admin/statistics}" method="get" class="d-flex align-items-center gap-2">
@@ -40,23 +29,65 @@
       </div>
 
       <div class="p-3 p-md-4">
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
             <div class="pro-kpi-card d-flex justify-content-between align-items-center">
               <div>
-                <div class="pro-kpi-label mb-1">Tổng Doanh Thu Tích Lũy (COMPLETED / PAID)</div>
+                <div class="pro-kpi-label mb-1">Tổng Doanh Thu (COMPLETED / PAID)</div>
                 <div class="pro-kpi-value text-success" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
               </div>
-              <span class="pro-kpi-icon pro-kpi-icon-emerald" style="width: 52px; height: 52px; font-size: 1.5rem;"><i class="bi bi-cash-stack"></i></span>
+              <span class="pro-kpi-icon pro-kpi-icon-emerald" style="width: 48px; height: 48px; font-size: 1.4rem;"><i class="bi bi-cash-stack"></i></span>
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <div class="pro-kpi-card d-flex justify-content-between align-items-center">
               <div>
-                <div class="pro-kpi-label mb-1">Tổng Chi Phí Nhập Kho (Phiếu Đã Duyệt)</div>
+                <div class="pro-kpi-label mb-1">Lợi Nhuận Gộp (Doanh thu - Giá vốn)</div>
+                <div class="pro-kpi-value text-info" th:text="${#numbers.formatDecimal(grossProfit, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+              </div>
+              <span class="pro-kpi-icon pro-kpi-icon-indigo" style="width: 48px; height: 48px; font-size: 1.4rem;"><i class="bi bi-graph-up-arrow"></i></span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="pro-kpi-card d-flex justify-content-between align-items-center">
+              <div>
+                <div class="pro-kpi-label mb-1">Tổng Chi Phí Nhập Kho (Đã Duyệt)</div>
                 <div class="pro-kpi-value text-primary" th:text="${#numbers.formatDecimal(totalImportCost, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
               </div>
-              <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 52px; height: 52px; font-size: 1.5rem;"><i class="bi bi-truck-flatbed"></i></span>
+              <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 48px; height: 48px; font-size: 1.4rem;"><i class="bi bi-truck-flatbed"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+          <div class="col">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Hôm nay</div>
+              <div class="fw-bold tabular-nums mt-1 text-primary text-nowrap" th:text="${#numbers.formatDecimal(revenueToday, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Tuần này</div>
+              <div class="fw-bold tabular-nums mt-1 text-info text-nowrap" th:text="${#numbers.formatDecimal(revenueThisWeek, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Tháng này</div>
+              <div class="fw-bold tabular-nums mt-1 text-success text-nowrap" th:text="${#numbers.formatDecimal(revenueThisMonth, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">AOV Trung bình</div>
+              <div class="fw-bold tabular-nums mt-1 text-nowrap" th:text="${#numbers.formatDecimal(averageOrderValue, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="pro-kpi-card py-3">
+              <div class="pro-kpi-label">Tỷ lệ hủy đơn</div>
+              <div class="fw-bold tabular-nums mt-1 text-danger text-nowrap" th:text="${cancellationRate} + '%'">0%</div>
             </div>
           </div>
         </div>
@@ -160,32 +191,62 @@
           </div>
         </div>
 
-        <div class="pro-card">
-          <div class="pro-card-header">
-            <h6 th:text="'5. Chi phí nhập kho theo tháng (' + ${selectedYear} + ')'"></h6>
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6 th:text="'5. Chi phí nhập kho theo tháng (' + ${selectedYear} + ')'"></h6>
+              </div>
+              <div class="table-responsive">
+                <table class="table pro-table mb-0">
+                  <thead><tr><th>Tháng</th><th class="text-center">Số phiếu duyệt</th><th class="text-end">Chi phí nhập</th></tr></thead>
+                  <tbody>
+                    <tr th:each="ic : ${monthlyImportCosts}">
+                      <td class="fw-medium" th:text="'Tháng ' + ${ic.month}"></td>
+                      <td class="text-center fw-semibold tabular-nums" th:text="${ic.receiptCount}"></td>
+                      <td class="text-end fw-bold text-primary tabular-nums" th:text="${#numbers.formatDecimal(ic.cost, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(monthlyImportCosts)}"><td colspan="3" class="text-center text-muted py-4">Chưa có phiếu nhập kho được duyệt trong năm này.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <div class="table-responsive">
-            <table class="table pro-table mb-0">
-              <thead><tr><th>Tháng</th><th class="text-center">Số phiếu nhập đã duyệt</th><th class="text-end">Tổng chi phí nhập</th></tr></thead>
-              <tbody>
-                <tr th:each="ic : ${monthlyImportCosts}">
-                  <td class="fw-medium" th:text="'Tháng ' + ${ic.month}"></td>
-                  <td class="text-center fw-semibold tabular-nums" th:text="${ic.receiptCount}"></td>
-                  <td class="text-end fw-bold text-primary tabular-nums" th:text="${#numbers.formatDecimal(ic.cost, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-                </tr>
-                <tr th:if="${#lists.isEmpty(monthlyImportCosts)}"><td colspan="3" class="text-center text-muted py-4">Chưa có phiếu nhập kho được duyệt trong năm này.</td></tr>
-              </tbody>
-            </table>
+
+          <div class="col-md-6">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6><i class="bi bi-person-workspace text-primary me-2"></i>6. Hiệu suất bán hàng Nhân viên / Quản trị</h6>
+              </div>
+              <div class="table-responsive">
+                <table class="table pro-table mb-0">
+                  <thead><tr><th>Nhân viên</th><th>Vai trò</th><th class="text-center">Số đơn</th><th class="text-end">Doanh số</th></tr></thead>
+                  <tbody>
+                    <tr th:each="sp : ${staffPerformance}">
+                      <td>
+                        <div class="fw-semibold" th:text="${sp.fullName}"></div>
+                        <small class="text-muted" th:text="${sp.username}"></small>
+                      </td>
+                      <td><span class="badge-soft badge-soft-info" th:text="${sp.role}"></span></td>
+                      <td class="text-center tabular-nums fw-semibold" th:text="${sp.orderCount}"></td>
+                      <td class="text-end pv-price tabular-nums" th:text="${#numbers.formatDecimal(sp.revenue, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(staffPerformance)}"><td colspan="4" class="text-center text-muted py-4">Chưa có đơn phát sinh qua nhân viên tại quầy.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </main>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
+<script th:src="@{/vendor/chartjs/chart.umd.min.js}"
+        onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';"></script>
 <script th:inline="javascript">
-  (function() {
+  window.addEventListener('load', function () {
     var revData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var costData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     /*[# th:each="m : ${monthlyRevenues}"]*/
@@ -201,18 +262,8 @@
         data: {
           labels: ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],
           datasets: [
-            {
-              label: 'Doanh thu bán hàng (VNĐ)',
-              data: revData,
-              backgroundColor: 'rgba(16, 185, 129, 0.85)',
-              borderRadius: 6
-            },
-            {
-              label: 'Chi phí nhập kho (VNĐ)',
-              data: costData,
-              backgroundColor: 'rgba(37, 99, 235, 0.78)',
-              borderRadius: 6
-            }
+            { label: 'Doanh thu bán hàng (VNĐ)', data: revData, backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 6 },
+            { label: 'Chi phí nhập kho (VNĐ)', data: costData, backgroundColor: 'rgba(37, 99, 235, 0.78)', borderRadius: 6 }
           ]
         },
         options: {
@@ -220,13 +271,13 @@
           maintainAspectRatio: false,
           plugins: { legend: { position: 'top' } },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+            y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.18)' } },
             x: { grid: { display: false } }
           }
         }
       });
     }
-  })();
+  });
 </script>
 </body>
 </html>

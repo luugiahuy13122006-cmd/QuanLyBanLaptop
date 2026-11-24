@@ -7,6 +7,7 @@ import com.laptopshop.exception.ResourceNotFoundException;
 import com.laptopshop.repository.CustomerRepository;
 import com.laptopshop.repository.OrderRepository;
 import com.laptopshop.service.CustomerService;
+import com.laptopshop.util.VietnameseTextNormalizer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,8 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional(readOnly = true)
     public Page<Customer> getCustomers(String keyword, Pageable pageable) {
         String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
-        return customerRepository.searchCustomers(kw, pageable);
+        String asciiKw = kw == null ? "" : VietnameseTextNormalizer.normalize(kw);
+        return customerRepository.searchCustomers(kw, asciiKw, pageable);
     }
 
     @Override

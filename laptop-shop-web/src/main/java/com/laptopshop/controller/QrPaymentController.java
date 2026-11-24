@@ -3,6 +3,7 @@ package com.laptopshop.controller;
 import com.laptopshop.config.ShopProperties;
 import com.laptopshop.entity.Order;
 import com.laptopshop.service.OrderService;
+import com.laptopshop.service.PaymentGatewayService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +15,14 @@ public class QrPaymentController {
 
     private final OrderService orderService;
     private final ShopProperties shopProperties;
+    private final PaymentGatewayService paymentGatewayService;
 
-    public QrPaymentController(OrderService orderService, ShopProperties shopProperties) {
+    public QrPaymentController(OrderService orderService,
+                               ShopProperties shopProperties,
+                               PaymentGatewayService paymentGatewayService) {
         this.orderService = orderService;
         this.shopProperties = shopProperties;
+        this.paymentGatewayService = paymentGatewayService;
     }
 
     @GetMapping("/{id}/{token}")
@@ -29,6 +34,7 @@ public class QrPaymentController {
         model.addAttribute("payment", orderService.getPaymentByOrderId(id).orElse(null));
         model.addAttribute("shopProperties", shopProperties);
         model.addAttribute("qrToken", token);
+        model.addAttribute("demoPaymentMode", paymentGatewayService.isDemoMode());
         return "store/qr-mobile-pay";
     }
 

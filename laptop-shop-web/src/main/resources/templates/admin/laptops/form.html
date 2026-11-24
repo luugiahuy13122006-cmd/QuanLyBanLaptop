@@ -1,18 +1,7 @@
 <!DOCTYPE html>
 <!-- Thành viên phụ trách: TV2 - Phạm Hữu Hiệu -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title th:text="${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop'}">Form Laptop</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
-</head>
+<head th:replace="~{fragments/head :: commonHead(${isEdit ? 'Cập nhật Laptop' : 'Thêm Laptop'})}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -26,201 +15,205 @@
         </div>
         <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
       </div>
+
       <div class="p-3 p-md-4">
-      <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-      <div class="pro-card">
-        <div class="pro-card-header">
-          <h6><i class="bi bi-laptop text-primary me-2"></i>Thông tin chi tiết Laptop</h6>
-        </div>
-        <div class="p-4">
-          <form id="laptopForm"
-                th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
-                th:object="${laptopDTO}" method="post" enctype="multipart/form-data" novalidate>
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label fw-bold">SKU <span class="text-danger">*</span></label>
-                <input type="text" th:field="*{sku}" class="form-control" th:classappend="${#fields.hasErrors('sku')} ? 'is-invalid'" placeholder="VD: LT021"/>
-                <div class="invalid-feedback" th:errors="*{sku}"></div>
-              </div>
-              <div class="col-md-9">
-                <label class="form-label fw-bold">Tên laptop <span class="text-danger">*</span></label>
-                <input type="text" th:field="*{name}" class="form-control" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'" placeholder="VD: Dell Inspiron 15"/>
-                <div class="invalid-feedback" th:errors="*{name}"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
-                <select th:field="*{categoryId}" class="form-select" th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid'">
-                  <option value="">-- Chọn danh mục --</option>
-                  <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
-                </select>
-                <div class="invalid-feedback" th:errors="*{categoryId}"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">Thương hiệu <span class="text-danger">*</span></label>
-                <select th:field="*{brandId}" class="form-select" th:classappend="${#fields.hasErrors('brandId')} ? 'is-invalid'">
-                  <option value="">-- Chọn thương hiệu --</option>
-                  <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
-                </select>
-                <div class="invalid-feedback" th:errors="*{brandId}"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">Màu sắc</label>
-                <select th:field="*{color}" class="form-select">
-                  <option value="">-- Chọn màu sắc --</option>
-                  <option th:if="${laptopDTO.color != null && !#lists.contains(colorOptions, laptopDTO.color)}"
-                          th:value="${laptopDTO.color}" th:text="${laptopDTO.color}"></option>
-                  <option th:each="col : ${colorOptions}" th:value="${col}" th:text="${col}"></option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">CPU</label>
-                <select th:field="*{cpu}" class="form-select">
-                  <option value="">-- Chọn CPU --</option>
-                  <option th:if="${laptopDTO.cpu != null && !#lists.contains(cpuOptions, laptopDTO.cpu)}"
-                          th:value="${laptopDTO.cpu}" th:text="${laptopDTO.cpu}"></option>
-                  <option th:each="cOpt : ${cpuOptions}" th:value="${cOpt}" th:text="${cOpt}"></option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">RAM (GB)</label>
-                <select th:field="*{ramGb}" class="form-select" th:classappend="${#fields.hasErrors('ramGb')} ? 'is-invalid'">
-                  <option th:each="r : ${ramOptions}" th:value="${r}" th:text="${r + ' GB'}"></option>
-                </select>
-                <div class="invalid-feedback" th:errors="*{ramGb}"></div>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Ổ cứng SSD</label>
-                <select th:field="*{storageGb}" class="form-select" th:classappend="${#fields.hasErrors('storageGb')} ? 'is-invalid'">
-                  <option th:each="s : ${storageOptions}" th:value="${s}"
-                          th:text="${s >= 1024 ? (s / 1024) + ' TB SSD' : s + ' GB SSD'}"></option>
-                </select>
-                <div class="invalid-feedback" th:errors="*{storageGb}"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">Card đồ họa (GPU)</label>
-                <select th:field="*{gpu}" class="form-select">
-                  <option value="">-- Chọn GPU --</option>
-                  <option th:if="${laptopDTO.gpu != null && !#lists.contains(gpuOptions, laptopDTO.gpu)}"
-                          th:value="${laptopDTO.gpu}" th:text="${laptopDTO.gpu}"></option>
-                  <option th:each="gOpt : ${gpuOptions}" th:value="${gOpt}" th:text="${gOpt}"></option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Màn hình</label>
-                <select th:field="*{screenSize}" class="form-select" th:classappend="${#fields.hasErrors('screenSize')} ? 'is-invalid'">
-                  <option th:each="scr : ${screenOptions}" th:value="${scr}" th:text="${scr + ' inch'}"></option>
-                </select>
-                <div class="invalid-feedback" th:errors="*{screenSize}"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">Hệ điều hành</label>
-                <select th:field="*{operatingSystem}" class="form-select">
-                  <option value="">-- Chọn hệ điều hành --</option>
-                  <option th:if="${laptopDTO.operatingSystem != null && !#lists.contains(osOptions, laptopDTO.operatingSystem)}"
-                          th:value="${laptopDTO.operatingSystem}" th:text="${laptopDTO.operatingSystem}"></option>
-                  <option th:each="oOpt : ${osOptions}" th:value="${oOpt}" th:text="${oOpt}"></option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label fw-bold">Tồn kho <span class="text-danger">*</span></label>
-                <input type="number" th:field="*{stockQuantity}" class="form-control" th:classappend="${#fields.hasErrors('stockQuantity')} ? 'is-invalid'" min="0"/>
-                <div class="invalid-feedback" th:errors="*{stockQuantity}"></div>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-bold">Giá nhập (đ) <span class="text-danger">*</span></label>
-                <input type="number" th:field="*{purchasePrice}" class="form-control" th:classappend="${#fields.hasErrors('purchasePrice')} ? 'is-invalid'" min="0" step="10000"/>
-                <div class="invalid-feedback" th:errors="*{purchasePrice}"></div>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-bold">Giá niêm yết (đ) <span class="text-danger">*</span></label>
-                <input type="number" th:field="*{listPrice}" class="form-control" th:classappend="${#fields.hasErrors('listPrice')} ? 'is-invalid'" min="0" step="10000"/>
-                <div class="invalid-feedback" th:errors="*{listPrice}"></div>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-bold">Giá bán / KM (đ) <span class="text-danger">*</span></label>
-                <input type="number" th:field="*{salePrice}" class="form-control" th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid'" min="0" step="10000"/>
-                <div class="invalid-feedback" th:errors="*{salePrice}"></div>
-              </div>
-              <div class="col-md-3 d-flex align-items-end">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" th:field="*{isActive}" id="isActive"/>
-                  <label class="form-check-label fw-semibold" for="isActive">Đang mở bán</label>
+        <div class="pro-card">
+          <div class="pro-card-header">
+            <h6><i class="bi bi-laptop text-primary me-2"></i>Thông tin chi tiết Laptop</h6>
+          </div>
+          <div class="p-4">
+            <form id="laptopForm"
+                  th:action="${isEdit ? '/admin/laptops/edit/' + laptopDTO.id : '/admin/laptops/add'}"
+                  th:object="${laptopDTO}" method="post" enctype="multipart/form-data" novalidate>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">SKU <span class="text-danger">*</span></label>
+                  <input type="text" th:field="*{sku}" class="form-control" th:classappend="${#fields.hasErrors('sku')} ? 'is-invalid'" placeholder="VD: LT021"/>
+                  <div class="invalid-feedback" th:errors="*{sku}"></div>
                 </div>
-              </div>
-              <!-- Khu vực tải lên 5 ảnh sản phẩm (CHỈ hiển thị ở trang Thêm mới, đã ẩn khỏi trang Cập nhật) -->
-              <div class="col-12" th:if="${!isEdit}">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                  <div>
-                    <label class="form-label fw-bold mb-0">Hình ảnh sản phẩm <span class="text-danger">*</span></label>
-                    <div class="small text-muted">Bắt buộc chọn đủ <strong>5 ảnh</strong> (.jpg, .png, .webp). Ảnh số 1 là ảnh đại diện.</div>
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <span id="imageCountBadge" class="badge bg-secondary">Đã chọn: 0 / 5 ảnh</span>
-                    <button type="button" id="btnBulkPick" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-folder2-open me-1"></i>Chọn nhanh 5 ảnh
-                    </button>
-                    <input type="file" id="bulkImagePicker" class="d-none" multiple
-                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"/>
+                <div class="col-md-9">
+                  <label class="form-label fw-bold">Tên laptop <span class="text-danger">*</span></label>
+                  <input type="text" th:field="*{name}" class="form-control" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'" placeholder="VD: Dell Inspiron 15"/>
+                  <div class="invalid-feedback" th:errors="*{name}"></div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
+                  <select th:field="*{categoryId}" class="form-select" th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid'">
+                    <option value="">-- Chọn danh mục --</option>
+                    <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+                  </select>
+                  <div class="invalid-feedback" th:errors="*{categoryId}"></div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Thương hiệu <span class="text-danger">*</span></label>
+                  <select th:field="*{brandId}" class="form-select" th:classappend="${#fields.hasErrors('brandId')} ? 'is-invalid'">
+                    <option value="">-- Chọn thương hiệu --</option>
+                    <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                  </select>
+                  <div class="invalid-feedback" th:errors="*{brandId}"></div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Màu sắc</label>
+                  <select th:field="*{color}" class="form-select">
+                    <option value="">-- Chọn màu sắc --</option>
+                    <option th:if="${laptopDTO.color != null && !#lists.contains(colorOptions, laptopDTO.color)}"
+                            th:value="${laptopDTO.color}" th:text="${laptopDTO.color}"></option>
+                    <option th:each="col : ${colorOptions}" th:value="${col}" th:text="${col}"></option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">CPU</label>
+                  <select th:field="*{cpu}" class="form-select">
+                    <option value="">-- Chọn CPU --</option>
+                    <option th:if="${laptopDTO.cpu != null && !#lists.contains(cpuOptions, laptopDTO.cpu)}"
+                            th:value="${laptopDTO.cpu}" th:text="${laptopDTO.cpu}"></option>
+                    <option th:each="cOpt : ${cpuOptions}" th:value="${cOpt}" th:text="${cOpt}"></option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">RAM (GB)</label>
+                  <select th:field="*{ramGb}" class="form-select" th:classappend="${#fields.hasErrors('ramGb')} ? 'is-invalid'">
+                    <option th:each="r : ${ramOptions}" th:value="${r}" th:text="${r + ' GB'}"></option>
+                  </select>
+                  <div class="invalid-feedback" th:errors="*{ramGb}"></div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Ổ cứng SSD</label>
+                  <select th:field="*{storageGb}" class="form-select" th:classappend="${#fields.hasErrors('storageGb')} ? 'is-invalid'">
+                    <option th:each="s : ${storageOptions}" th:value="${s}"
+                            th:text="${s >= 1024 ? (s / 1024) + ' TB SSD' : s + ' GB SSD'}"></option>
+                  </select>
+                  <div class="invalid-feedback" th:errors="*{storageGb}"></div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Card đồ họa (GPU)</label>
+                  <select th:field="*{gpu}" class="form-select">
+                    <option value="">-- Chọn GPU --</option>
+                    <option th:if="${laptopDTO.gpu != null && !#lists.contains(gpuOptions, laptopDTO.gpu)}"
+                            th:value="${laptopDTO.gpu}" th:text="${laptopDTO.gpu}"></option>
+                    <option th:each="gOpt : ${gpuOptions}" th:value="${gOpt}" th:text="${gOpt}"></option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Màn hình</label>
+                  <select th:field="*{screenSize}" class="form-select" th:classappend="${#fields.hasErrors('screenSize')} ? 'is-invalid'">
+                    <option th:each="scr : ${screenOptions}" th:value="${scr}" th:text="${scr + ' inch'}"></option>
+                  </select>
+                  <div class="invalid-feedback" th:errors="*{screenSize}"></div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Hệ điều hành</label>
+                  <select th:field="*{operatingSystem}" class="form-select">
+                    <option value="">-- Chọn hệ điều hành --</option>
+                    <option th:if="${laptopDTO.operatingSystem != null && !#lists.contains(osOptions, laptopDTO.operatingSystem)}"
+                            th:value="${laptopDTO.operatingSystem}" th:text="${laptopDTO.operatingSystem}"></option>
+                    <option th:each="oOpt : ${osOptions}" th:value="${oOpt}" th:text="${oOpt}"></option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Tồn kho <span class="text-danger">*</span></label>
+                  <input type="number" th:field="*{stockQuantity}" class="form-control tabular-nums"
+                         th:readonly="${isEdit}"
+                         th:classappend="${#fields.hasErrors('stockQuantity')} ? 'is-invalid'" min="0"/>
+                  <div class="invalid-feedback" th:errors="*{stockQuantity}"></div>
+                  <div th:if="${isEdit}" class="form-text text-muted" style="font-size: 0.72rem;">Chỉ thay đổi qua Phiếu nhập kho / Bán hàng.</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Giá nhập (đ) <span class="text-danger">*</span></label>
+                  <input type="number" th:field="*{purchasePrice}" class="form-control tabular-nums" th:classappend="${#fields.hasErrors('purchasePrice')} ? 'is-invalid'" min="0" step="10000"/>
+                  <div class="invalid-feedback" th:errors="*{purchasePrice}"></div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Giá niêm yết (đ) <span class="text-danger">*</span></label>
+                  <input type="number" th:field="*{listPrice}" class="form-control tabular-nums" th:classappend="${#fields.hasErrors('listPrice')} ? 'is-invalid'" min="0" step="10000"/>
+                  <div class="invalid-feedback" th:errors="*{listPrice}"></div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Giá bán / KM (đ) <span class="text-danger">*</span></label>
+                  <input type="number" th:field="*{salePrice}" class="form-control tabular-nums" th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid'" min="0" step="10000"/>
+                  <div class="invalid-feedback" th:errors="*{salePrice}"></div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" role="switch" th:field="*{isActive}" id="isActive"/>
+                    <label class="form-check-label fw-semibold" for="isActive">Đang mở bán</label>
                   </div>
                 </div>
 
-                <div class="row row-cols-2 row-cols-md-5 g-3" id="imageUploadGrid">
-                  <div class="col" th:each="slotIdx : ${#numbers.sequence(1, 5)}">
-                    <div class="border rounded-3 p-2 bg-light h-100 d-flex flex-column justify-content-between image-slot-card"
-                         th:attr="data-slot=${slotIdx}"
-                         style="border-style: dashed !important; border-width: 2px !important;">
-                      <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge"
-                              th:classappend="${slotIdx == 1} ? 'bg-primary' : 'bg-secondary'"
-                              th:text="${slotIdx == 1} ? 'Ảnh 1 (Đại diện)' : 'Ảnh ' + ${slotIdx}"></span>
-                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 d-none btn-clear-slot"
-                                title="Xóa ảnh này" th:attr="data-slot=${slotIdx}">
-                          <i class="bi bi-x-lg"></i>
-                        </button>
-                      </div>
-
-                      <div class="slot-preview-box d-flex flex-column align-items-center justify-content-center bg-white rounded border position-relative overflow-hidden"
-                           th:attr="data-slot=${slotIdx}"
-                           style="height: 120px; cursor: pointer;">
-                        <div class="slot-placeholder text-center text-muted p-2">
-                          <i class="bi bi-cloud-arrow-up fs-3 d-block text-primary"></i>
-                          <small>Nhấn chọn ảnh</small>
-                        </div>
-                        <img src="" alt="Xem trước" class="slot-preview-img d-none w-100 h-100"
-                             style="object-fit: contain; padding: 4px;"/>
-                      </div>
-
-                      <div class="mt-2 d-flex justify-content-between align-items-center gap-1">
-                        <small class="text-muted text-truncate slot-filename" style="max-width: 95px;">Chưa chọn</small>
-                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 btn-pick-slot"
-                                th:attr="data-slot=${slotIdx}">Chọn</button>
-                      </div>
-                      <input type="file" name="imageFiles" class="d-none slot-file-input"
-                             th:attr="data-slot=${slotIdx}"
+                <!-- 5-image uploader for Add mode only -->
+                <div class="col-12" th:if="${!isEdit}">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <div>
+                      <label class="form-label fw-bold mb-0">Hình ảnh sản phẩm <span class="text-danger">*</span></label>
+                      <div class="small text-muted">Bắt buộc chọn đủ <strong>5 ảnh</strong> (.jpg, .png, .webp). Ảnh số 1 là ảnh đại diện.</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span id="imageCountBadge" class="badge bg-secondary">Đã chọn: 0 / 5 ảnh</span>
+                      <button type="button" id="btnBulkPick" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-folder2-open me-1"></i>Chọn nhanh 5 ảnh
+                      </button>
+                      <input type="file" id="bulkImagePicker" class="d-none" multiple
                              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"/>
                     </div>
                   </div>
+
+                  <div class="row row-cols-2 row-cols-md-5 g-3" id="imageUploadGrid">
+                    <div class="col" th:each="slotIdx : ${#numbers.sequence(1, 5)}">
+                      <div class="border rounded-3 p-2 bg-light h-100 d-flex flex-column justify-content-between image-slot-card"
+                           th:attr="data-slot=${slotIdx}"
+                           style="border-style: dashed !important; border-width: 2px !important;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                          <span class="badge"
+                                th:classappend="${slotIdx == 1} ? 'bg-primary' : 'bg-secondary'"
+                                th:text="${slotIdx == 1} ? 'Ảnh 1 (Đại diện)' : 'Ảnh ' + ${slotIdx}"></span>
+                          <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 d-none btn-clear-slot"
+                                  title="Xóa ảnh này" th:attr="data-slot=${slotIdx}">
+                            <i class="bi bi-x-lg"></i>
+                          </button>
+                        </div>
+                        <div class="slot-preview-box d-flex flex-column align-items-center justify-content-center bg-white rounded border position-relative overflow-hidden"
+                             th:attr="data-slot=${slotIdx}"
+                             style="height: 120px; cursor: pointer;">
+                          <div class="slot-placeholder text-center text-muted p-2">
+                            <i class="bi bi-cloud-arrow-up fs-3 d-block text-primary"></i>
+                            <small>Nhấn chọn ảnh</small>
+                          </div>
+                          <img src="" alt="Xem trước" class="slot-preview-img d-none w-100 h-100"
+                               style="object-fit: contain; padding: 4px;"/>
+                        </div>
+                        <div class="mt-2 d-flex justify-content-between align-items-center gap-1">
+                          <small class="text-muted text-truncate slot-filename" style="max-width: 95px;">Chưa chọn</small>
+                          <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 btn-pick-slot"
+                                  th:attr="data-slot=${slotIdx}">Chọn</button>
+                        </div>
+                        <input type="file" name="imageFiles" class="d-none slot-file-input"
+                               th:attr="data-slot=${slotIdx}"
+                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"/>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="imageUploadError" class="alert alert-danger py-2 px-3 small mt-2 d-none mb-0"></div>
                 </div>
-                <div id="imageUploadError" class="alert alert-danger py-2 px-3 small mt-2 d-none mb-0"></div>
+
+                <div class="col-12">
+                  <label class="form-label fw-bold">Mô tả</label>
+                  <textarea th:field="*{description}" class="form-control" rows="3"></textarea>
+                </div>
               </div>
-              <div class="col-12">
-                <label class="form-label">Mô tả</label>
-                <textarea th:field="*{description}" class="form-control" rows="3"></textarea>
+              <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-save me-1"></i><span th:text="${isEdit ? 'Cập nhật' : 'Thêm mới'}"></span></button>
+                <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary px-4">Hủy</a>
               </div>
-            </div>
-            <div class="mt-4 d-flex gap-2">
-              <button type="submit" class="btn btn-pv-primary px-4"><i class="bi bi-save me-1"></i><span th:text="${isEdit ? 'Cập nhật' : 'Thêm mới'}"></span></button>
-              <a th:href="@{/admin/laptops}" class="btn btn-outline-secondary px-4">Hủy</a>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
-      </div>
       </div>
     </main>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
 <script th:if="${!isEdit}">
   (function () {
     const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp'];
@@ -230,143 +223,83 @@
     const countBadge = document.getElementById('imageCountBadge');
     const errorBox = document.getElementById('imageUploadError');
     const slotInputs = {};
-    for (let i = 1; i <= 5; i++) {
-      slotInputs[i] = document.querySelector(`.slot-file-input[data-slot="${i}"]`);
-    }
+    for (let i = 1; i <= 5; i++) slotInputs[i] = document.querySelector(`.slot-file-input[data-slot="${i}"]`);
 
     function showError(msg) {
-      if (!msg) {
-        errorBox.classList.add('d-none');
-        errorBox.textContent = '';
-      } else {
-        errorBox.textContent = msg;
-        errorBox.classList.remove('d-none');
-      }
+      if (!msg) { errorBox.classList.add('d-none'); errorBox.textContent = ''; }
+      else { errorBox.textContent = msg; errorBox.classList.remove('d-none'); }
     }
-
     function isValidImageFile(file) {
       if (!file) return false;
       const parts = file.name.split('.');
-      const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
-      return ALLOWED_EXT.includes(ext);
+      return ALLOWED_EXT.includes((parts.length > 1 ? parts.pop() : '').toLowerCase());
     }
-
     function setFileToInput(input, file) {
       const dt = new DataTransfer();
       if (file) dt.items.add(file);
       input.files = dt.files;
     }
-
+    function updateCount() {
+      let count = 0;
+      for (let i = 1; i <= 5; i++) if (slotInputs[i].files && slotInputs[i].files.length > 0) count++;
+      countBadge.textContent = `Đã chọn: ${count} / 5 ảnh`;
+      countBadge.className = count === 5 ? 'badge bg-success' : 'badge bg-secondary';
+      if (count === 5) showError('');
+    }
     function renderSlot(slotIdx) {
-      const input = slotInputs[slotIdx];
-      const file = input.files && input.files.length > 0 ? input.files[0] : null;
+      const file = slotInputs[slotIdx].files && slotInputs[slotIdx].files[0];
       const card = document.querySelector(`.image-slot-card[data-slot="${slotIdx}"]`);
       const img = card.querySelector('.slot-preview-img');
       const placeholder = card.querySelector('.slot-placeholder');
       const filenameEl = card.querySelector('.slot-filename');
       const clearBtn = card.querySelector('.btn-clear-slot');
       const pickBtn = card.querySelector('.btn-pick-slot');
-
       if (file) {
         const reader = new FileReader();
-        reader.onload = function (e) {
-          img.src = e.target.result;
-          img.classList.remove('d-none');
-          placeholder.classList.add('d-none');
-        };
+        reader.onload = e => { img.src = e.target.result; img.classList.remove('d-none'); placeholder.classList.add('d-none'); };
         reader.readAsDataURL(file);
-        filenameEl.textContent = file.name;
-        filenameEl.title = file.name;
-        clearBtn.classList.remove('d-none');
-        pickBtn.textContent = 'Đổi';
-        card.classList.remove('border-danger');
-        card.classList.add('border-success');
+        filenameEl.textContent = file.name; filenameEl.title = file.name;
+        clearBtn.classList.remove('d-none'); pickBtn.textContent = 'Đổi';
+        card.classList.remove('border-danger'); card.classList.add('border-success');
       } else {
-        img.src = '';
-        img.classList.add('d-none');
-        placeholder.classList.remove('d-none');
-        filenameEl.textContent = 'Chưa chọn';
-        filenameEl.title = '';
-        clearBtn.classList.add('d-none');
-        pickBtn.textContent = 'Chọn';
+        img.src = ''; img.classList.add('d-none'); placeholder.classList.remove('d-none');
+        filenameEl.textContent = 'Chưa chọn'; filenameEl.title = '';
+        clearBtn.classList.add('d-none'); pickBtn.textContent = 'Chọn';
         card.classList.remove('border-success');
       }
       updateCount();
     }
-
-    function updateCount() {
-      let count = 0;
-      for (let i = 1; i <= 5; i++) {
-        if (slotInputs[i].files && slotInputs[i].files.length > 0) count++;
-      }
-      countBadge.textContent = `Đã chọn: ${count} / 5 ảnh`;
-      countBadge.className = count === 5 ? 'badge bg-success' : 'badge bg-secondary';
-      if (count === 5) showError('');
-    }
-
     for (let i = 1; i <= 5; i++) {
-      const previewBox = document.querySelector(`.slot-preview-box[data-slot="${i}"]`);
-      const pickBtn = document.querySelector(`.btn-pick-slot[data-slot="${i}"]`);
-      const clearBtn = document.querySelector(`.btn-clear-slot[data-slot="${i}"]`);
       const input = slotInputs[i];
-
-      previewBox.addEventListener('click', () => input.click());
-      pickBtn.addEventListener('click', () => input.click());
-      clearBtn.addEventListener('click', () => {
-        setFileToInput(input, null);
-        renderSlot(i);
-      });
+      document.querySelector(`.slot-preview-box[data-slot="${i}"]`).addEventListener('click', () => input.click());
+      document.querySelector(`.btn-pick-slot[data-slot="${i}"]`).addEventListener('click', () => input.click());
+      document.querySelector(`.btn-clear-slot[data-slot="${i}"]`).addEventListener('click', () => { setFileToInput(input, null); renderSlot(i); });
       input.addEventListener('change', () => {
         const file = input.files && input.files[0];
         if (!file) return;
-        if (!isValidImageFile(file)) {
-          setFileToInput(input, null);
-          renderSlot(i);
-          showError(`Ảnh số ${i} ("${file.name}") không hợp lệ! Chỉ chấp nhận định dạng .jpg, .png, .webp.`);
-          return;
-        }
-        showError('');
-        renderSlot(i);
+        if (!isValidImageFile(file)) { setFileToInput(input, null); renderSlot(i); showError(`Ảnh số ${i} không hợp lệ! Chỉ nhận .jpg, .png, .webp.`); return; }
+        showError(''); renderSlot(i);
       });
     }
-
     bulkBtn.addEventListener('click', () => bulkInput.click());
     bulkInput.addEventListener('change', () => {
-      const files = Array.from(bulkInput.files || []);
-      bulkInput.value = '';
-      if (files.length === 0) return;
-      if (files.length !== 5) {
-        showError(`Bạn vừa chọn ${files.length} ảnh. Vui lòng chọn đúng 5 ảnh sản phẩm (không thiếu, không thừa)!`);
-        return;
-      }
-      for (let i = 0; i < files.length; i++) {
-        if (!isValidImageFile(files[i])) {
-          showError(`Tệp "${files[i].name}" không đúng định dạng! Chỉ chấp nhận .jpg, .png, .webp.`);
-          return;
-        }
-      }
-      for (let i = 1; i <= 5; i++) {
-        setFileToInput(slotInputs[i], files[i - 1]);
-        renderSlot(i);
-      }
+      const files = Array.from(bulkInput.files || []); bulkInput.value = '';
+      if (files.length !== 5) { showError(`Bạn vừa chọn ${files.length} ảnh. Vui lòng chọn đúng 5 ảnh sản phẩm!`); return; }
+      for (const f of files) { if (!isValidImageFile(f)) { showError(`Tệp "${f.name}" không đúng định dạng ảnh!`); return; } }
+      for (let i = 1; i <= 5; i++) { setFileToInput(slotInputs[i], files[i - 1]); renderSlot(i); }
       showError('');
     });
-
-    form.addEventListener('submit', function (e) {
-      let missing = [];
+    form.addEventListener('submit', e => {
+      const missing = [];
       for (let i = 1; i <= 5; i++) {
         const file = slotInputs[i].files && slotInputs[i].files[0];
         const card = document.querySelector(`.image-slot-card[data-slot="${i}"]`);
-        if (!file || !isValidImageFile(file)) {
-          missing.push(i);
-          card.classList.add('border-danger');
-        } else {
-          card.classList.remove('border-danger');
-        }
+        if (!file || !isValidImageFile(file)) { missing.push(i); card.classList.add('border-danger'); }
+        else card.classList.remove('border-danger');
       }
       if (missing.length > 0) {
         e.preventDefault();
-        showError(`Bắt buộc chọn đủ 5 ảnh sản phẩm hợp lệ (.jpg, .png, .webp). Còn thiếu ảnh số: ${missing.join(', ')}.`);
+        showError(`Bắt buộc chọn đủ 5 ảnh hợp lệ (.jpg, .png, .webp). Thiếu ảnh: ${missing.join(', ')}.`);
         errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     });

@@ -1,18 +1,7 @@
 <!DOCTYPE html>
 <!-- Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Quản lý Đơn hàng - Nexora Admin</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
-</head>
+<head th:replace="~{fragments/head :: commonHead('Quản lý Đơn hàng')}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -22,9 +11,12 @@
       <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
           <h4 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary me-2"></i>Danh sách Đơn hàng</h4>
-          <div class="small text-muted">Quản lý tiến độ đơn hàng, giao nhận &amp; hoàn trả tồn kho</div>
+          <div class="small text-muted">Quản lý tiến độ đơn hàng, vận đơn &amp; hoàn trả tồn kho</div>
         </div>
         <div class="d-flex gap-2">
+          <a th:href="@{/admin/orders/pending-proofs}" class="btn btn-outline-warning btn-sm px-3">
+            <i class="bi bi-qr-code-scan me-1"></i>Duyệt minh chứng CK
+          </a>
           <a th:href="@{/admin/orders/create}" class="btn btn-pv-primary btn-sm px-3">
             <i class="bi bi-plus-lg me-1"></i>Tạo Đơn hàng
           </a>
@@ -71,7 +63,7 @@
               <thead>
                 <tr>
                   <th>ID</th><th>Mã đơn</th><th>Khách hàng</th><th>Người nhận &amp; SĐT</th>
-                  <th>Ngày đặt</th><th>Thanh toán</th><th class="text-end">Tổng tiền</th><th class="text-center">Trạng thái</th><th class="text-center">Chi tiết</th>
+                  <th>Ngày đặt</th><th>Thanh toán</th><th class="text-end">Tổng tiền</th><th class="text-center">Trạng thái</th><th class="text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -96,30 +88,24 @@
                           th:classappend="${o.orderStatus.name() == 'COMPLETED' ? 'badge-soft-success' : (o.orderStatus.name() == 'CANCELLED' or o.orderStatus.name() == 'RETURNED' or o.orderStatus.name() == 'REFUNDED' ? 'badge-soft-danger' : (o.orderStatus.name() == 'REFUND_REQUESTED' ? 'badge-soft-indigo' : 'badge-soft-warning'))}"
                           th:text="${o.orderStatus.displayName}"></span>
                   </td>
-                  <td class="text-center">
-                    <a th:href="@{/admin/orders/{id}(id=${o.orderId})}" class="btn btn-sm btn-pv-outline">Xem &amp; Xử lý</a>
+                  <td class="text-center text-nowrap">
+                    <a th:href="@{/admin/orders/{id}(id=${o.orderId})}" class="btn btn-sm btn-pv-outline me-1">Xử lý</a>
+                    <a th:href="@{/admin/orders/{id}/invoice(id=${o.orderId})}" class="btn btn-sm btn-outline-secondary" title="In hóa đơn"><i class="bi bi-printer"></i></a>
                   </td>
                 </tr>
                 <tr th:if="${orderPage.empty}">
-                  <td colspan="9" class="text-center py-5 text-muted">Không có đơn hàng nào.</td>
+                  <td colspan="9" class="text-center py-5 text-muted">Không tìm thấy đơn hàng nào.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <nav th:if="${orderPage.totalPages > 1}" class="mt-4">
-          <ul class="pagination pro-pagination justify-content-center">
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, orderPage.totalPages - 1)}"
-                th:classappend="${i == orderPage.number} ? 'active'">
-              <a class="page-link" th:href="@{/admin/orders(page=${i}, status=${selectedStatus}, keyword=${keyword}, sortBy=${sortBy}, direction=${direction})}" th:text="${i + 1}"></a>
-            </li>
-          </ul>
-        </nav>
+        <nav th:replace="~{fragments/ui :: paginationBar(${orderPage}, '/admin/orders')}"></nav>
       </div>
     </main>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
 </body>
 </html>

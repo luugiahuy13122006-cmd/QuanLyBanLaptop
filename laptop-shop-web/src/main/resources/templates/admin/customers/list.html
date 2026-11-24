@@ -1,18 +1,7 @@
 <!DOCTYPE html>
 <!-- Thành viên phụ trách: TV4 - Nguyễn Tuấn Khang -->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Quản lý Khách hàng - Nexora Admin</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
-</head>
+<head th:replace="~{fragments/head :: commonHead('Quản lý Khách hàng')}"></head>
 <body>
 <div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
 <div class="container-fluid">
@@ -78,8 +67,10 @@
                   </td>
                   <td class="text-center text-nowrap">
                     <a th:href="@{/admin/customers/edit/{id}(id=${c.customerId})}" class="btn btn-sm btn-outline-primary pro-btn-icon me-1" title="Sửa"><i class="bi bi-pencil"></i></a>
-                    <button type="button" class="btn btn-sm btn-outline-danger pro-btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
-                            th:attr="data-id=${c.customerId}, data-name=${c.customerName}" title="Xóa"><i class="bi bi-trash"></i></button>
+                    <form th:action="@{/admin/customers/delete/{id}(id=${c.customerId})}" method="post" class="d-inline"
+                          th:attr="data-confirm='Bạn có chắc muốn xóa khách hàng ' + ${c.customerName} + '?'">
+                      <button type="submit" class="btn btn-sm btn-outline-danger pro-btn-icon" title="Xóa"><i class="bi bi-trash"></i></button>
+                    </form>
                   </td>
                 </tr>
                 <tr th:if="${customerPage.empty}">
@@ -90,40 +81,11 @@
           </div>
         </div>
 
-        <nav th:if="${customerPage.totalPages > 1}" class="mt-4">
-          <ul class="pagination pro-pagination justify-content-center">
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, customerPage.totalPages - 1)}"
-                th:classappend="${i == customerPage.number} ? 'active'">
-              <a class="page-link" th:href="@{/admin/customers(page=${i}, keyword=${keyword}, sortBy=${sortBy}, direction=${direction})}" th:text="${i + 1}"></a>
-            </li>
-          </ul>
-        </nav>
+        <nav th:replace="~{fragments/ui :: paginationBar(${customerPage}, '/admin/customers')}"></nav>
       </div>
     </main>
   </div>
 </div>
-
-<div class="modal fade" id="deleteModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
-    <div class="modal-header bg-danger text-white border-0"><h5 class="modal-title fw-bold"><i class="bi bi-trash me-2"></i>Xác nhận xóa</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body p-4">Bạn có chắc muốn xóa khách hàng <strong id="deleteName"></strong>?</div>
-    <div class="modal-footer border-0 bg-light">
-      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-      <form id="deleteForm" method="post">
-        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <button type="submit" class="btn btn-danger px-4">Xóa</button>
-      </form>
-    </div>
-  </div></div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  document.getElementById('deleteModal').addEventListener('show.bs.modal', function(e) {
-    var btn = e.relatedTarget;
-    document.getElementById('deleteName').textContent = btn.getAttribute('data-name');
-    document.getElementById('deleteForm').action = '/admin/customers/delete/' + btn.getAttribute('data-id');
-  });
-</script>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
 </body>
 </html>

@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,17 +20,11 @@ public class CustomUserDetails implements UserDetails {
     private final String phone;
     private final String roleName;
     private final boolean active;
+    private final LocalDateTime lockedUntil;
+    private final boolean mustChangePassword;
 
     public CustomUserDetails(Account account) {
-        this.accountId = account.getId();
-        this.customerId = null; // sẽ được set sau nếu cần
-        this.username = account.getUsername();
-        this.password = account.getPasswordHash();
-        this.fullName = account.getFullName();
-        this.email = account.getEmail();
-        this.phone = account.getPhone();
-        this.roleName = account.getRole() != null ? account.getRole().getRoleName() : "CUSTOMER";
-        this.active = Boolean.TRUE.equals(account.getIsActive());
+        this(account, null);
     }
 
     public CustomUserDetails(Account account, Integer customerId) {
@@ -42,6 +37,8 @@ public class CustomUserDetails implements UserDetails {
         this.phone = account.getPhone();
         this.roleName = account.getRole() != null ? account.getRole().getRoleName() : "CUSTOMER";
         this.active = Boolean.TRUE.equals(account.getIsActive());
+        this.lockedUntil = account.getLockedUntil();
+        this.mustChangePassword = Boolean.TRUE.equals(account.getMustChangePassword());
     }
 
     public Integer getAccountId() { return accountId; }
@@ -50,6 +47,7 @@ public class CustomUserDetails implements UserDetails {
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
     public String getRoleName() { return roleName; }
+    public boolean isMustChangePassword() { return mustChangePassword; }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -59,7 +57,12 @@ public class CustomUserDetails implements UserDetails {
     @Override public String getPassword() { return password; }
     @Override public String getUsername() { return username; }
     @Override public boolean isAccountNonExpired() { return true; }
-    @Override public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return lockedUntil == null || !lockedUntil.isAfter(LocalDateTime.now());
+    }
+
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled() { return active; }
 }

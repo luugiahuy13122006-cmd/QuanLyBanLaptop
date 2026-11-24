@@ -4,6 +4,7 @@ package com.laptopshop.controller;
 import com.laptopshop.dto.CustomerDTO;
 import com.laptopshop.entity.Customer;
 import com.laptopshop.service.CustomerService;
+import com.laptopshop.util.PaginationUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +42,8 @@ public class CustomerController {
                 ? Sort.by(sortField).ascending()
                 : Sort.by(sortField).descending();
 
-        Page<Customer> customerPage = customerService.getCustomers(keyword, PageRequest.of(page, size, sort));
+        Page<Customer> customerPage = customerService.getCustomers(keyword,
+                PageRequest.of(PaginationUtils.clampPage(page), PaginationUtils.clampSize(size, 8, 100), sort));
         model.addAttribute("customerPage", customerPage);
         model.addAttribute("keyword", keyword);
         model.addAttribute("sortBy", sortBy);

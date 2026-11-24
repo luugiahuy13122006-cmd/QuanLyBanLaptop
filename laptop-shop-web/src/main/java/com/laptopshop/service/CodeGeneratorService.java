@@ -28,12 +28,12 @@ public class CodeGeneratorService {
         this.receiptRepository = receiptRepository;
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public String nextOrderCode() {
         return next(ORDER_SEQ, "DH", orderRepository::existsByOrderCodeIgnoreCase);
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public String nextReceiptCode() {
         return next(RECEIPT_SEQ, "PN", receiptRepository::existsByReceiptCodeIgnoreCase);
     }

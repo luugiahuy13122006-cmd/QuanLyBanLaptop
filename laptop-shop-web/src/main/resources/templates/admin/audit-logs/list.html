@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: commonHead('Nhật ký Hệ thống')}"></head>
+<body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Nhật ký Kiểm toán Hệ thống (Audit Logs)</h4>
+          <div class="small text-muted">Truy vết thao tác đăng nhập, đơn hàng, nhập kho &amp; quản trị hệ thống</div>
+        </div>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <form th:action="@{/admin/audit-logs}" method="get" class="pro-card p-3 mb-4 d-flex gap-2">
+          <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm" style="max-width: 340px;"
+                 placeholder="Tìm theo tài khoản, hành động, đối tượng..."/>
+          <button type="submit" class="btn btn-pv-primary btn-sm px-3"><i class="bi bi-search me-1"></i>Lọc</button>
+          <a th:href="@{/admin/audit-logs}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
+        </form>
+
+        <div class="pro-card">
+          <div class="table-responsive">
+            <table class="table pro-table pro-table-compact align-middle mb-0">
+              <thead>
+                <tr><th>#</th><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Đối tượng</th><th>Chi tiết</th><th>IP</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="log : ${logPage.content}">
+                  <td class="text-muted tabular-nums" th:text="${log.id}"></td>
+                  <td class="small text-muted tabular-nums" th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                  <td><code class="fw-semibold" th:text="${log.actorUsername ?: 'system'}"></code></td>
+                  <td><span class="badge-soft badge-soft-info" th:text="${log.action}"></span></td>
+                  <td class="small"><span th:text="${log.entityType}"></span> #<span th:text="${log.entityId}"></span></td>
+                  <td class="small" style="max-width: 340px;" th:text="${log.details}"></td>
+                  <td class="small font-mono-code text-muted" th:text="${log.ipAddress ?: '-'}"></td>
+                </tr>
+                <tr th:if="${logPage.empty}">
+                  <td colspan="7" class="text-center text-muted py-5">Chưa có bản ghi nhật ký nào.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <nav th:replace="~{fragments/ui :: paginationBar(${logPage}, '/admin/audit-logs')}"></nav>
+      </div>
+    </main>
+  </div>
+</div>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
+</body>
+</html>

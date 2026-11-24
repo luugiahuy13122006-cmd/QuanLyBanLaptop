@@ -6,37 +6,76 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.laptopshop.entity.Order;
+import com.laptopshop.entity.Payment;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.Enumeration;
 import java.util.Map;
 
 @Service
 public class QrCodeService {
 
-    private static final String HMAC_KEY = "QL_LAPTOP_VIETQR_SECRET_KEY_2026";
     private final QrTunnelService qrTunnelService;
+    private final Environment environment;
+    private final String configuredSecret;
+    private String effectiveSecret;
 
-    public QrCodeService(QrTunnelService qrTunnelService) {
+    public QrCodeService(QrTunnelService qrTunnelService,
+                         Environment environment,
+                         @Value("${laptop.qr.hmac-secret:}") String configuredSecret) {
         this.qrTunnelService = qrTunnelService;
+        this.environment = environment;
+        this.configuredSecret = configuredSecret;
+    }
+
+    @PostConstruct
+    public void initSecret() {
+        String s = configuredSecret != null ? configuredSecret.trim() : "";
+        if (environment.acceptsProfiles(Profiles.of("prod")) && s.length() < 32) {
+            throw new IllegalStateException("QR_HMAC_SECRET bắt buộc >= 32 ký tự trong profile prod.");
+        }
+        if (s.length() >= 16) {
+            this.effectiveSecret = s;
+        } else {
+            byte[] randomBytes = new byte[32];
+            new SecureRandom().nextBytes(randomBytes);
+            this.effectiveSecret = Base64.getEncoder().encodeToString(randomBytes);
+        }
     }
 
     public String createToken(Integer orderId, String orderCode, String transactionCode) {
+        return createToken(orderId, orderCode, transactionCode, BigDecimal.ZERO, null);
+    }
+
+    public String createToken(Integer orderId, String orderCode, String transactionCode,
+                              BigDecimal amount, LocalDateTime expiresAt) {
         try {
+            String amtStr = amount != null ? amount.stripTrailingZeros().toPlainString() : "0";
+            long expEpoch = expiresAt != null ? expiresAt.toEpochSecond(ZoneOffset.UTC) : 0L;
             String payload = orderId + "|" + (orderCode != null ? orderCode : "") + "|"
-                    + (transactionCode != null ? transactionCode : "");
+                    + (transactionCode != null ? transactionCode : "") + "|" + amtStr + "|" + expEpoch;
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(HMAC_KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            mac.init(new SecretKeySpec(effectiveSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < 16 && i < digest.length; i++) {
@@ -49,8 +88,19 @@ public class QrCodeService {
     }
 
     public boolean verifyToken(Integer orderId, String orderCode, String transactionCode, String token) {
+        return verifyToken(orderId, orderCode, transactionCode, BigDecimal.ZERO, null, token);
+    }
+
+    public boolean verifyToken(Order order, Payment payment, String token) {
+        if (order == null || payment == null) return false;
+        return verifyToken(order.getId(), order.getOrderCode(), payment.getTransactionCode(),
+                order.getTotalAmount(), order.getPaymentExpiresAt(), token);
+    }
+
+    public boolean verifyToken(Integer orderId, String orderCode, String transactionCode,
+                               BigDecimal amount, LocalDateTime expiresAt, String token) {
         if (token == null || token.isBlank()) return false;
-        String expected = createToken(orderId, orderCode, transactionCode);
+        String expected = createToken(orderId, orderCode, transactionCode, amount, expiresAt);
         return MessageDigest.isEqual(
                 expected.getBytes(StandardCharsets.UTF_8),
                 token.trim().getBytes(StandardCharsets.UTF_8)

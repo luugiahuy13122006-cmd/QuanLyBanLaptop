@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- Global Overlays: Toast Stack, Confirm Modal, Command Palette (Ctrl/Cmd + K) -->
+<div th:fragment="globalOverlays">
+  <div id="nxToastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;"></div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal fade" id="nxConfirmModal" tabindex="-1" aria-labelledby="nxConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 shadow-lg">
+        <div class="modal-header border-0 pb-1">
+          <h5 class="modal-title fw-bold" id="nxConfirmTitle">
+            <i class="bi bi-exclamation-diamond text-warning me-2"></i>Xác nhận thao tác
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <p id="nxConfirmMessage" class="mb-0 text-muted">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+        </div>
+        <div class="modal-footer border-0 pt-1">
+          <button type="button" class="btn btn-light rounded-3 px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" id="nxConfirmAcceptBtn" class="btn btn-danger rounded-3 px-4 fw-semibold">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command Palette Modal (Ctrl/Cmd + K) -->
+  <div class="modal fade" id="nxCommandModal" tabindex="-1" aria-label="Tìm kiếm nhanh (Ctrl+K)" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content rounded-4 shadow-lg overflow-hidden">
+        <div class="modal-body p-3">
+          <div class="input-group input-group-lg mb-2">
+            <span class="input-group-text bg-transparent border-0"><i class="bi bi-search text-primary"></i></span>
+            <input type="search" id="nxCommandInput" class="form-control border-0 shadow-none"
+                   placeholder="Tìm nhanh laptop theo tên, SKU, CPU... (Nhấn Esc để đóng)"/>
+          </div>
+          <div id="nxCommandResults" class="list-group list-group-flush mb-2"></div>
+          <div class="border-top pt-2 d-flex flex-wrap gap-2 small">
+            <a th:href="@{/}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2"><i class="bi bi-shop me-1"></i>Cửa hàng</a>
+            <a th:href="@{/bao-hanh}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2"><i class="bi bi-shield-check me-1"></i>Tra cứu bảo hành</a>
+            <a th:href="@{/so-sanh}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2"><i class="bi bi-columns-gap me-1"></i>So sánh Laptop</a>
+            <a th:href="@{/tin-tuc}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2"><i class="bi bi-newspaper me-1"></i>Tin công nghệ</a>
+            <a th:href="@{/ho-tro}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none p-2"><i class="bi bi-chat-dots me-1"></i>Chat hỗ trợ</a>
+            <a sec:authorize="hasAnyRole('ADMIN','STAFF')" th:href="@{/admin/dashboard}" class="badge bg-success bg-opacity-10 text-success text-decoration-none p-2"><i class="bi bi-grid-1x2 me-1"></i>Quản trị</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shared Sliding-Window Pagination -->
+<nav th:fragment="paginationBar(pageObj, baseUrl)" th:if="${pageObj != null and pageObj.totalPages > 1}"
+     aria-label="Phân trang" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+  <div class="small text-muted">
+    Trang <strong th:text="${pageObj.number + 1}">1</strong> / <strong th:text="${pageObj.totalPages}">1</strong>
+    (<span th:text="${pageObj.totalElements}">0</span> kết quả)
+  </div>
+  <ul class="pagination pagination-sm nx-pagination mb-0">
+    <li class="page-item" th:classappend="${pageObj.first} ? 'disabled'">
+      <a class="page-link" th:href="@{${baseUrl}(page=${pageObj.number - 1}, keyword=${keyword}, categoryId=${categoryId}, brandId=${brandId}, sortBy=${sortBy}, direction=${direction}, status=${selectedStatus})}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    <li class="page-item"
+        th:each="i : ${#numbers.sequence(T(java.lang.Math).max(0, pageObj.number - 2), T(java.lang.Math).min(pageObj.totalPages - 1, pageObj.number + 2))}"
+        th:classappend="${i == pageObj.number} ? 'active'">
+      <a class="page-link" th:text="${i + 1}"
+         th:href="@{${baseUrl}(page=${i}, keyword=${keyword}, categoryId=${categoryId}, brandId=${brandId}, sortBy=${sortBy}, direction=${direction}, status=${selectedStatus})}">1</a>
+    </li>
+    <li class="page-item" th:classappend="${pageObj.last} ? 'disabled'">
+      <a class="page-link" th:href="@{${baseUrl}(page=${pageObj.number + 1}, keyword=${keyword}, categoryId=${categoryId}, brandId=${brandId}, sortBy=${sortBy}, direction=${direction}, status=${selectedStatus})}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+</body>
+</html>

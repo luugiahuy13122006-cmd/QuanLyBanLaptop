@@ -16,7 +16,8 @@ public class RegisterDTO {
     private String username;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 6, max = 100, message = "Mật khẩu tối thiểu 6 ký tự")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,100}$",
+            message = "Mật khẩu tối thiểu 8 ký tự, gồm cả chữ và số")
     private String password;
 
     @NotBlank(message = "Vui lòng xác nhận mật khẩu")

@@ -3,6 +3,7 @@ package com.laptopshop.entity;
 public enum OrderStatus {
     PENDING("Chờ xác nhận"),
     CONFIRMED("Đã xác nhận"),
+    PREPARING("Đang chuẩn bị hàng"),
     SHIPPING("Đang giao hàng"),
     COMPLETED("Hoàn thành"),
     CANCELLED("Đã hủy"),

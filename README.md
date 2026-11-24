@@ -1,132 +1,113 @@
-# Hệ Thống Quản Lý Website Bán Laptop (QuanLyBanLaptop)
+# Hệ Thống Quản Lý & Bán Hàng Trực Tuyến **NEXORA LAPTOP** (`QuanLyBanLaptop`)
 
-Đồ án môn học **Công nghệ Java** – Nhóm 5 thành viên.
-Ứng dụng Web thương mại điện tử & quản trị bán laptop xây dựng bằng **Spring Boot**, **Thymeleaf**, **Bootstrap 5**, **Microsoft SQL Server**, **Xử lý đồng thời (Multithreading + Pessimistic Locking)** và **Lập trình mạng TCP Socket (Server/Client tách biệt)**.
+> Đồ án môn học **Công nghệ Java** — Nhóm 5 thành viên • Phiên bản nâng cấp chuẩn vận hành cửa hàng thật (Production-ready + Offline-safe + Dark/Light Design System).
 
 ---
 
 ## 1. Thành viên nhóm & Phân công công việc
 
 | Mã SV | Họ và tên | Vai trò | Phần phụ trách chính |
-|-------|-----------|---------|----------------------|
-| 2001240171 | **Lư Gia Huy** (Nhóm trưởng) | Thành viên 1 | Phân tích nghiệp vụ, thiết kế CSDL SQL Server (`QL_LAPTOP.sql`), sơ đồ ERD, dữ liệu mẫu |
-| 2001240138 | **Phạm Hữu Hiệu** | Thành viên 2 | Backend & giao diện quản lý Laptop, Danh mục, Thương hiệu; Kiểm thử đa luồng tồn kho; Socket Server & Client tách biệt |
-| 2001240077 | **Trương Xuân Đạt** | Thành viên 3 | Giao diện Website khách hàng (Thymeleaf + Bootstrap 5 responsive), tìm kiếm/lọc, giỏ hàng, đặt hàng, fragment dùng chung |
-| 2001240193 | **Nguyễn Tuấn Khang** | Thành viên 4 | Backend Khách hàng, Đơn hàng, Thanh toán, Lịch sử trạng thái, Thống kê doanh thu, Transaction & Pessimistic Lock chống Overselling, kiểm thử 10 luồng |
-| 2001240043 | **Vũ Gia Bảo** | Thành viên 5 | Tài khoản, Đăng ký/Đăng nhập/Phân quyền (Spring Security + BCrypt), Quản lý tài khoản, Tích hợp toàn hệ thống, Xử lý ngoại lệ, Kiểm thử tổng thể, README |
+|---|---|---|---|
+| 2001240171 | **Lư Gia Huy** (Nhóm trưởng) | Thành viên 1 | Phân tích nghiệp vụ, thiết kế CSDL SQL Server (`QL_LAPTOP.sql` + `QL_LAPTOP_upgrade.sql`, 29 bảng), sơ đồ ERD, dữ liệu mẫu |
+| 2001240138 | **Phạm Hữu Hiệu** | Thành viên 2 | Quản lý Laptop/Danh mục/Thương hiệu/Phiếu nhập kho/Nhà cung cấp/Serial, Socket Server TCP (`9090`) & `laptop-socket-client` |
+| 2001240077 | **Trương Xuân Đạt** | Thành viên 3 | Design System Light/Dark (`static/css/*`), Offline Vendor (`static/vendor/*`), Website bán hàng, So sánh, Bảo hành công khai, Tin tức, Chat |
+| 2001240193 | **Nguyễn Tuấn Khang** | Thành viên 4 | Giỏ hàng DB, Checkout (VietQR + COD + Webhook), Mã giảm giá, Vận đơn, Hóa đơn A4 PDF, Hoàn tiền, POS, Thống kê & Xuất báo cáo A4/CSV, `@Scheduled` & Pessimistic Lock |
+| 2001240043 | **Vũ Gia Bảo** | Thành viên 5 | Spring Security + BCrypt + Lockout + Reset MK, Quản lý Tài khoản & Audit Log, Bảo vệ IDOR, Kiểm thử tổng hợp (`SystemIntegrationTest`, `Phase1SecurityAndConcurrencyTest`, `Phase2FeaturesTest`), Tài liệu |
+
+Chi tiết ánh xạ từng file xem tại [`docs/PHAN_CONG_FILE_THANH_VIEN.md`](docs/PHAN_CONG_FILE_THANH_VIEN.md).
 
 ---
 
-## 2. Yêu cầu môi trường (Bắt buộc)
+## 2. Công nghệ & Kiến trúc
 
-- **JDK**: **Java 17** (LTS) – khuyến nghị Oracle JDK 17 hoặc OpenJDK 17.
-- **IDE**: **IntelliJ IDEA** (khuyến nghị) hoặc Eclipse / VS Code.
-- **Build tool**: **Apache Maven 3.8+** (hoặc dùng Maven tích hợp sẵn trong IntelliJ IDEA).
-- **Cơ sở dữ liệu**: **Microsoft SQL Server** (2019 / 2022 / Express) + **SQL Server Management Studio (SSMS)**.
+- **Backend:** Java 17+, Spring Boot 3.3.4, Spring Web MVC, Spring Security 6 + BCrypt, Spring Data JPA / Hibernate (`ddl-auto=validate`), Jakarta Bean Validation, JavaMail, ZXing QR.
+- **Frontend:** Thymeleaf + Fragment dùng chung + Bootstrap 5.3.2 + Bootstrap Icons + Chart.js 4.4.4 + html2pdf.js 0.10.1 + Google Fonts WOFF2 (**đã tải cục bộ trong `static/vendor/`**, chạy đầy đủ khi mất mạng).
+- **CSDL:** Microsoft SQL Server (`QL_Laptop` — 29 bảng tiếng Việt chuẩn PascalCase, `PhysicalNamingStrategyStandardImpl`, `globally_quoted_identifiers=true`).
+- **Xử lý đồng thời & Thời gian thực:** `@Transactional`, khóa bi quan `PESSIMISTIC_WRITE` theo thứ tự ID tăng dần chống bán quá tồn/chết khóa, bảng `BoDemMa` sinh mã đơn/phiếu nhập an toàn đa luồng, `KhoaTacVu` chống chạy trùng `@Scheduled`, và Server-Sent Events (`/admin/sse/notifications`).
+- **Lập trình mạng TCP Socket:** `SocketServer` (`ServerSocket` + `ThreadPoolExecutor` 8..32 luồng, cổng `9090`, xác thực `AUTH|<token>`) và module client tách biệt `laptop-socket-client` (`LaptopClientApp`, `StockMonitorFrame`, `MultiClientDemo`).
 
 ---
 
-## 3. Cấu trúc dự án
+## 3. Cấu trúc thư mục chính
 
 ```text
-QuanLyBanLaptop/
-├── pom.xml                             # Parent Maven Multi-Module
-├── README.md                           # Hướng dẫn cài đặt và chạy
-├── .gitignore
+QuanLyBanLaptop-main/
+├── pom.xml                                  # Parent Maven Multi-Module
+├── README.md
 ├── database/
-│   └── QL_LAPTOP.sql                   # Script tạo CSDL QL_Laptop (10 bảng) + 20 bản ghi mẫu/bảng
+│   ├── QL_LAPTOP.sql                        # Khởi tạo sạch 29 bảng + >= 20 bản ghi mẫu/bảng chính
+│   └── QL_LAPTOP_upgrade.sql                # Script nâng cấp CSDL đang có (idempotent, chạy lặp không lỗi)
 ├── docs/
-│   ├── So_do_ERD_QL_LAPTOP.png         # Sơ đồ ERD
-│   ├── Chuong1_2_ThietKeCSDL.docx      # Tài liệu thiết kế CSDL
-│   └── PHAN_CONG_FILE_THANH_VIEN.md    # Bảng phân công file/thư mục từng thành viên trên Git
-├── laptop-shop-web/                    # Module 1: Spring Boot Web App + TCP Socket Server (cổng 8080 & 9090)
-└── laptop-socket-client/               # Module 2: Chương trình Java Client mạng tách biệt
+│   ├── AUDIT_REPORT.md                      # Báo cáo kiểm toán 5 trục (Phase 0)
+│   ├── UPGRADE_LOG.md                       # Nhật ký nâng cấp Phase 0 -> Phase 4
+│   ├── CHECKLIST_RUBRIC.md                  # Đối chiếu khung chấm điểm mức A
+│   ├── KIEN_TRUC_VA_SO_DO.md                # Sơ đồ kiến trúc, trạng thái, tuần tự (Mermaid)
+│   ├── GIAO_THUC_SOCKET.md                  # Đặc tả giao thức TCP Socket 9090
+│   ├── KIEM_THU_THU_CONG.md                 # Kịch bản kiểm thử thủ công & QA
+│   ├── DEMO_15_PHUT.md                      # Kịch bản trình bày bảo vệ 15 phút
+│   ├── BAO_CAO_KHUNG_5_CHUONG.md            # Đề cương báo cáo 5 chương
+│   └── PHAN_CONG_FILE_THANH_VIEN.md         # Bảng phân công file theo thành viên
+├── laptop-shop-web/                         # Module Web & Socket Server (Spring Boot)
+└── laptop-socket-client/                    # Module TCP Client tách biệt (CLI & Swing GUI)
 ```
 
 ---
 
-## 4. Hướng dẫn cài đặt & tạo Cơ sở dữ liệu (SQL Server)
+## 4. Cài đặt CSDL SQL Server
 
-1. Mở **SQL Server Configuration Manager** → vào *SQL Server Network Configuration* → bật **TCP/IP** (cổng mặc định `1433`) và khởi động lại dịch vụ SQL Server.
-2. Đảm bảo tài khoản `sa` đã được bật (**SQL Server and Windows Authentication mode**).
-3. Mở **SQL Server Management Studio (SSMS)** → chọn *File → Open → File...* → mở `database/QL_LAPTOP.sql`.
-4. Nhấn **Execute (F5)** để chạy toàn bộ script.
-   - Script tự động tạo database `QL_Laptop` gồm 10 bảng tiếng Việt: `VaiTro`, `TaiKhoan`, `DanhMucLaptop`, `ThuongHieu`, `Laptop`, `KhachHang`, `DonHang`, `ChiTietDonHang`, `ThanhToan`, `LichSuTrangThaiDonHang`.
-   - Chèn sẵn 3 vai trò, 5 tài khoản mẫu và **20 bản ghi mẫu** cho mỗi bảng chính (`DanhMucLaptop`, `ThuongHieu`, `Laptop`, `KhachHang`, `DonHang`, `ChiTietDonHang`, `ThanhToan`, `LichSuTrangThaiDonHang`).
+1. Bật **TCP/IP** (cổng `1433`) trong *SQL Server Configuration Manager* và bật chế độ *SQL Server and Windows Authentication*.
+2. Nếu cài mới hoàn toàn, chạy file `database/QL_LAPTOP.sql` bằng SSMS hoặc dòng lệnh UTF-8:
+   ```powershell
+   sqlcmd -S localhost -E -b -f 65001 -i database\QL_LAPTOP.sql
+   ```
+3. Nếu nâng cấp CSDL `QL_Laptop` cũ đang có dữ liệu, chạy `database/QL_LAPTOP_upgrade.sql` (an toàn khi chạy lặp nhiều lần).
 
 ---
 
-## 5. Cấu hình kết nối trên máy cá nhân
+## 5. Cấu hình biến môi trường & Chạy ứng dụng
 
-Mở file `laptop-shop-web/src/main/resources/application.properties` (hoặc copy từ `application.properties.example`) và điền thông tin kết nối SQL Server trên máy bạn:
+Mã nguồn **không chứa mật khẩu CSDL mặc định**. Tham khảo [`application.properties.example`](laptop-shop-web/src/main/resources/application.properties.example) để đặt biến môi trường trước khi chạy:
 
-```properties
-spring.datasource.url=${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=QL_Laptop;encrypt=true;trustServerCertificate=true}
-spring.datasource.username=${DB_USERNAME:sa}
-spring.datasource.password=${DB_PASSWORD:YOUR_SQL_SERVER_PASSWORD}
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "dev"
+$env:DB_USERNAME = "sa"
+$env:DB_PASSWORD = "<MAT_KHAU_SQL_CUA_BAN>"
+$env:SOCKET_AUTH_TOKEN = "NEXORA_SOCKET_DEV_TOKEN_2026"
 ```
 
-> Thay `YOUR_SQL_SERVER_PASSWORD` bằng mật khẩu `sa` trên máy bạn (hoặc truyền qua biến môi trường `DB_PASSWORD`).
+Khi chạy production (`SPRING_PROFILES_ACTIVE=prod`), cấu hình thêm `QR_HMAC_SECRET`, `PAYMENT_WEBHOOK_SECRET`, `PAYMENT_MODE=PRODUCTION`, `QR_TUNNEL_ENABLED=false` (tắt tự động tunnel và ẩn chi tiết lỗi nội bộ).
 
----
-
-## 6. Hướng dẫn chạy Server (Ứng dụng Web + Socket Server)
-
-### Cách 1: Chạy bằng IntelliJ IDEA (Khuyên dùng)
-1. Mở IntelliJ IDEA → **File → Open** → chọn thư mục gốc `QuanLyBanLaptop` (IntelliJ sẽ tự nhận diện dự án Maven gồm 2 module).
-2. Chọn **Project SDK = JDK 17** (*File → Project Structure → Project → SDK*).
-3. Chờ Maven tải thư viện ở góc dưới bên phải.
-4. Mở file `laptop-shop-web/src/main/java/com/laptopshop/LaptopShopApplication.java` → nhấn **Run** (`▶`).
-5. Khi khởi động thành công:
-   - **Website bán hàng & Quản trị**: http://localhost:8080
-   - **TCP Socket Server**: tự động lắng nghe tại cổng **9090**
-
-### Cách 2: Chạy bằng dòng lệnh Maven
-```bash
+### Chạy Server (`laptop-shop-web`)
+```powershell
 cd laptop-shop-web
 mvn spring-boot:run
 ```
+- Website & Quản trị: `http://localhost:8080`
+- TCP Socket Server: `localhost:9090`
 
-### Tài khoản đăng nhập mẫu (Mật khẩu chung: `123456`)
-| Vai trò | Tên đăng nhập | Quyền hạn |
-|---------|---------------|-----------|
-| **ADMIN** | `admin` | Toàn quyền: Laptop, Danh mục, Thương hiệu, Khách hàng, Đơn hàng, Thống kê, Đa luồng, **Quản lý Tài khoản** |
-| **STAFF** | `staff01` | Quản lý Laptop, Danh mục, Thương hiệu, Khách hàng, Đơn hàng, Thống kê, Đa luồng (không vào được Quản lý Tài khoản) |
-| **CUSTOMER** | `khach01` | Mua hàng, giỏ hàng, đặt hàng, xem lịch sử & hủy đơn hàng chờ xử lý |
-
----
-
-## 7. Hướng dẫn chạy chương trình Socket Client tách biệt (Thành viên 2)
-
-> **Lưu ý:** Phải chạy `LaptopShopApplication` (Server) trước để cổng `9090` mở.
-
-### 7.1. Chạy 1 Client tương tác qua menu CLI
-- Trong IntelliJ IDEA: mở `laptop-socket-client/src/main/java/com/laptopshop/client/LaptopClientApp.java` → nhấn **Run**.
-- Hoặc chạy bằng dòng lệnh:
-```bash
+### Chạy Socket Client (`laptop-socket-client`)
+```powershell
 cd laptop-socket-client
 mvn compile
 java -cp target/classes com.laptopshop.client.LaptopClientApp localhost 9090
+# Hoặc demo 5 client kết nối song song:
+java -cp target/classes com.laptopshop.client.MultiClientDemo
 ```
-Các lệnh hỗ trợ: `PING`, `LIST_CATEGORIES`, `LIST_BRANDS`, `LIST_LAPTOPS`, `SEARCH|<từ khóa>`, `GET|<id>`, `QUIT`.
 
-### 7.2. Chạy Demo 3 Client kết nối đồng thời
-- Trong IntelliJ IDEA: mở `laptop-socket-client/src/main/java/com/laptopshop/client/MultiClientDemo.java` → nhấn **Run**.
-- Hoặc dòng lệnh:
-```bash
-java -cp target/classes com.laptopshop.client.MultiClientDemo localhost 9090
-```
+### Tài khoản mẫu (Mật khẩu mặc định: `123456`)
+| Vai trò | Tên đăng nhập | Quyền hạn chính |
+|---|---|---|
+| **ADMIN** | `admin` | Toàn quyền hệ thống, duyệt phiếu nhập kho, quản lý tài khoản, xem Audit Log |
+| **STAFF** | `staff01` | Bán POS, xử lý đơn hàng/minh chứng CK/vận đơn, bảo hành, đánh giá, hỗ trợ chat, lập phiếu nhập |
+| **CUSTOMER** | `khach01` | Mua sắm, giỏ hàng DB, sổ địa chỉ, đặt hàng COD/VietQR, hủy/hoàn tiền, tra cứu bảo hành |
 
 ---
 
-## 8. Hướng dẫn chạy Kiểm thử tự động (JUnit 5 + Đa luồng + Phân quyền)
+## 6. Kiểm thử tự động
 
-Bộ kiểm thử sử dụng H2 in-memory chế độ tương thích SQL Server (`MODE=MSSQLServer`) nên chạy được độc lập trên mọi máy:
+Chạy toàn bộ kiểm thử tích hợp, đa luồng, bảo mật, phân quyền, Socket 5 luồng và render 43 route giao diện bằng H2 (`MODE=MSSQLServer`):
 
-```bash
-mvn test
+```powershell
+mvn clean verify
 ```
-
-Gồm 2 bộ kiểm thử chính:
-1. `ConcurrencyOrderTest` (TV4): kiểm thử 10 luồng đặt hàng đồng thời tranh 5 laptop (chỉ 5 đơn thành công, tồn kho = 0, không âm kho) và kiểm thử hủy đơn hoàn kho + thống kê doanh thu.
-2. `SystemIntegrationTest` (TV5): kiểm thử đăng ký & BCrypt, phân quyền Spring Security (`ADMIN` / `STAFF` / `CUSTOMER`), ràng buộc khóa ngoại & trùng mã, cập nhật tồn kho đa luồng (`updateStockSafe`), và `SocketServer` phục vụ đồng thời 3 client TCP.
+Bao gồm 4 bộ test: `ConcurrencyOrderTest`, `SystemIntegrationTest`, `Phase1SecurityAndConcurrencyTest`, `Phase2FeaturesTest`.

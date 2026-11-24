@@ -71,6 +71,17 @@ class SystemIntegrationTest {
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private OrderStatusHistoryRepository historyRepository;
     @Autowired private ImportReceiptRepository importReceiptRepository;
+    @Autowired private StockMovementRepository stockMovementRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
+    @Autowired private ProductSerialRepository productSerialRepository;
+    @Autowired private WarrantyClaimRepository warrantyClaimRepository;
+    @Autowired private ProductReviewRepository productReviewRepository;
+    @Autowired private WishlistRepository wishlistRepository;
+    @Autowired private CartItemRepository cartItemRepository;
+    @Autowired private CustomerAddressRepository customerAddressRepository;
+    @Autowired private CouponRepository couponRepository;
+    @Autowired private SupplierRepository supplierRepository;
     @Autowired private ImportReceiptService importReceiptService;
     @Autowired private QrCodeService qrCodeService;
 
@@ -81,11 +92,22 @@ class SystemIntegrationTest {
 
     @BeforeEach
     void initData() {
+        warrantyClaimRepository.deleteAll();
+        productSerialRepository.deleteAll();
+        productReviewRepository.deleteAll();
+        wishlistRepository.deleteAll();
+        cartItemRepository.deleteAll();
+        customerAddressRepository.deleteAll();
+        stockMovementRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
+        auditLogRepository.deleteAll();
         historyRepository.deleteAll();
         paymentRepository.deleteAll();
         orderDetailRepository.deleteAll();
         orderRepository.deleteAll();
         importReceiptRepository.deleteAll();
+        couponRepository.deleteAll();
+        supplierRepository.deleteAll();
         customerRepository.deleteAll();
         accountRepository.deleteAll();
         laptopRepository.deleteAll();
@@ -124,8 +146,8 @@ class SystemIntegrationTest {
     void testRegisterAndAccountSecurity() {
         RegisterDTO reg = new RegisterDTO();
         reg.setUsername("khach_test");
-        reg.setPassword("123456");
-        reg.setConfirmPassword("123456");
+        reg.setPassword("Pass1234");
+        reg.setConfirmPassword("Pass1234");
         reg.setFullName("Khách Hàng Test");
         reg.setEmail("khachtest@gmail.com");
         reg.setPhone("0988777666");
@@ -134,7 +156,7 @@ class SystemIntegrationTest {
         Account created = accountService.registerCustomer(reg);
         assertNotNull(created.getId());
         assertEquals("CUSTOMER", created.getRole().getRoleName());
-        assertTrue(passwordEncoder.matches("123456", created.getPasswordHash()));
+        assertTrue(passwordEncoder.matches("Pass1234", created.getPasswordHash()));
         assertTrue(customerRepository.findByAccountId(created.getId()).isPresent());
 
         assertThrows(BusinessException.class, () -> accountService.registerCustomer(reg),
@@ -298,6 +320,12 @@ class SystemIntegrationTest {
                          BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
                          PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8)), true)) {
                         s.setSoTimeout(5000);
+                        out.println("AUTH|NEXORA_SOCKET_DEV_TOKEN_2026");
+                        assertEquals("OK", in.readLine());
+                        String authLine;
+                        while ((authLine = in.readLine()) != null) {
+                            if ("END".equals(authLine)) break;
+                        }
                         out.println(cmd);
                         String statusLine = in.readLine();
                         assertEquals("OK", statusLine);
@@ -456,7 +484,8 @@ class SystemIntegrationTest {
 
         assertThrows(BusinessException.class, () -> orderService.updateOrderStatus(order.getId(), OrderStatus.CONFIRMED));
         Payment pCreated = orderService.getPaymentByOrderId(order.getId()).orElseThrow();
-        String qrToken = qrCodeService.createToken(order.getId(), order.getOrderCode(), pCreated.getTransactionCode());
+        String qrToken = qrCodeService.createToken(order.getId(), order.getOrderCode(),
+                pCreated.getTransactionCode(), order.getTotalAmount(), order.getPaymentExpiresAt());
         orderService.confirmBankTransferByQrToken(order.getId(), qrToken);
         Order confirmed = orderRepository.findById(order.getId()).orElseThrow();
         assertEquals(OrderStatus.CONFIRMED, confirmed.getStatus());
@@ -477,8 +506,8 @@ class SystemIntegrationTest {
     void testProfileUpdateAndCustomerCreationGuard() throws Exception {
         RegisterDTO reg = new RegisterDTO();
         reg.setUsername("khach_profile_test");
-        reg.setPassword("123456");
-        reg.setConfirmPassword("123456");
+        reg.setPassword("Pass1234");
+        reg.setConfirmPassword("Pass1234");
         reg.setFullName("Nguyễn Minh Khôi");
         reg.setEmail("minhkhoi@test.com");
         reg.setPhone("0977111222");
@@ -509,7 +538,7 @@ class SystemIntegrationTest {
                         .param("email", "minhkhoi@test.com")
                         .param("phone", "0977111222")
                         .param("address", "Quận 7, TP.HCM")
-                        .param("currentPassword", "123456"))
+                        .param("currentPassword", "Pass1234"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/tai-khoan"));
 
@@ -521,7 +550,7 @@ class SystemIntegrationTest {
         Role customerRole = roleRepository.findByRoleNameIgnoreCase("CUSTOMER").orElseThrow();
         AccountDTO badAcc = new AccountDTO();
         badAcc.setUsername("admin_create_cus");
-        badAcc.setPassword("123456");
+        badAcc.setPassword("Pass1234");
         badAcc.setFullName("Khách Admin Tạo");
         badAcc.setRoleId(customerRole.getId());
         assertThrows(BusinessException.class, () -> accountService.createAccount(badAcc));
@@ -563,8 +592,8 @@ class SystemIntegrationTest {
     void testCashOnDeliveryBusinessFlowAndGuards() throws Exception {
         RegisterDTO reg = new RegisterDTO();
         reg.setUsername("khach_cod_test");
-        reg.setPassword("123456");
-        reg.setConfirmPassword("123456");
+        reg.setPassword("Pass1234");
+        reg.setConfirmPassword("Pass1234");
         reg.setFullName("Lê Hoàng Nam");
         reg.setEmail("codtest@test.com");
         reg.setPhone("0966554433");

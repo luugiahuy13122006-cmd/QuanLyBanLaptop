@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:replace="~{fragments/head :: commonHead('Sản phẩm yêu thích')}"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<main id="mainContent" class="container py-4">
+  <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+  <h2 class="h4 fw-bold mb-4"><i class="bi bi-heart-fill text-danger me-2"></i>Danh sách sản phẩm yêu thích</h2>
+  <div th:if="${items.empty}" class="nx-filter-bar text-center py-5">
+    <p class="text-muted mb-3">Bạn chưa lưu sản phẩm yêu thích nào.</p>
+    <a th:href="@{/}" class="btn btn-pv-primary px-4">Khám phá Laptop</a>
+  </div>
+  <div class="row g-3" th:if="${!items.empty}">
+    <div class="col-6 col-md-3" th:each="w : ${items}">
+      <div class="nx-card p-3">
+        <a th:href="@{/san-pham/{id}(id=${w.laptop.id})}" class="nx-thumb-box rounded-3 mb-2">
+          <img th:src="${w.laptop.displayImageUrl}" th:alt="${w.laptop.name}"/>
+        </a>
+        <a th:href="@{/san-pham/{id}(id=${w.laptop.id})}" class="fw-bold small text-reset text-truncate d-block mb-1" th:text="${w.laptop.name}"></a>
+        <div class="nx-price-now fs-6 tabular-nums mb-2" th:text="${#numbers.formatDecimal(w.laptop.salePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+        <div class="d-flex gap-1 mt-auto">
+          <form th:action="@{/gio-hang/them/{id}(id=${w.laptop.id})}" method="post" class="flex-grow-1">
+            <button type="submit" class="btn btn-pv-primary btn-sm w-100">Thêm vào giỏ</button>
+          </form>
+          <form th:action="@{/yeu-thich/toggle/{id}(id=${w.laptop.id})}" method="post">
+            <input type="hidden" name="redirect" value="/yeu-thich"/>
+            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/scripts :: commonScripts}"/>
+</body>
+</html>

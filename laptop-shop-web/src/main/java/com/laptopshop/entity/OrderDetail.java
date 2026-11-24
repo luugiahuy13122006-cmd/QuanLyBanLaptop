@@ -30,6 +30,9 @@ public class OrderDetail {
     @Column(name = "DonGia", nullable = false, precision = 18, scale = 2)
     private BigDecimal unitPrice;
 
+    @Column(name = "GiaVonLuuTru", nullable = false, precision = 18, scale = 2)
+    private BigDecimal costPriceSnapshot = BigDecimal.ZERO;
+
     @Column(name = "SoLuong", nullable = false)
     private Integer quantity;
 
@@ -44,6 +47,7 @@ public class OrderDetail {
         this.laptop = laptop;
         this.skuSnapshot = (laptop != null && laptop.getSku() != null) ? laptop.getSku() : "N/A";
         this.laptopNameSnapshot = (laptop != null && laptop.getName() != null) ? laptop.getName() : "N/A";
+        this.costPriceSnapshot = (laptop != null && laptop.getPurchasePrice() != null) ? laptop.getPurchasePrice() : BigDecimal.ZERO;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
@@ -90,4 +94,7 @@ public class OrderDetail {
     public void setLineTotal(BigDecimal lineTotal) { this.lineTotal = lineTotal; }
     public BigDecimal getSubtotal() { return lineTotal; }
     public void setSubtotal(BigDecimal subtotal) { this.lineTotal = subtotal; }
+
+    public BigDecimal getCostPriceSnapshot() { return costPriceSnapshot; }
+    public void setCostPriceSnapshot(BigDecimal costPriceSnapshot) { this.costPriceSnapshot = costPriceSnapshot; }
 }

@@ -33,3 +33,4 @@ Thumbs.db
 
 # Runtime uploads
 uploads/
+laptop-shop-web/src/main/resources/application-local.properties

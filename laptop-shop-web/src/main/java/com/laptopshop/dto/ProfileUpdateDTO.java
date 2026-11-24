@@ -21,7 +21,8 @@ public class ProfileUpdateDTO {
     @NotBlank(message = "Vui lòng nhập mật khẩu hiện tại để xác nhận thay đổi")
     private String currentPassword;
 
-    @Pattern(regexp = "^$|^.{6,100}$", message = "Mật khẩu mới phải từ 6 đến 100 ký tự")
+    @Pattern(regexp = "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,100}$",
+            message = "Mật khẩu mới tối thiểu 8 ký tự, gồm cả chữ và số")
     private String newPassword;
 
     private String confirmNewPassword;

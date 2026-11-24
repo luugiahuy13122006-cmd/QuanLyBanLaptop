@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: commonHead('Duyệt Đánh giá Sản phẩm')}"></head>
+<body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-star-half text-warning me-2"></i>Kiểm duyệt Đánh giá &amp; Phản hồi</h4>
+          <div class="small text-muted">Duyệt đánh giá đã mua hàng và phản hồi chính thức từ NEXORA</div>
+        </div>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="pro-card">
+          <div class="table-responsive">
+            <table class="table pro-table align-middle mb-0">
+              <thead>
+                <tr><th>#</th><th>Sản phẩm</th><th>Khách hàng</th><th>Đánh giá</th><th>Trạng thái</th><th style="min-width: 280px;">Duyệt &amp; Phản hồi</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="r : ${reviewPage.content}">
+                  <td class="text-muted tabular-nums" th:text="${r.id}"></td>
+                  <td class="small">
+                    <code th:text="${r.laptop.sku}"></code>
+                    <div class="fw-semibold" th:text="${r.laptop.name}"></div>
+                  </td>
+                  <td class="small">
+                    <div class="fw-medium" th:text="${r.customer.customerName}"></div>
+                    <span th:if="${r.verifiedPurchase}" class="badge-soft badge-soft-success">Đã mua hàng</span>
+                  </td>
+                  <td style="max-width: 280px;">
+                    <div class="text-warning fw-bold small" th:text="${r.rating + ' ★ ' + (r.title ?: '')}"></div>
+                    <div class="small" th:text="${r.content}"></div>
+                  </td>
+                  <td>
+                    <span th:if="${r.approved}" class="badge-soft badge-soft-success">Đã hiển thị</span>
+                    <span th:unless="${r.approved}" class="badge-soft badge-soft-warning">Chờ duyệt</span>
+                  </td>
+                  <td>
+                    <form th:action="@{/admin/reviews/{id}/moderate(id=${r.id})}" method="post" class="d-grid gap-1">
+                      <input type="text" name="shopReply" th:value="${r.shopReply}" class="form-control form-control-sm" placeholder="Phản hồi từ shop..."/>
+                      <div class="d-flex gap-1">
+                        <button type="submit" name="approve" value="true" class="btn btn-sm btn-success flex-grow-1">Duyệt hiển thị</button>
+                        <button type="submit" name="approve" value="false" class="btn btn-sm btn-outline-danger">Ẩn</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+                <tr th:if="${reviewPage.empty}">
+                  <td colspan="6" class="text-center text-muted py-5">Chưa có đánh giá sản phẩm nào.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <nav th:replace="~{fragments/ui :: paginationBar(${reviewPage}, '/admin/reviews')}"></nav>
+      </div>
+    </main>
+  </div>
+</div>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
+</body>
+</html>

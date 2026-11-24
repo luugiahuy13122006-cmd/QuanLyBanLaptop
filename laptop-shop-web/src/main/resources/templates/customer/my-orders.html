@@ -1,92 +1,82 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Đơn hàng của tôi - Nexora Laptop</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link th:href="@{/css/style.css}" rel="stylesheet"/>
-  <link rel="icon" type="image/svg+xml" th:href="@{/images/brand/nexora-mark.svg}"/>
-  <link th:href="@{/css/nexora.css}" rel="stylesheet"/>
-  <script>document.documentElement.classList.add('nx-js')</script>
-  <script th:src="@{/js/nexora.js}" defer></script>
+  <th:block th:replace="~{fragments/head :: commonHead('Đơn hàng của tôi')}"/>
 </head>
 <body>
 <div th:replace="~{fragments/header :: header}"></div>
 
-<main class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h2 class="h4 fw-bold mb-0 d-flex align-items-center gap-2">
-      <span class="pro-kpi-icon pro-kpi-icon-blue" style="width: 36px; height: 36px; font-size: 1rem;">
-        <i class="bi bi-bag-check"></i>
-      </span>
-      Lịch sử đơn hàng của tôi
+<main id="mainContent" class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h2 class="h4 fw-bold mb-0"><i class="bi bi-bag-check text-primary me-2"></i>Đơn hàng của tôi
+      <span class="badge bg-primary bg-opacity-10 text-primary ms-1" th:text="${allOrderCount ?: orders.size()}">0</span>
     </h2>
-    <a th:href="@{/}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Tiếp tục mua sắm</a>
+    <a th:href="@{/}" class="btn btn-outline-primary btn-sm"><i class="bi bi-shop me-1"></i>Tiếp tục mua sắm</a>
   </div>
-
   <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
 
-  <div th:if="${#lists.isEmpty(orders)}" class="pro-card p-5 text-center">
-    <div class="pro-kpi-icon pro-kpi-icon-slate mx-auto mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
-      <i class="bi bi-receipt"></i>
+  <form th:action="@{/don-hang-cua-toi}" method="get" class="nx-filter-bar p-3 mb-4 row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label small fw-semibold mb-1">Tìm theo mã đơn</label>
+      <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm" placeholder="VD: DH001..."/>
     </div>
-    <h5 class="fw-bold mb-1">Chưa có đơn hàng nào</h5>
-    <p class="text-muted small mb-3">Bạn chưa đặt đơn hàng nào tại Nexora Laptop.</p>
-    <a th:href="@{/}" class="btn btn-pv-primary px-4">Mua sắm ngay</a>
+    <div class="col-md-4">
+      <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">Tất cả trạng thái</option>
+        <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.displayName}" th:selected="${s == selectedStatus}"></option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-pv-primary btn-sm flex-grow-1">Tìm kiếm</button>
+      <a th:href="@{/don-hang-cua-toi}" class="btn btn-outline-secondary btn-sm">Đặt lại</a>
+    </div>
+  </form>
+
+  <div th:if="${orders.empty}" class="nx-filter-bar text-center py-5">
+    <i class="bi bi-inbox display-4 text-muted mb-3 d-block"></i>
+    <h5 class="fw-bold">Chưa có đơn hàng nào</h5>
+    <a th:href="@{/}" class="btn btn-pv-primary mt-2 px-4">Mua sắm ngay</a>
   </div>
 
-  <div class="pro-card" th:if="${!#lists.isEmpty(orders)}">
+  <div class="nx-filter-bar p-0 overflow-hidden" th:if="${!orders.empty}">
     <div class="table-responsive">
-      <table class="table pro-table align-middle mb-0">
-        <thead>
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
           <tr>
-            <th>Mã đơn</th>
-            <th>Ngày đặt</th>
-            <th>Sản phẩm</th>
-            <th>Thanh toán</th>
-            <th class="text-end">Tổng tiền</th>
-            <th class="text-center">Trạng thái</th>
-            <th class="text-center">Thao tác</th>
+            <th>Mã đơn</th><th>Ngày đặt</th><th>Thanh toán</th><th>Trạng thái</th><th class="text-end">Tổng tiền</th><th class="text-end">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <tr th:each="o : ${orders}">
-            <td>
-              <a th:href="@{/don-hang-cua-toi/{id}(id=${o.id})}" class="fw-bold font-mono text-decoration-none text-primary" th:text="${o.orderCode}"></a>
-            </td>
-            <td class="small text-muted tabular-nums" th:text="${#temporals.format(o.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
-            <td>
-              <div th:each="d : ${o.details}" class="small">
-                <span class="fw-medium" th:text="${d.laptopNameSnapshot}"></span>
-                <span class="text-muted"> x <strong class="text-dark" th:text="${d.quantity}"></strong></span>
-              </div>
-            </td>
+            <td><code class="fw-bold text-primary" th:text="${o.orderCode}"></code></td>
+            <td class="small tabular-nums" th:text="${#temporals.format(o.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
             <td class="small">
-              <div class="fw-medium mb-1" th:text="${o.paymentMethod.displayName}"></div>
-              <span class="badge-soft"
-                    th:classappend="${o.paymentStatus.name() == 'PAID' ? 'badge-soft-success' : (o.paymentStatus.name() == 'PENDING_CONFIRMATION' ? 'badge-soft-warning' : (o.paymentStatus.name() == 'FAILED' or o.paymentStatus.name() == 'REFUNDED' ? 'badge-soft-danger' : 'badge-soft-slate'))}"
-                    th:text="${o.paymentStatus.displayName}"></span>
+              <span th:text="${o.paymentMethod.displayName}"></span>
+              <span class="badge bg-success bg-opacity-10 text-success ms-1" th:if="${o.paymentStatus.name() == 'PAID'}">Đã TT</span>
             </td>
-            <td class="text-end pv-price text-nowrap tabular-nums"
-                th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-            <td class="text-center">
-              <span class="badge-soft"
-                    th:classappend="${o.status.name() == 'COMPLETED' ? 'badge-soft-success' : (o.status.name() == 'CANCELLED' or o.status.name() == 'RETURNED' or o.status.name() == 'REFUNDED' ? 'badge-soft-danger' : (o.status.name() == 'REFUND_REQUESTED' ? 'badge-soft-indigo' : 'badge-soft-warning'))}"
-                    th:text="${o.status.displayName}"></span>
-            </td>
-            <td class="text-center text-nowrap">
-              <a th:href="@{/don-hang-cua-toi/{id}(id=${o.id})}" class="btn btn-sm btn-pv-outline">Chi tiết</a>
+            <td><span class="badge bg-primary bg-opacity-10 text-primary" th:text="${o.status.displayName}"></span></td>
+            <td class="text-end fw-bold text-primary tabular-nums" th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/don-hang-cua-toi/{id}(id=${o.id})}" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+              <a th:href="@{/don-hang-cua-toi/{id}/hoa-don(id=${o.id})}" class="btn btn-sm btn-outline-secondary" title="Hóa đơn"><i class="bi bi-printer"></i></a>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <nav th:if="${totalPages != null and totalPages > 1}" class="d-flex justify-content-end mt-3">
+    <ul class="pagination pagination-sm nx-pagination mb-0">
+      <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage} ? 'active'">
+        <a class="page-link" th:href="@{/don-hang-cua-toi(page=${i}, keyword=${keyword}, status=${selectedStatus})}" th:text="${i + 1}">1</a>
+      </li>
+    </ul>
+  </nav>
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<th:block th:replace="~{fragments/scripts :: commonScripts}"/>
 </body>
 </html>
