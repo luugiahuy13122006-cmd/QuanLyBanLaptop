@@ -8,7 +8,7 @@
      style="background: #0b1120; border-bottom: 1px solid rgba(255,255,255,0.08);">
   <a class="navbar-brand fw-bold d-flex align-items-center gap-2" th:href="@{/admin/dashboard}">
     <span th:replace="~{fragments/brand :: mark(32)}"></span>
-    <span class="fs-6">NEXORA Admin</span>
+    <span class="fs-6">NEXORA Quản trị</span>
   </a>
   <div class="d-flex align-items-center gap-2">
     <button type="button" class="btn btn-sm btn-outline-light" data-theme-toggle title="Sáng / Tối">
@@ -20,7 +20,7 @@
   </div>
   <div class="collapse navbar-collapse mt-2 pb-2" id="adminMobileMenu">
     <ul class="navbar-nav gap-1">
-      <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2 me-2"></i>Dashboard</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2 me-2"></i>Bảng điều khiển</a></li>
       <li class="nav-item" th:if="${staffPerms['ORDERS']?.canView()}"><a class="nav-link" th:href="@{/admin/orders}"><i class="bi bi-box-seam me-2"></i>Đơn hàng</a></li>
       <li class="nav-item" th:if="${staffPerms['LAPTOPS']?.canView()}"><a class="nav-link" th:href="@{/admin/laptops}"><i class="bi bi-pc-display me-2"></i>Laptop</a></li>
       <li class="nav-item" th:if="${staffPerms['IMPORT_RECEIPTS']?.canView()}"><a class="nav-link" th:href="@{/admin/import-receipts}"><i class="bi bi-truck-flatbed me-2"></i>Phiếu nhập kho</a></li>
@@ -44,7 +44,7 @@
 <!-- Desktop Sidebar -->
 <nav th:fragment="adminSidebar" class="col-lg-2 d-none d-lg-flex flex-column sidebar pro-sidebar sticky-lg-top no-print" style="max-height: 100vh; overflow-y: auto;">
   <div class="d-flex align-items-center justify-content-between px-1 pb-3 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
-    <div th:replace="~{fragments/brand :: lockup(true, 'Admin Workspace', '/admin/dashboard')}"></div>
+    <div th:replace="~{fragments/brand :: lockup(true, 'Quản trị hệ thống', '/admin/dashboard')}"></div>
     <button type="button" class="btn btn-sm btn-outline-light border-0" data-theme-toggle title="Sáng / Tối">
       <i class="bi bi-moon-stars-fill" data-theme-icon></i>
     </button>
@@ -53,7 +53,7 @@
   <div class="flex-grow-1">
     <div class="pro-nav-label">Tổng quan</div>
     <ul class="nav flex-column">
-      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri == '/admin' || currentUri == '/admin/dashboard'} ? 'active'" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a></li>
+      <li class="nav-item"><a class="nav-link" th:classappend="${currentUri == '/admin' || currentUri == '/admin/dashboard'} ? 'active'" th:href="@{/admin/dashboard}"><i class="bi bi-grid-1x2"></i><span>Bảng điều khiển</span></a></li>
       <li class="nav-item" th:if="${staffPerms['STATISTICS']?.canView()}"><a class="nav-link" th:classappend="${currentUri.startsWith('/admin/statistics')} ? 'active'" th:href="@{/admin/statistics}"><i class="bi bi-bar-chart-line"></i><span>Thống kê &amp; Báo cáo</span></a></li>
     </ul>
 

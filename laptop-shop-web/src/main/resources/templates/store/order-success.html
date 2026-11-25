@@ -124,7 +124,7 @@
                 <div class="d-flex align-items-center gap-2">
                   <code class="fs-6 fw-bold text-dark" id="bankAccText" th:text="${shopProperties.payment.accountNumber}"></code>
                   <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" onclick="copyText('bankAccText')">
-                    <i class="bi bi-copy me-1"></i>Copy
+                    <i class="bi bi-copy me-1"></i>Sao chép
                   </button>
                 </div>
               </div>
@@ -141,7 +141,7 @@
                 <div class="d-flex align-items-center gap-2">
                   <code class="fs-6 fw-bold text-primary" id="orderCodeText" th:text="${order.orderCode}"></code>
                   <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" onclick="copyText('orderCodeText')">
-                    <i class="bi bi-copy me-1"></i>Copy
+                    <i class="bi bi-copy me-1"></i>Sao chép
                   </button>
                 </div>
               </div>
@@ -162,7 +162,7 @@
                 <i class="bi bi-link-45deg text-primary me-1"></i>Link QR điện thoại:
                 <a id="qrPayUrlLink" th:href="${qrPayUrl}" target="_blank" class="text-decoration-none font-mono" th:text="${qrPayUrl}"></a>
               </span>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 text-nowrap" onclick="copyText('qrPayUrlLink')">Copy link</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 text-nowrap" onclick="copyText('qrPayUrlLink')">Sao chép link</button>
             </div>
           </div>
 

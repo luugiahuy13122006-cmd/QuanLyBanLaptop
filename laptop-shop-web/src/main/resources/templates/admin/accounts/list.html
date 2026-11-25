@@ -22,7 +22,7 @@
         <form th:action="@{/admin/accounts}" method="get" class="pro-card p-3 mb-4">
           <div class="row g-2 align-items-center">
             <div class="col-md-4">
-              <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm" placeholder="Tìm username, họ tên, email..."/>
+              <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm" placeholder="Tìm tên đăng nhập, họ tên, email..."/>
             </div>
             <div class="col-md-3">
               <select name="roleId" class="form-select form-select-sm">
@@ -33,7 +33,7 @@
             <div class="col-md-2">
               <select name="sortBy" class="form-select form-select-sm">
                 <option value="id" th:selected="${sortBy == 'id'}">ID</option>
-                <option value="username" th:selected="${sortBy == 'username'}">Username</option>
+                <option value="username" th:selected="${sortBy == 'username'}">Tên đăng nhập</option>
                 <option value="fullName" th:selected="${sortBy == 'fullName'}">Họ tên</option>
               </select>
             </div>

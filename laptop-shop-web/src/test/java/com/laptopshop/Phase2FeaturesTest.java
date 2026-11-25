@@ -382,5 +382,19 @@ class Phase2FeaturesTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Đã chuyển khoản thành công!")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Quay lại trang chủ")));
+
+        // Kiểm tra ngôn ngữ chính là Tiếng Việt & footer đã đổi thành 'Bảo hành điện tử'
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Giỏ hàng")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Bảo hành điện tử")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Bảo hành Serial điện tử"))));
+
+        mockMvc.perform(get("/san-pham/" + laptopId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Mua Ngay")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Thêm giỏ hàng")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Buy Now"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Add to Cart"))));
     }
 }

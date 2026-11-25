@@ -85,10 +85,10 @@
             <input type="number" name="quantity" value="1" min="1" th:max="${laptop.stockQuantity}"
                    class="form-control text-center fw-bold" style="width: 82px;"/>
             <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary px-4 py-2 flex-grow-1">
-              <i class="bi bi-lightning-fill me-1"></i><span th:text="#{btn.buy_now}">Mua ngay</span>
+              <i class="bi bi-lightning-fill me-1"></i><span th:text="#{btn.buy_now}">Mua Ngay</span>
             </button>
             <button type="submit" class="btn btn-outline-primary rounded-3 px-4 py-2">
-              <i class="bi bi-cart-plus me-1"></i><span th:text="#{btn.add_to_cart}">Thêm vào giỏ</span>
+              <i class="bi bi-cart-plus me-1"></i><span th:text="#{btn.add_to_cart}">Thêm giỏ hàng</span>
             </button>
           </form>
 
@@ -183,7 +183,7 @@
   </div>
   <form th:action="@{/gio-hang/them/{id}(id=${laptop.id})}" method="post">
     <input type="hidden" name="quantity" value="1"/>
-    <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary px-4">Mua ngay</button>
+    <button type="submit" name="buyNow" value="true" class="btn btn-pv-primary px-4">Mua Ngay</button>
   </form>
 </div>
 

@@ -14,7 +14,7 @@
     <div class="row align-items-center g-4">
       <div class="col-lg-7">
         <span class="nx-hero-badge mb-3">
-          <i class="bi bi-stars"></i> NEXORA LAPTOP 2026 • CHÍNH HÃNG VAT • BẢO HÀNH SERIAL ĐIỆN TỬ
+          <i class="bi bi-stars"></i> NEXORA LAPTOP 2026 • CHÍNH HÃNG VAT • BẢO HÀNH ĐIỆN TỬ
         </span>
         <h1 class="display-6 fw-bold mb-2"
             th:text="${banners != null and !banners.isEmpty()} ? ${banners[0].title} : 'Hiệu năng bứt phá — Định chuẩn Laptop 2026'">
@@ -219,7 +219,7 @@
               <div class="nx-price-old tabular-nums" th:if="${lp.discounted}" th:text="${#numbers.formatDecimal(lp.listPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
             </div>
             <form th:if="${lp.stockQuantity > 0}" th:action="@{/gio-hang/them/{id}(id=${lp.id})}" method="post">
-              <button type="submit" class="btn btn-pv-primary btn-sm px-3" title="Thêm vào giỏ">
+              <button type="submit" class="btn btn-pv-primary btn-sm px-3" title="Thêm giỏ hàng">
                 <i class="bi bi-cart-plus"></i>
               </button>
             </form>
