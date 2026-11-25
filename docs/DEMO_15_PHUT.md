@@ -21,7 +21,7 @@ Mục tiêu: Trình bày mạch lạc toàn bộ **kiến trúc, nghiệp vụ t
 5. **Thống kê & Hỗ trợ trực tuyến CSKH (`/admin/statistics` -> `/admin/content`):** Chart.js, báo cáo A4 (PDF/CSV) và hộp thoại Hỗ trợ trực tuyến có chuông/toast SSE khi khách nhắn từ `/ho-tro`.
 
 ## Phút 9–12: Xử lý đồng thời (`PESSIMISTIC_WRITE`) & Lập trình mạng TCP Socket
-1. Giải thích đoạn mã `OrderServiceImpl.placeOrder()`: gom các `laptopId` trùng, sắp xếp ID tăng dần tránh deadlock, dùng `findAllByIdInForUpdate` (`PESSIMISTIC_WRITE`), khóa `MaGiamGia`, cập nhật `BoDemMa`.
+1. Mở trang `/admin/stock/test` (**Kiểm tra đa luồng**) chạy trực tiếp **10 luồng đồng thời** ngay trên giao diện Quản trị và giải thích đoạn mã `OrderServiceImpl.placeOrder()`: gom `laptopId` trùng, sắp xếp ID tăng dần tránh deadlock, dùng `findAllByIdInForUpdate` (`PESSIMISTIC_WRITE`), khóa `MaGiamGia`, cập nhật `BoDemMa`.
 2. Mở terminal chạy `MultiClientDemo` (5 client TCP đồng thời gửi `AUTH`, `CHECK_STOCK|LT001`, `SEARCH|asus`, `LOW_STOCK`) và mở `StockMonitorFrame` (nếu demo Swing GUI) để cho thấy Server TCP (`SocketServer` cổng `9090`) phục vụ song song qua `ThreadPoolExecutor` (8..32 luồng).
 
 ## Phút 12–15: Minh chứng Kiểm thử tự động & Hỏi đáp

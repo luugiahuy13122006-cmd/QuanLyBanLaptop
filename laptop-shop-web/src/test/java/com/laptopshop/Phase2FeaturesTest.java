@@ -65,6 +65,7 @@ class Phase2FeaturesTest {
     @Autowired private SupplierService supplierService;
     @Autowired private StaffPermissionService staffPermissionService;
     @Autowired private ImportReceiptService importReceiptService;
+    @Autowired private QrCodeService qrCodeService;
 
     private Integer laptopId;
     private Integer customerId;
@@ -290,7 +291,7 @@ class Phase2FeaturesTest {
                 "/admin/import-receipts", "/admin/import-receipts/create",
                 "/admin/suppliers", "/admin/orders", "/admin/orders/create",
                 "/admin/customers", "/admin/coupons",
-                "/admin/warranties", "/admin/reviews", "/admin/content", "/admin/accounts", "/admin/audit-logs"
+                "/admin/warranties", "/admin/reviews", "/admin/content", "/admin/accounts", "/admin/stock/test", "/admin/audit-logs"
         )) {
             mockMvc.perform(get(adminUrl).with(user(adminPrincipal)))
                     .andExpect(status().isOk());
@@ -319,6 +320,7 @@ class Phase2FeaturesTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("perm_STATISTICS")));
 
         mockMvc.perform(get("/403")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/admin/stock/test").with(user(staffPrincipal))).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/coupons").with(user(staffPrincipal))).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/suppliers").with(user(staffPrincipal))).andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/statistics").with(user(staffPrincipal))).andExpect(status().isForbidden());
@@ -346,5 +348,39 @@ class Phase2FeaturesTest {
         assertThrows(BusinessException.class, () -> supplierService.delete(supIdToDelete));
         Supplier toggled = supplierService.toggleActive(supIdToDelete);
         assertFalse(toggled.getIsActive());
+
+        // Kiểm tra đa luồng trong trang Quản trị (/admin/stock/concurrent-test)
+        int stockBefore = laptopRepo.findById(laptopId).orElseThrow().getStockQuantity();
+        mockMvc.perform(post("/admin/stock/concurrent-test").with(user(adminPrincipal)).with(csrf())
+                        .param("laptopId", String.valueOf(laptopId))
+                        .param("threadCount", "5")
+                        .param("deltaPerThread", "2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/stock/test"));
+        assertEquals(stockBefore + 10, laptopRepo.findById(laptopId).orElseThrow().getStockQuantity());
+
+        // Kiểm tra luồng quét QR trên điện thoại: xác nhận thanh toán xong vẫn hiển thị trang thành công + nút Quay lại trang chủ
+        PlaceOrderRequest qrReq = new PlaceOrderRequest();
+        qrReq.setCustomerId(customerId);
+        qrReq.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        qrReq.setItems(List.of(new OrderItemRequest(laptopId, 1)));
+        Order qrOrder = orderService.placeOrder(qrReq, customerAccount.getId());
+        Payment qrPayment = orderService.getPaymentByOrderId(qrOrder.getId()).orElseThrow();
+        String qrToken = qrCodeService.createToken(qrOrder.getId(), qrOrder.getOrderCode(),
+                qrPayment.getTransactionCode(), qrOrder.getTotalAmount(), qrOrder.getPaymentExpiresAt());
+
+        mockMvc.perform(get("/qr-pay/" + qrOrder.getId() + "/" + qrToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Xác nhận đã chuyển khoản")));
+
+        mockMvc.perform(post("/qr-pay/" + qrOrder.getId() + "/" + qrToken + "/confirm"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/qr-pay/" + qrOrder.getId() + "/" + qrToken));
+
+        // Sau khi thanh toán xong (paymentExpiresAt = null), redirect GET phải hiển thị thành công & nút Quay lại trang chủ, KHÔNG báo lỗi
+        mockMvc.perform(get("/qr-pay/" + qrOrder.getId() + "/" + qrToken))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đã chuyển khoản thành công!")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Quay lại trang chủ")));
     }
 }

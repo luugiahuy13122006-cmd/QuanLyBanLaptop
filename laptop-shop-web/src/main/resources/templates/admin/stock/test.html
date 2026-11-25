@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<!-- Thành viên phụ trách: TV2 - Phạm Hữu Hiệu -->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: commonHead('Kiểm tra Đa luồng - Tồn kho')}"></head>
+<body>
+<div th:replace="~{fragments/admin-layout :: adminTopbar}"></div>
+<div class="container-fluid">
+  <div class="row">
+    <nav th:replace="~{fragments/admin-layout :: adminSidebar}"></nav>
+    <main class="col-lg-10 p-0">
+      <div class="pro-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-0"><i class="bi bi-cpu text-primary me-2"></i>Kiểm tra Đa luồng &amp; Khóa Tồn kho (Pessimistic Lock)</h4>
+          <div class="small text-muted">
+            Mô phỏng nhiều luồng truy cập đồng thời cùng lúc bằng <code>ExecutorService</code> &amp; <code>CountDownLatch</code> với khóa <code>PESSIMISTIC_WRITE</code> chống Race Condition / Overselling
+          </div>
+        </div>
+        <a th:href="@{/admin/laptops}" class="btn btn-sm btn-pv-outline">
+          <i class="bi bi-pc-display me-1"></i>Xem kho Laptop
+        </a>
+      </div>
+
+      <div class="p-3 p-md-4">
+        <div th:replace="~{fragments/admin-layout :: flashMessages}"></div>
+
+        <div class="row g-4">
+          <div class="col-lg-5">
+            <div class="pro-card h-100">
+              <div class="pro-card-header">
+                <h6 class="mb-0"><i class="bi bi-sliders2 text-primary me-2"></i>Cấu hình Kịch bản Đa luồng</h6>
+              </div>
+              <div class="p-4">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                  <button type="button" class="btn btn-sm btn-outline-primary"
+                          onclick="applyPreset(10, -1)">10 luồng tranh xuất (-1)</button>
+                  <button type="button" class="btn btn-sm btn-outline-success"
+                          onclick="applyPreset(10, 2)">10 luồng nhập đồng thời (+2)</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                          onclick="applyPreset(15, -5)">15 luồng test quá tồn (-5)</button>
+                </div>
+
+                <form th:action="@{/admin/stock/concurrent-test}" method="post" class="d-grid gap-3">
+                  <div>
+                    <label class="form-label fw-semibold small">Chọn Laptop kiểm thử <span class="text-danger">*</span></label>
+                    <select name="laptopId" class="form-select" required>
+                      <option th:each="l : ${laptops}" th:value="${l.id}"
+                              th:selected="${l.id == laptopId}"
+                              th:text="${'#' + l.id + ' - ' + l.sku + ' - ' + l.name + ' (Tồn: ' + l.stockQuantity + ')'}"></option>
+                    </select>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label fw-semibold small">Số luồng (2 – 30)</label>
+                      <input type="number" id="threadCountInput" name="threadCount" class="form-control tabular-nums"
+                             th:value="${threadCount ?: 10}" min="2" max="30" required/>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label fw-semibold small">Delta mỗi luồng</label>
+                      <input type="number" id="deltaInput" name="deltaPerThread" class="form-control tabular-nums"
+                             th:value="${deltaPerThread ?: -1}" required/>
+                    </div>
+                  </div>
+                  <div class="p-3 rounded-3 small text-muted border" style="background: var(--surface-2);">
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    <strong>Cơ chế hoạt động:</strong> Tất cả luồng được giữ tại rào <code>CountDownLatch</code> và bung chạy cùng một thời điểm.
+                    Khóa <code>LockModeType.PESSIMISTIC_WRITE</code> tuần tự hóa truy cập dòng dữ liệu SQL Server để tồn kho không bao giờ bị sai lệch hoặc âm.
+                  </div>
+                  <button type="submit" class="btn btn-pv-primary py-2 fw-bold">
+                    <i class="bi bi-lightning-charge-fill me-1"></i>Chạy kiểm tra đa luồng ngay
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-7">
+            <div th:if="${testResults != null}" class="pro-card h-100">
+              <div class="pro-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0"><i class="bi bi-terminal text-primary me-2"></i>Kết quả thực thi (<span th:text="${testedLaptopName}"></span>)</h6>
+                <span class="badge-soft"
+                      th:classappend="${stockAfter == expectedAfter} ? 'badge-soft-success' : 'badge-soft-danger'"
+                      th:text="${stockAfter == expectedAfter ? 'Toàn vẹn dữ liệu 100%' : 'Sai lệch tồn kho'}"></span>
+              </div>
+              <div class="p-4">
+                <div class="row g-2 mb-3 text-center">
+                  <div class="col-3">
+                    <div class="p-2 rounded-3 border" style="background: var(--surface-2);">
+                      <div class="small text-muted">Tồn trước</div>
+                      <div class="fs-5 fw-bold tabular-nums" th:text="${stockBefore}">0</div>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="p-2 rounded-3 border" style="background: var(--surface-2);">
+                      <div class="small text-muted">Thành công</div>
+                      <div class="fs-5 fw-bold text-success tabular-nums" th:text="${successCount}">0</div>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="p-2 rounded-3 border" style="background: var(--surface-2);">
+                      <div class="small text-muted">Bị chặn</div>
+                      <div class="fs-5 fw-bold text-danger tabular-nums" th:text="${failCount}">0</div>
+                    </div>
+                  </div>
+                  <div class="col-3">
+                    <div class="p-2 rounded-3 border" style="background: var(--surface-2);">
+                      <div class="small text-muted">Tồn sau</div>
+                      <div class="fs-5 fw-bold text-primary tabular-nums" th:text="${stockAfter}">0</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="p-3 rounded-3 border font-mono-code small"
+                     style="max-height: 320px; overflow-y: auto; background: #0b1120; color: #e2e8f0; line-height: 1.65;">
+                  <div th:each="r : ${testResults}" th:text="${r}"></div>
+                </div>
+              </div>
+            </div>
+
+            <div th:unless="${testResults != null}" class="pro-card h-100">
+              <div class="p-5 text-center text-muted d-flex flex-column justify-content-center align-items-center h-100">
+                <span class="pro-kpi-icon pro-kpi-icon-blue mb-3" style="width: 60px; height: 60px; font-size: 1.6rem;">
+                  <i class="bi bi-cpu"></i>
+                </span>
+                <h6 class="fw-bold mb-1">Sẵn sàng kiểm thử đồng thời</h6>
+                <p class="small mb-0" style="max-width: 420px;">
+                  Chọn sản phẩm laptop và nhấn <strong>Chạy kiểm tra đa luồng ngay</strong> để quan sát chi tiết log của từng luồng xử lý và kết quả khóa <code>PESSIMISTIC_WRITE</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<div th:replace="~{fragments/scripts :: commonScripts}"></div>
+<script>
+  function applyPreset(threads, delta) {
+    document.getElementById('threadCountInput').value = threads;
+    document.getElementById('deltaInput').value = delta;
+  }
+</script>
+</body>
+</html>

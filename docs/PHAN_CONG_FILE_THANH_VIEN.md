@@ -21,9 +21,9 @@ Dự án `QuanLyBanLaptop` là **một repository chung** trên GitHub cho cả 
   - `util/VietnameseTextNormalizer.java`
   - `repository/{Category,Brand,Laptop,Supplier,ImportReceipt,ProductSerial,WarrantyClaim}Repository.java`
   - `service/{Category,Brand,Laptop,Supplier,ImportReceipt,Warranty}Service*.java`
-  - `controller/{Category,Brand,Laptop,ImportReceipt,Warranty}Controller.java`
+  - `controller/{Category,Brand,Laptop,ImportReceipt,Warranty,Stock}Controller.java`
   - `socket/SocketServer.java`
-  - `templates/admin/{laptops,categories,brands,import-receipts,suppliers,warranties}/`
+  - `templates/admin/{laptops,categories,brands,import-receipts,suppliers,warranties,stock}/`
   - `docs/GIAO_THUC_SOCKET.md`
 
 ## 3. Thành viên 3 – Trương Xuân Đạt (2001240077)

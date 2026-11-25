@@ -53,44 +53,37 @@ QuanLyBanLaptop-main/
 
 ---
 
-## 4. Cài đặt CSDL SQL Server
+## 4. Cài đặt CSDL SQL Server (Nhanh gọn trên mọi máy)
 
-1. Bật **TCP/IP** (cổng `1433`) trong *SQL Server Configuration Manager* và bật chế độ *SQL Server and Windows Authentication*.
-2. Nếu cài mới hoàn toàn, chạy file `database/QL_LAPTOP.sql` bằng SSMS hoặc dòng lệnh UTF-8:
-   ```powershell
-   sqlcmd -S localhost -E -b -f 65001 -i database\QL_LAPTOP.sql
-   ```
-3. Nếu nâng cấp CSDL `QL_Laptop` cũ đang có dữ liệu, chạy `database/QL_LAPTOP_upgrade.sql` (an toàn khi chạy lặp nhiều lần).
+Chỉ cần cài sẵn **JDK 17+**, **Maven** và **Microsoft SQL Server (SSMS)**:
+1. Mở **SQL Server Management Studio (SSMS)**, kết nối tới SQL Server trên máy và chạy file `database/QL_LAPTOP.sql` để tạo mới CSDL `QL_Laptop` cùng đầy đủ dữ liệu mẫu.
+   - *(Nếu máy đã có CSDL `QL_Laptop` cũ trước đó, chỉ cần chạy `database/QL_LAPTOP_upgrade.sql` để nâng cấp mà không mất dữ liệu).*
+   - *(Hoặc chạy bằng dòng lệnh: `sqlcmd -S localhost -E -b -f 65001 -i database\QL_LAPTOP.sql`)*
 
 ---
 
-## 5. Cấu hình biến môi trường & Chạy ứng dụng
+## 5. Cấu hình & Chạy ứng dụng
 
-Mã nguồn **không chứa mật khẩu CSDL mặc định**. Tham khảo [`application.properties.example`](laptop-shop-web/src/main/resources/application.properties.example) để đặt biến môi trường trước khi chạy:
-
-```powershell
-$env:SPRING_PROFILES_ACTIVE = "dev"
-$env:DB_USERNAME = "sa"
-$env:DB_PASSWORD = "<MAT_KHAU_SQL_CUA_BAN>"
-$env:SOCKET_AUTH_TOKEN = "NEXORA_SOCKET_DEV_TOKEN_2026"
-```
-
-Khi chạy production (`SPRING_PROFILES_ACTIVE=prod`), cấu hình thêm `QR_HMAC_SECRET`, `PAYMENT_WEBHOOK_SECRET`, `PAYMENT_MODE=PRODUCTION`, `QR_TUNNEL_ENABLED=false` (tắt tự động tunnel và ẩn chi tiết lỗi nội bộ).
-
-### Chạy Server (`laptop-shop-web`)
-```powershell
-cd laptop-shop-web
-mvn spring-boot:run
-```
+Không cần thiết lập biến môi trường phức tạp hay chỉnh cấu hình hệ điều hành:
+1. Mở file [`laptop-shop-web/src/main/resources/application.properties`](laptop-shop-web/src/main/resources/application.properties), kiểm tra và sửa lại cho khớp SQL Server trên máy của bạn (mặc định là `localhost:1433`, `username=sa`, `password=123`).
+2. Nhấn **Run `LaptopShopApplication.java`** trong IntelliJ IDEA (hoặc chạy qua Maven):
+   ```powershell
+   cd laptop-shop-web
+   mvn spring-boot:run
+   ```
 - Website & Quản trị: `http://localhost:8080`
-- TCP Socket Server: `localhost:9090`
+- Kiểm tra đa luồng tồn kho (Admin): `http://localhost:8080/admin/stock/test`
+- TCP Socket Server: `localhost:9090` (tự khởi động cùng `LaptopShopApplication`)
 
-### Chạy Socket Client (`laptop-socket-client`)
+*(Ghi chú production: khi deploy thực tế với `SPRING_PROFILES_ACTIVE=prod`, cấu hình biến môi trường `DB_USERNAME`, `DB_PASSWORD`, `QR_HMAC_SECRET`, `PAYMENT_WEBHOOK_SECRET`, `PAYMENT_MODE=PRODUCTION`, `QR_TUNNEL_ENABLED=false`.)*
+
+### Chạy TCP Socket Client tách biệt (`laptop-socket-client` — phục vụ chấm điểm Lập trình mạng)
+Module `laptop-socket-client` là ứng dụng **Client TCP độc lập** kết nối tới `SocketServer` cổng `9090` (không ảnh hưởng khi bạn bè/giảng viên chỉ chạy `LaptopShopApplication`):
 ```powershell
 cd laptop-socket-client
 mvn compile
 java -cp target/classes com.laptopshop.client.LaptopClientApp localhost 9090
-# Hoặc demo 5 client kết nối song song:
+# Hoặc demo 5 client TCP kết nối song song:
 java -cp target/classes com.laptopshop.client.MultiClientDemo
 ```
 

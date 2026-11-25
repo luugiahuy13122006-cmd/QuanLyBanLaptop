@@ -71,9 +71,10 @@ public class QrCodeService {
                               BigDecimal amount, LocalDateTime expiresAt) {
         try {
             String amtStr = amount != null ? amount.stripTrailingZeros().toPlainString() : "0";
-            long expEpoch = expiresAt != null ? expiresAt.toEpochSecond(ZoneOffset.UTC) : 0L;
+            // Không đưa paymentExpiresAt (bị set null khi thanh toán xong) vào chữ ký HMAC
+            // để URL QR trên điện thoại vẫn hợp lệ khi redirect sang trang "chuyển khoản thành công".
             String payload = orderId + "|" + (orderCode != null ? orderCode : "") + "|"
-                    + (transactionCode != null ? transactionCode : "") + "|" + amtStr + "|" + expEpoch;
+                    + (transactionCode != null ? transactionCode : "") + "|" + amtStr;
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(effectiveSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));

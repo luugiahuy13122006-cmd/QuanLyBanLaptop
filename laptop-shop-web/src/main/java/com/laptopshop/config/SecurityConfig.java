@@ -142,7 +142,7 @@ public class SecurityConfig {
                                                    ObjectProvider<CartService> cartServiceProvider) throws Exception {
         http
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/api/webhooks/payment")
+                .ignoringRequestMatchers("/api/webhooks/payment", "/qr-pay/**")
             )
             .headers(headers -> headers
                 .frameOptions(frame -> frame.sameOrigin())
@@ -175,7 +175,8 @@ public class SecurityConfig {
                 .requestMatchers("/orders/place").hasAnyRole("ADMIN", "STAFF")
                 .requestMatchers(
                     "/admin/accounts/**", "/admin/audit-logs/**",
-                    "/admin/coupons/**", "/admin/suppliers/**"
+                    "/admin/coupons/**", "/admin/suppliers/**",
+                    "/admin/stock/**"
                 ).hasRole("ADMIN")
                 .requestMatchers("/admin/import-receipts/*/approve", "/admin/import-receipts/*/reject").hasRole("ADMIN")
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")

@@ -96,9 +96,10 @@ public class QrTunnelService implements ApplicationListener<WebServerInitialized
                         }
                         if (foundUrl != null && activeTunnelUrl == null
                                 && (line.contains("Registered tunnel connection") || line.contains("connIndex="))) {
-                            try { Thread.sleep(600); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                            this.activeTunnelUrl = foundUrl;
-                            log.info("[QR-TUNNEL] Đã sẵn sàng quét QR từ mọi mạng (4G/5G/Wi-Fi): {}", foundUrl);
+                            if (waitUntilHttpsReady(foundUrl)) {
+                                this.activeTunnelUrl = foundUrl;
+                                log.info("[QR-TUNNEL] Đã sẵn sàng quét QR HTTPS toàn cầu (4G/5G/Wi-Fi): {}", foundUrl);
+                            }
                         }
                     }
                 }
@@ -115,6 +116,34 @@ public class QrTunnelService implements ApplicationListener<WebServerInitialized
                 try { Thread.sleep(4000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
             }
         }
+    }
+
+    private boolean waitUntilHttpsReady(String baseUrl) {
+        HttpClient client = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(4))
+                .build();
+        URI probeUri = URI.create(baseUrl + "/robots.txt");
+        for (int attempt = 1; attempt <= 10 && !shuttingDown; attempt++) {
+            try {
+                Thread.sleep(attempt == 1 ? 800L : 1000L);
+                HttpRequest req = HttpRequest.newBuilder(probeUri)
+                        .timeout(Duration.ofSeconds(4))
+                        .GET()
+                        .build();
+                HttpResponse<Void> res = client.send(req, HttpResponse.BodyHandlers.discarding());
+                if (res.statusCode() >= 200 && res.statusCode() < 400) {
+                    return true;
+                }
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return false;
+            } catch (Exception ignored) {
+                // DNS / TLS edge cho trycloudflare.com có thể mất vài giây để lan truyền
+            }
+        }
+        log.warn("[QR-TUNNEL] Tunnel {} chưa sẵn sàng HTTPS kịp thời; tạm dùng địa chỉ dự phòng.", baseUrl);
+        return false;
     }
 
     private String resolveOrInstallCloudflared() {

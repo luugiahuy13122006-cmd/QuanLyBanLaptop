@@ -41,31 +41,69 @@
 
     <div class="p-4">
       <!-- State 1: ALREADY PAID ON PHONE -->
-      <div th:if="${payment != null and payment.paymentStatus.name() == 'PAID'}" class="text-center py-2">
+      <div th:if="${payment != null and payment.paymentStatus.name() == 'PAID'}" class="text-center py-2" style="color: #0F172A;">
         <svg class="success-check-svg mb-3" viewBox="0 0 52 52">
           <circle class="success-check-circle" cx="26" cy="26" r="24"/>
           <path class="success-check-tick" d="M15 27 L23 35 L38 19"/>
         </svg>
         <span class="badge-soft badge-soft-success mb-2"><i class="bi bi-patch-check-fill"></i> Đã hoàn tất</span>
-        <h4 class="fw-bold text-success mb-2">Xác nhận chuyển khoản thành công!</h4>
-        <p class="small text-muted mb-4">
-          Giao dịch <code th:text="${payment.transactionCode}"></code> đã được xác nhận.
-          Màn hình máy tính của bạn sẽ tự động hiển thị <strong>Thanh toán thành công</strong> ngay bây giờ.
+        <h4 class="fw-bold text-success mb-2">Đã chuyển khoản thành công!</h4>
+        <p class="small mb-3" style="color: #475569;">
+          Giao dịch <code th:text="${payment.transactionCode}"></code> cho đơn hàng
+          <strong th:text="${order.orderCode}"></strong> đã được xác nhận.
+          Màn hình máy tính của bạn cũng tự động hoàn tất ngay bây giờ.
         </p>
 
-        <div class="rounded-4 p-3 text-start small d-flex flex-column gap-2" style="background: #F8FAFC; border: 1px solid var(--brand-border);">
-          <div class="d-flex justify-content-between">
-            <span class="text-muted">Người nhận:</span>
-            <strong th:text="${order.recipientName}"></strong>
+        <div class="rounded-4 p-3 text-start small d-flex flex-column gap-2 mb-3"
+             style="background: #F8FAFC; border: 1px solid #CBD5E1; color: #0F172A;">
+          <div class="d-flex justify-content-between gap-2">
+            <span style="color: #64748B;">Mã đơn hàng:</span>
+            <code class="fw-bold text-primary" th:text="${order.orderCode}"></code>
           </div>
-          <div class="d-flex justify-content-between" th:if="${payment.paidAt != null}">
-            <span class="text-muted">Thời gian:</span>
+          <div class="d-flex justify-content-between gap-2">
+            <span style="color: #64748B;">Số tiền đã thanh toán:</span>
+            <strong class="text-success tabular-nums"
+                    th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
+          </div>
+          <div class="d-flex justify-content-between gap-2">
+            <span style="color: #64748B;">Người nhận:</span>
+            <strong th:text="${order.recipientName + (order.recipientPhone != null ? ' • ' + order.recipientPhone : '')}"></strong>
+          </div>
+          <div class="d-flex justify-content-between gap-2">
+            <span style="color: #64748B;">Địa chỉ giao hàng:</span>
+            <strong class="text-end" th:text="${order.deliveryAddress}"></strong>
+          </div>
+          <div class="d-flex justify-content-between gap-2" th:if="${payment.paidAt != null}">
+            <span style="color: #64748B;">Thời gian xác nhận:</span>
             <strong class="tabular-nums" th:text="${#temporals.format(payment.paidAt, 'dd/MM/yyyy HH:mm:ss')}"></strong>
           </div>
-          <div class="d-flex justify-content-between">
-            <span class="text-muted">Trạng thái đơn:</span>
+          <div class="d-flex justify-content-between gap-2">
+            <span style="color: #64748B;">Trạng thái đơn:</span>
             <span class="badge-soft badge-soft-info" th:text="${order.status.displayName}"></span>
           </div>
+        </div>
+
+        <div class="mb-4 text-start" th:if="${order.details != null and !order.details.isEmpty()}">
+          <div class="small fw-semibold text-uppercase mb-2" style="color: #64748B; font-size: 0.72rem; letter-spacing: 0.05em;">Chi tiết sản phẩm</div>
+          <div class="d-flex flex-column gap-2">
+            <div th:each="d : ${order.details}" class="p-2 rounded-3 border d-flex justify-content-between align-items-center small gap-2"
+                 style="background: #FFFFFF; border-color: #CBD5E1 !important; color: #0F172A;">
+              <div>
+                <div class="fw-semibold" th:text="${d.laptopNameSnapshot}"></div>
+                <small style="color: #64748B;" th:text="'SL: ' + ${d.quantity}"></small>
+              </div>
+              <strong class="tabular-nums text-nowrap" th:text="${#numbers.formatDecimal(d.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <a th:href="@{/}" class="btn btn-pv-primary py-2 fw-bold">
+            <i class="bi bi-house-door-fill me-2"></i>Quay lại trang chủ
+          </a>
+          <a th:href="@{/don-hang-cua-toi/{id}(id=${order.id})}" class="btn btn-outline-primary btn-sm py-2 fw-semibold">
+            <i class="bi bi-receipt me-1"></i>Xem chi tiết đơn hàng
+          </a>
         </div>
       </div>
 
@@ -75,9 +113,12 @@
           <i class="bi bi-x-circle-fill"></i>
         </div>
         <h5 class="fw-bold text-danger">Đơn hàng không còn hiệu lực thanh toán</h5>
-        <p class="small text-muted mb-0">
+        <p class="small text-muted mb-4">
           Trạng thái hiện tại: <strong th:text="${order.status.displayName}"></strong>
         </p>
+        <a th:href="@{/}" class="btn btn-pv-primary w-100 py-2 fw-bold">
+          <i class="bi bi-house-door-fill me-2"></i>Quay lại trang chủ
+        </a>
       </div>
 
       <!-- State 3: READY FOR CUSTOMER CONFIRMATION ON PHONE -->

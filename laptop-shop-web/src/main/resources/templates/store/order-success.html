@@ -101,7 +101,7 @@
                class="badge rounded-pill px-3 py-2 mt-3"
                th:style="${tunnelActive} ? 'background: rgba(16,185,129,0.18); border: 1px solid rgba(52,211,153,0.45); color: #6EE7B7;' : 'background: rgba(245,158,11,0.18); border: 1px solid rgba(251,191,36,0.45); color: #FDE68A;'">
             <i id="qrScopeIcon" th:class="${tunnelActive} ? 'bi bi-globe2 me-1' : 'bi bi-wifi me-1'"></i>
-            <span id="qrScopeText" th:text="${tunnelActive} ? 'Kết nối toàn cầu (4G / Mọi Wi-Fi)' : 'Mạng nội bộ (đang mở kết nối toàn cầu...)'"></span>
+            <span id="qrScopeText" th:text="${tunnelActive} ? 'HTTPS An toàn toàn cầu (4G / Mọi Wi-Fi)' : 'Đang khởi tạo HTTPS toàn cầu (tạm dùng Wi-Fi nội bộ)...'"></span>
           </div>
         </div>
 
@@ -237,13 +237,13 @@
         scopeBadge.style.border = '1px solid rgba(52,211,153,0.45)';
         scopeBadge.style.color = '#6EE7B7';
         scopeIcon.className = 'bi bi-globe2 me-1';
-        scopeText.textContent = 'Kết nối toàn cầu (4G / Mọi Wi-Fi)';
+        scopeText.textContent = 'HTTPS An toàn toàn cầu (4G / Mọi Wi-Fi)';
       } else {
         scopeBadge.style.background = 'rgba(245,158,11,0.18)';
         scopeBadge.style.border = '1px solid rgba(251,191,36,0.45)';
         scopeBadge.style.color = '#FDE68A';
         scopeIcon.className = 'bi bi-wifi me-1';
-        scopeText.textContent = 'Mạng nội bộ (đang mở kết nối toàn cầu...)';
+        scopeText.textContent = 'Đang khởi tạo HTTPS toàn cầu (tạm dùng Wi-Fi nội bộ)...';
       }
     }
 
