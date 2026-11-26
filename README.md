@@ -34,6 +34,10 @@ QuanLyBanLaptop-main/
 ├── README.md
 ├── database/
 │   └── QL_LAPTOP.sql                        # Khởi tạo sạch 26 bảng + >= 20 bản ghi mẫu/bảng chính
+├── docs/
+│   ├── BaoCao_LaptopShop.docx               # Báo cáo đồ án (Word)
+│   ├── BaoCao_LaptopShop.pdf                # Báo cáo đồ án (PDF)
+│   └── Slide_LaptopShop_CongNgheJava.pptx   # Slide thuyết trình đồ án
 ├── laptop-shop-web/                         # Module Web & Socket Server (Spring Boot)
 └── laptop-socket-client/                    # Module TCP Client tách biệt (CLI & Swing GUI)
 ```
