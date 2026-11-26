@@ -8,13 +8,11 @@
 
 | Mã SV | Họ và tên | Vai trò | Phần phụ trách chính |
 |---|---|---|---|
-| 2001240171 | **Lư Gia Huy** (Nhóm trưởng) | Thành viên 1 | Phân tích nghiệp vụ, thiết kế CSDL SQL Server (`QL_LAPTOP.sql` + `QL_LAPTOP_upgrade.sql`, 29 bảng), sơ đồ ERD, dữ liệu mẫu |
+| 2001240171 | **Lư Gia Huy** (Nhóm trưởng) | Thành viên 1 | Phân tích nghiệp vụ, thiết kế CSDL SQL Server (`QL_LAPTOP.sql`, 26 bảng), sơ đồ ERD, dữ liệu mẫu |
 | 2001240138 | **Phạm Hữu Hiệu** | Thành viên 2 | Quản lý Laptop/Danh mục/Thương hiệu/Phiếu nhập kho/Nhà cung cấp/Serial, Socket Server TCP (`9090`) & `laptop-socket-client` |
 | 2001240077 | **Trương Xuân Đạt** | Thành viên 3 | Design System Light/Dark (`static/css/*`), Offline Vendor (`static/vendor/*`), Website bán hàng, So sánh, Bảo hành công khai, Tin tức, Chat |
 | 2001240193 | **Nguyễn Tuấn Khang** | Thành viên 4 | Giỏ hàng DB, Checkout (VietQR + COD + Webhook), Mã giảm giá, Vận đơn, Hóa đơn A4 PDF, Hoàn tiền, POS, Thống kê & Xuất báo cáo A4/CSV, `@Scheduled` & Pessimistic Lock |
 | 2001240043 | **Vũ Gia Bảo** | Thành viên 5 | Spring Security + BCrypt + Lockout + Reset MK, Quản lý Tài khoản & Audit Log, Bảo vệ IDOR, Kiểm thử tổng hợp (`SystemIntegrationTest`, `Phase1SecurityAndConcurrencyTest`, `Phase2FeaturesTest`), Tài liệu |
-
-Chi tiết ánh xạ từng file xem tại [`docs/PHAN_CONG_FILE_THANH_VIEN.md`](docs/PHAN_CONG_FILE_THANH_VIEN.md).
 
 ---
 
@@ -22,7 +20,7 @@ Chi tiết ánh xạ từng file xem tại [`docs/PHAN_CONG_FILE_THANH_VIEN.md`]
 
 - **Backend:** Java 17+, Spring Boot 3.3.4, Spring Web MVC, Spring Security 6 + BCrypt, Spring Data JPA / Hibernate (`ddl-auto=validate`), Jakarta Bean Validation, JavaMail, ZXing QR.
 - **Frontend:** Thymeleaf + Fragment dùng chung + Bootstrap 5.3.2 + Bootstrap Icons + Chart.js 4.4.4 + html2pdf.js 0.10.1 + Google Fonts WOFF2 (**đã tải cục bộ trong `static/vendor/`**, chạy đầy đủ khi mất mạng).
-- **CSDL:** Microsoft SQL Server (`QL_Laptop` — 29 bảng tiếng Việt chuẩn PascalCase, `PhysicalNamingStrategyStandardImpl`, `globally_quoted_identifiers=true`).
+- **CSDL:** Microsoft SQL Server (`QL_Laptop` — 26 bảng tiếng Việt chuẩn PascalCase, `PhysicalNamingStrategyStandardImpl`, `globally_quoted_identifiers=true`).
 - **Xử lý đồng thời & Thời gian thực:** `@Transactional`, khóa bi quan `PESSIMISTIC_WRITE` theo thứ tự ID tăng dần chống bán quá tồn/chết khóa, bảng `BoDemMa` sinh mã đơn/phiếu nhập an toàn đa luồng, `KhoaTacVu` chống chạy trùng `@Scheduled`, và Server-Sent Events (`/admin/sse/notifications`).
 - **Lập trình mạng TCP Socket:** `SocketServer` (`ServerSocket` + `ThreadPoolExecutor` 8..32 luồng, cổng `9090`, xác thực `AUTH|<token>`) và module client tách biệt `laptop-socket-client` (`LaptopClientApp`, `StockMonitorFrame`, `MultiClientDemo`).
 
@@ -35,18 +33,7 @@ QuanLyBanLaptop-main/
 ├── pom.xml                                  # Parent Maven Multi-Module
 ├── README.md
 ├── database/
-│   ├── QL_LAPTOP.sql                        # Khởi tạo sạch 29 bảng + >= 20 bản ghi mẫu/bảng chính
-│   └── QL_LAPTOP_upgrade.sql                # Script nâng cấp CSDL đang có (idempotent, chạy lặp không lỗi)
-├── docs/
-│   ├── AUDIT_REPORT.md                      # Báo cáo kiểm toán 5 trục (Phase 0)
-│   ├── UPGRADE_LOG.md                       # Nhật ký nâng cấp Phase 0 -> Phase 4
-│   ├── CHECKLIST_RUBRIC.md                  # Đối chiếu khung chấm điểm mức A
-│   ├── KIEN_TRUC_VA_SO_DO.md                # Sơ đồ kiến trúc, trạng thái, tuần tự (Mermaid)
-│   ├── GIAO_THUC_SOCKET.md                  # Đặc tả giao thức TCP Socket 9090
-│   ├── KIEM_THU_THU_CONG.md                 # Kịch bản kiểm thử thủ công & QA
-│   ├── DEMO_15_PHUT.md                      # Kịch bản trình bày bảo vệ 15 phút
-│   ├── BAO_CAO_KHUNG_5_CHUONG.md            # Đề cương báo cáo 5 chương
-│   └── PHAN_CONG_FILE_THANH_VIEN.md         # Bảng phân công file theo thành viên
+│   └── QL_LAPTOP.sql                        # Khởi tạo sạch 26 bảng + >= 20 bản ghi mẫu/bảng chính
 ├── laptop-shop-web/                         # Module Web & Socket Server (Spring Boot)
 └── laptop-socket-client/                    # Module TCP Client tách biệt (CLI & Swing GUI)
 ```
@@ -57,7 +44,6 @@ QuanLyBanLaptop-main/
 
 Chỉ cần cài sẵn **JDK 17+**, **Maven** và **Microsoft SQL Server (SSMS)**:
 1. Mở **SQL Server Management Studio (SSMS)**, kết nối tới SQL Server trên máy và chạy file `database/QL_LAPTOP.sql` để tạo mới CSDL `QL_Laptop` cùng đầy đủ dữ liệu mẫu.
-   - *(Nếu máy đã có CSDL `QL_Laptop` cũ trước đó, chỉ cần chạy `database/QL_LAPTOP_upgrade.sql` để nâng cấp mà không mất dữ liệu).*
    - *(Hoặc chạy bằng dòng lệnh: `sqlcmd -S localhost -E -b -f 65001 -i database\QL_LAPTOP.sql`)*
 
 ---
