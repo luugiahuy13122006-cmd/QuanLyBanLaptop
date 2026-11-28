@@ -90,8 +90,9 @@
                       th:action="@{/admin/suppliers/payables/{id}(id=${receipt.id})}" method="post" class="mt-2 pt-2 border-top">
                   <label class="form-label fw-semibold small">Ghi nhận thanh toán (₫)</label>
                   <div class="input-group input-group-sm">
-                    <input type="number" name="amount" min="1000" step="10000" class="form-control tabular-nums"
-                           th:value="${receipt.totalAmount.subtract(receipt.paidAmount ?: T(java.math.BigDecimal).ZERO)}" required/>
+                    <input type="number" name="amount" min="1" step="1" class="form-control tabular-nums"
+                           th:max="${receipt.totalAmount.subtract(receipt.paidAmount ?: T(java.math.BigDecimal).ZERO).longValue()}"
+                           th:value="${receipt.totalAmount.subtract(receipt.paidAmount ?: T(java.math.BigDecimal).ZERO).longValue()}" required/>
                     <button type="submit" class="btn btn-success fw-semibold">Thanh toán NCC</button>
                   </div>
                 </form>
