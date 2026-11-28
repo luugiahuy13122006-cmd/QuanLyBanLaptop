@@ -229,23 +229,64 @@ public class StoreController {
         return "redirect:/san-pham/" + id;
     }
 
+    private String safeBackUrl(HttpServletRequest request, String fallback) {
+        if (request == null) return fallback;
+        String ref = request.getHeader("Referer");
+        if (ref == null || ref.isBlank()) return fallback;
+        try {
+            java.net.URI uri = java.net.URI.create(ref);
+            if (uri.getHost() == null || !uri.getHost().equalsIgnoreCase(request.getServerName())) return fallback;
+            String path = (uri.getRawPath() == null || uri.getRawPath().isEmpty()) ? "/" : uri.getRawPath();
+            if (!path.startsWith("/") || path.startsWith("//") || path.startsWith("/gio-hang")) return fallback;
+            return uri.getRawQuery() != null ? path + "?" + uri.getRawQuery() : path;
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
+    }
+
+    @PostMapping(value = "/gio-hang/them/{id}", headers = "X-Requested-With=XMLHttpRequest")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addToCartAjax(@PathVariable Integer id,
+                                                             @RequestParam(defaultValue = "1") int quantity,
+                                                             @AuthenticationPrincipal CustomUserDetails currentUser,
+                                                             HttpSession session) {
+        try {
+            Integer accountId = currentUser != null ? currentUser.getAccountId() : null;
+            cartService.addItem(id, quantity, accountId, session);
+            Laptop laptop = laptopService.getLaptopById(id);
+            int cartCount = cartService.getCartCount(accountId, session);
+            return ResponseEntity.ok(Map.of(
+                    "ok", true,
+                    "cartCount", cartCount,
+                    "message", "Đã thêm '" + laptop.getName() + "' vào giỏ hàng."
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "ok", false,
+                    "message", ex.getMessage() != null ? ex.getMessage() : "Không thể thêm vào giỏ hàng."
+            ));
+        }
+    }
+
     @PostMapping("/gio-hang/them/{id}")
     public String addToCart(@PathVariable Integer id,
                             @RequestParam(defaultValue = "1") int quantity,
                             @RequestParam(defaultValue = "false") boolean buyNow,
                             @AuthenticationPrincipal CustomUserDetails currentUser,
+                            HttpServletRequest request,
                             HttpSession session,
                             RedirectAttributes ra) {
+        String backUrl = safeBackUrl(request, "/san-pham/" + id);
         try {
             Integer accountId = currentUser != null ? currentUser.getAccountId() : null;
             cartService.addItem(id, quantity, accountId, session);
             if (buyNow) return "redirect:/dat-hang";
             Laptop laptop = laptopService.getLaptopById(id);
             ra.addFlashAttribute("successMessage", "Đã thêm '" + laptop.getName() + "' vào giỏ hàng.");
-            return "redirect:/gio-hang";
+            return "redirect:" + backUrl;
         } catch (Exception ex) {
             ra.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:/san-pham/" + id;
+            return "redirect:" + backUrl;
         }
     }
 

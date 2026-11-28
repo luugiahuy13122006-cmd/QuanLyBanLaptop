@@ -1,11 +1,12 @@
-const CACHE_NAME = 'nexora-static-v1';
+const CACHE_NAME = 'nexora-static-v2';
 const OFFLINE_ASSETS = [
   '/',
   '/vendor/bootstrap/bootstrap.min.css',
   '/vendor/bootstrap/bootstrap.bundle.min.js',
-  '/vendor/bootstrap-icons/bootstrap-icons.css',
-  '/css/style.css',
-  '/css/nexora.css',
+  '/vendor/bootstrap-icons/bootstrap-icons.min.css',
+  '/vendor/bootstrap-icons/fonts/bootstrap-icons.woff2?v=1.11.3',
+  '/css/base.css',
+  '/css/components.css',
   '/images/laptop-default.svg'
 ];
 

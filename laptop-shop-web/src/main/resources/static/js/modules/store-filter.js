@@ -38,4 +38,59 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+
+  // AJAX "Thêm giỏ hàng": giữ nguyên trang hiện tại, cập nhật badge và hiện toast (riêng "Mua Ngay" vẫn chuyển /dat-hang)
+  document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (!form || !form.getAttribute) return;
+    const action = form.getAttribute('action') || '';
+    if (!action.includes('/gio-hang/them/')) return;
+    const submitter = e.submitter;
+    if (submitter && submitter.name === 'buyNow') return;
+
+    e.preventDefault();
+    const formData = new FormData(form);
+    if (submitter) submitter.disabled = true;
+
+    fetch(form.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      },
+      credentials: 'same-origin'
+    })
+      .then(function (res) {
+        if (res.redirected && res.url && res.url.includes('/login')) {
+          window.location.href = res.url;
+          return null;
+        }
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          window.location.reload();
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (typeof data.cartCount === 'number') {
+          document.querySelectorAll('a[href="/gio-hang"] .badge, a[href$="/gio-hang"] .badge').forEach(function (badge) {
+            badge.textContent = String(data.cartCount);
+          });
+        }
+        if (typeof window.NexoraToast === 'function') {
+          window.NexoraToast('Giỏ hàng', data.message || 'Đã cập nhật giỏ hàng.', data.ok ? 'success' : 'danger');
+        }
+      })
+      .catch(function () {
+        if (typeof window.NexoraToast === 'function') {
+          window.NexoraToast('Giỏ hàng', 'Không thể thêm vào giỏ hàng, vui lòng thử lại.', 'danger');
+        }
+      })
+      .finally(function () {
+        if (submitter) submitter.disabled = false;
+      });
+  });
 });
